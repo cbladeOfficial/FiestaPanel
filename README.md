@@ -1,12 +1,20 @@
-# 🌐 FiestaPanel
+<p align="center">
+  <img src="assets/banner.png" alt="FiestaPanel Banner" width="100%">
+</p>
 
-> **The Modern & Retro Minecraft Server Management Suite**  
-> Nostalgic TP-Link & Windows 7 Aero Aesthetics • Real-Time Telemetry • Visual Inventory Inspector • Modrinth Plugin Manager • Jailed File Manager • Turnkey Deployment
+<h1 align="center">🌐 FiestaPanel</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-brightgreen.svg)](https://python.org)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20systemd-orange.svg)]()
-[![Minecraft](https://img.shields.io/badge/Minecraft-Java%20Edition-success.svg)]()
+<p align="center">
+  <strong>The Modern & Retro Minecraft Server Management Suite</strong><br>
+  Nostalgic TP-Link & Windows 7 Aero Aesthetics • Real-Time Telemetry • Visual Inventory Inspector • Modrinth Plugin Manager • Jailed File Manager • Turnkey Deployment
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-brightgreen.svg" alt="Python 3.9+"></a>
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20systemd-orange.svg" alt="Platform">
+  <img src="https://img.shields.io/badge/Minecraft-Java%20Edition-success.svg" alt="Minecraft">
+</p>
 
 ---
 
@@ -23,7 +31,7 @@ curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
 
 Or clone and run locally:
 ```bash
-git clone https://github.com/cbladeOfficial/FiestaPanel.git /opt/fiestapanel
+git clone https://github.com/open-fiestasmp/FiestaPanel.git /opt/fiestapanel
 cd /opt/fiestapanel
 sudo bash install.sh
 ```

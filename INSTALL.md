@@ -68,7 +68,7 @@ sudo dnf install -y python3 python3-pip git curl
 
 ```bash
 sudo mkdir -p /opt/fiestapanel
-sudo git clone https://github.com/cbladeOfficial/FiestaPanel.git /opt/fiestapanel
+sudo git clone https://github.com/open-fiestasmp/FiestaPanel.git /opt/fiestapanel
 cd /opt/fiestapanel
 ```
 
