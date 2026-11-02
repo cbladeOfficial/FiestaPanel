@@ -20,7 +20,7 @@ curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
 
 Or clone and run locally:
 ```bash
-git clone https://github.com/debarkak/gatewaypanel.git /opt/gatewaypanel
+git clone https://github.com/cbladeOfficial/gatewaypanel.git /opt/gatewaypanel
 cd /opt/gatewaypanel
 sudo bash install.sh
 ```

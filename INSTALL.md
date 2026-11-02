@@ -68,7 +68,7 @@ sudo dnf install -y python3 python3-pip git curl
 
 ```bash
 sudo mkdir -p /opt/gatewaypanel
-sudo git clone https://github.com/debarkak/gatewaypanel.git /opt/gatewaypanel
+sudo git clone https://github.com/cbladeOfficial/gatewaypanel.git /opt/gatewaypanel
 cd /opt/gatewaypanel
 ```
 
