@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*$py.class
+users.json
+venv/
+.env
+static/gatewaypanel-latest.tar.gz
