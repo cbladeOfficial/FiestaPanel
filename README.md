@@ -10,6 +10,9 @@
 
 ---
 
+<img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/d291e8bd-0571-44f4-b81b-5b013db7c885" />
+<img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/f5d5116c-5ef6-4491-b8c3-4e6de4af9bb1" />
+
 ## ⚡ Quick Start (1-Line Install)
 
 Run the automated installer on any Ubuntu, Debian, or Linux server:
