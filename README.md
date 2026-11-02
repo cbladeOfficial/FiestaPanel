@@ -41,27 +41,16 @@ sudo bash install.sh
 
 ## ✨ Features at a Glance
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        FiestaPanel Highlights                         │
-├───────────────────────────────────┬────────────────────────────────────┤
-│ 🎮 Full Process Control           │ 🎒 Visual Inventory Inspector      │
-│ Start, stop, restart, kill, and   │ Live armor, offhand, storage &     │
-│ tail ANSI logs with scroll jumps. │ hotbar with authentic 1.21 assets. │
-├───────────────────────────────────┼────────────────────────────────────┤
-│ 🔌 Modrinth Plugin Manager        │ 📁 Jailed File Manager             │
-│ Search, filter, and 1-click       │ In-browser code editor, directory  │
-│ install plugins from Modrinth API.│ browser & drag-and-drop upload.    │
-├───────────────────────────────────┼────────────────────────────────────┤
-│ 🌍 World & Weather Controls       │ 👥 Sub-Users & Multi-User Access   │
-│ Day/Night cycle, weather clear/   │ Granular permissions (Admin, Op,   │
-│ rain/thunder, & safe world flush. │ Viewer) with salted PBKDF2 auth.   │
-├───────────────────────────────────┼────────────────────────────────────┤
-│ 🎨 Windows 7 Aero & Retro Themes  │ 🏷️ Complete Brand Customization    │
-│ Authentic 7.css glass reflection, │ Header icons (12 presets + SVG),   │
-│ TP-Link legacy, Win98, Cyberpunk. │ model number, title, and tagline.  │
-└───────────────────────────────────┴────────────────────────────────────┘
-```
+| Feature | Highlights |
+|---|---|
+| 🎮 **Full Process Control** | Start, stop, restart, and tail live ANSI logs with top/bottom scroll navigation. |
+| 🎒 **Visual Inventory Inspector** | Real-time armor, offhand, storage & hotbar viewer with authentic 1.21 item textures and giving search tool. |
+| 🔌 **Modrinth Plugin Manager** | Search, filter by Minecraft version, and 1-click install plugins directly from the Modrinth API. |
+| 📁 **Jailed File Manager** | In-browser code & config editor, directory navigation, and drag-and-drop file uploads with traversal protection. |
+| 🌍 **World & Weather Controls** | Day/Noon/Night cycles, weather clear/rain/thunder toggles, and safe world flushing (`/save-all`). |
+| 👥 **Sub-Users & Access Control** | Multi-user roles (Admin, Operator, Viewer) with salted PBKDF2 password hashing. |
+| 🎨 **Windows 7 Aero & Retro Themes** | Authentic 7.css specular glass reflection, TP-Link legacy, Windows 98, Dark Mode, Matrix, and Cyberpunk. |
+| 🏷️ **Complete Brand Customization** | Header icon picker (12 themed presets + custom SVG), custom title, hardware model number, and tagline. |
 
 ---
 
