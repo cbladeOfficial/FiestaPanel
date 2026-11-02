@@ -1,6 +1,6 @@
-# 🛡️ GatewayPanel Security Architecture & Best Practices
+# 🛡️ FiestaPanel Security Architecture & Best Practices
 
-GatewayPanel is built with security, isolation, and defense-in-depth principles in mind. This document outlines the security controls implemented within GatewayPanel and recommended deployment configurations.
+FiestaPanel is built with security, isolation, and defense-in-depth principles in mind. This document outlines the security controls implemented within FiestaPanel and recommended deployment configurations.
 
 ---
 
@@ -8,7 +8,7 @@ GatewayPanel is built with security, isolation, and defense-in-depth principles 
 
 ### 1. Password Hashing & Key Derivation
 - All user passwords stored in `users.json` are hashed using **PBKDF2 with SHA-256** using unique cryptographic salts generated via `werkzeug.security.generate_password_hash`.
-- GatewayPanel never stores plain-text passwords on disk.
+- FiestaPanel never stores plain-text passwords on disk.
 
 ### 2. Path Traversal & File Jail
 - The File Manager implements strict path resolution (`os.path.abspath`) verifying that any canonical target path begins with the canonical root of the Minecraft server (`SERVER_CONFIG['mc_path']`).
@@ -29,12 +29,12 @@ GatewayPanel is built with security, isolation, and defense-in-depth principles 
 ## 🛡️ Recommended Production Deployment
 
 ### 1. Run Under a Dedicated System User
-While GatewayPanel can run as root, running under an unprivileged user (e.g. `minecraft` or `gateway`) provides stronger defense-in-depth:
+While FiestaPanel can run as root, running under an unprivileged user (e.g. `minecraft` or `gateway`) provides stronger defense-in-depth:
 ```bash
 sudo useradd -r -s /bin/false gateway
-sudo chown -R gateway:gateway /opt/gatewaypanel
+sudo chown -R gateway:gateway /opt/fiestapanel
 ```
-Ensure sudo permissions for systemctl are scoped tightly using `sudoers.d/gatewaypanel`:
+Ensure sudo permissions for systemctl are scoped tightly using `sudoers.d/fiestapanel`:
 ```sudoers
 gateway ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart fiesta.service, /usr/bin/systemctl status fiesta.service
 ```

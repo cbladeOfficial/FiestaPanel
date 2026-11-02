@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# GatewayPanel - Push to GitHub Helper
+# FiestaPanel - Push to GitHub Helper
 # ==============================================================================
 set -e
 
@@ -12,7 +12,7 @@ COLOR_GREEN="\033[1;32m"
 COLOR_YELLOW="\033[1;33m"
 COLOR_RESET="\033[0m"
 
-echo -e "${COLOR_CYAN}=== GatewayPanel GitHub Publisher ===${COLOR_RESET}"
+echo -e "${COLOR_CYAN}=== FiestaPanel GitHub Publisher ===${COLOR_RESET}"
 echo "Current branch: $(git branch --show-current)"
 echo "Commits ready to push:"
 git log -2 --oneline
@@ -30,8 +30,8 @@ case "$AUTH_OPT" in
         echo -e "${COLOR_CYAN}Starting GitHub CLI Web Login...${COLOR_RESET}"
         gh auth login -h github.com -p https -w
         echo -e "${COLOR_GREEN}Authentication complete! Creating repository and pushing...${COLOR_RESET}"
-        read -rp "Enter repository name [gatewaypanel]: " REPO_NAME
-        REPO_NAME="${REPO_NAME:-gatewaypanel}"
+        read -rp "Enter repository name [fiestapanel]: " REPO_NAME
+        REPO_NAME="${REPO_NAME:-fiestapanel}"
         gh repo create "$REPO_NAME" --public --source=. --remote=origin --push || git push -u origin main
         echo -e "${COLOR_GREEN}Successfully pushed to GitHub!${COLOR_RESET}"
         ;;
@@ -39,15 +39,15 @@ case "$AUTH_OPT" in
         read -rp "Enter your GitHub username: " GH_USER
         read -rsp "Enter your GitHub Personal Access Token (with 'repo' scope): " GH_TOKEN
         echo ""
-        read -rp "Enter repository name [gatewaypanel]: " REPO_NAME
-        REPO_NAME="${REPO_NAME:-gatewaypanel}"
+        read -rp "Enter repository name [fiestapanel]: " REPO_NAME
+        REPO_NAME="${REPO_NAME:-fiestapanel}"
         git remote remove origin 2>/dev/null || true
         git remote add origin "https://${GH_USER}:${GH_TOKEN}@github.com/${GH_USER}/${REPO_NAME}.git"
         git push -u origin main
         echo -e "${COLOR_GREEN}Successfully pushed to https://github.com/${GH_USER}/${REPO_NAME}!${COLOR_RESET}"
         ;;
     3)
-        read -rp "Enter your GitHub SSH repository URL (e.g. git@github.com:username/gatewaypanel.git): " SSH_URL
+        read -rp "Enter your GitHub SSH repository URL (e.g. git@github.com:username/fiestapanel.git): " SSH_URL
         git remote remove origin 2>/dev/null || true
         git remote add origin "$SSH_URL"
         git push -u origin main

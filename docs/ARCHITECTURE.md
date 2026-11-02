@@ -1,12 +1,12 @@
-# 🏗️ GatewayPanel Architecture & Technical Design
+# 🏗️ FiestaPanel Architecture & Technical Design
 
-This document details the architectural design, internal components, process model, and data flow of **GatewayPanel**.
+This document details the architectural design, internal components, process model, and data flow of **FiestaPanel**.
 
 ---
 
 ## 🏛️ System Overview
 
-GatewayPanel is designed as a lightweight, zero-overhead management suite tailored for Minecraft Java Edition servers. It blends a nostalgic, responsive UI (TP-Link Legacy, Windows 7 Aero, Windows 98, Cyberpunk) with a modern backend built on Python, Flask, systemd, and direct process interfaces.
+FiestaPanel is designed as a lightweight, zero-overhead management suite tailored for Minecraft Java Edition servers. It blends a nostalgic, responsive UI (TP-Link Legacy, Windows 7 Aero, Windows 98, Cyberpunk) with a modern backend built on Python, Flask, systemd, and direct process interfaces.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -23,7 +23,7 @@ GatewayPanel is designed as a lightweight, zero-overhead management suite tailor
                                     │ Reverse Proxy (127.0.0.1:8080)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        GatewayPanel Backend                            │
+│                        FiestaPanel Backend                            │
 │                 (Flask Application Server / Werkzeug)                  │
 ├────────────────────────────────────────────────────────────────────────┤
 │  • Auth Engine (PBKDF2 SHA-256 session management, Role ACL)           │
@@ -51,7 +51,7 @@ GatewayPanel is designed as a lightweight, zero-overhead management suite tailor
 ## 🧩 Core Subsystems
 
 ### 1. Process & Daemon Management
-- **Interaction Model**: GatewayPanel controls the underlying Minecraft server using `systemctl` commands via Linux subprocessing, allowing non-blocking starts, stops, and restarts.
+- **Interaction Model**: FiestaPanel controls the underlying Minecraft server using `systemctl` commands via Linux subprocessing, allowing non-blocking starts, stops, and restarts.
 - **Log Streaming**: Live console output is read in real time from `journalctl -u <mc_service> -f` or directly from `logs/latest.log` inside the server directory.
 - **Console Dispatch**: Commands sent via the retro terminal are executed directly via:
   1. `systemd-cat` / service stdin fifo (if configured).
@@ -59,7 +59,7 @@ GatewayPanel is designed as a lightweight, zero-overhead management suite tailor
   3. `screen` / `tmux` process forwarding when deployed in interactive session mode.
 
 ### 2. Player Inventory & Texture Atlas Engine
-- **Texture Mapping**: GatewayPanel bundles `items_textures.json` and a full offline directory of over 1,300 extracted vanilla Minecraft textures (`static/mcassets/`).
+- **Texture Mapping**: FiestaPanel bundles `items_textures.json` and a full offline directory of over 1,300 extracted vanilla Minecraft textures (`static/mcassets/`).
 - **NBT Parsing**: Player data files (`world/playerdata/<UUID>.dat`) are uncompressed and parsed into memory.
 - **Slot Mapping**:
   - `Equipment / Armor`: Helmet (Slot 103), Chestplate (Slot 102), Leggings (Slot 101), Boots (Slot 100).

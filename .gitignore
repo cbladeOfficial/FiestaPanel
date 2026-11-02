@@ -4,4 +4,4 @@ __pycache__/
 users.json
 venv/
 .env
-static/gatewaypanel-latest.tar.gz
+static/*.tar.gz

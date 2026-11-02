@@ -1,6 +1,6 @@
-# 🚀 GatewayPanel Installation & Setup Guide
+# 🚀 FiestaPanel Installation & Setup Guide
 
-This guide walks you through deploying **GatewayPanel** on any Linux server (Ubuntu, Debian, Raspberry Pi OS, CentOS, AlmaLinux, Rocky Linux, Arch Linux).
+This guide walks you through deploying **FiestaPanel** on any Linux server (Ubuntu, Debian, Raspberry Pi OS, CentOS, AlmaLinux, Rocky Linux, Arch Linux).
 
 ---
 
@@ -36,10 +36,10 @@ PORT=9000 MC_PATH=/opt/minecraft MC_SERVICE=minecraft curl -sSL https://fiesta.d
 ### What the Automated Installer Does:
 1. Detects OS package manager (`apt-get`, `dnf`, `pacman`, `zypper`).
 2. Installs required system packages: `python3`, `python3-pip`, `python3-venv`, `curl`, `tar`.
-3. Creates dedicated directory `/opt/gatewaypanel` (or updates existing installation).
+3. Creates dedicated directory `/opt/fiestapanel` (or updates existing installation).
 4. Sets up an isolated Python virtual environment (`venv`) and installs dependencies.
 5. Installs the `panelctl` CLI tool directly into `/usr/local/bin/panelctl`.
-6. Configures and registers a `systemd` service (`gatewaypanel.service`).
+6. Configures and registers a `systemd` service (`fiestapanel.service`).
 7. Auto-generates a secure administrator credential if none exists and prints login details.
 8. Starts the service immediately and verifies HTTP health.
 
@@ -67,9 +67,9 @@ sudo dnf install -y python3 python3-pip git curl
 ### 2. Clone the Repository
 
 ```bash
-sudo mkdir -p /opt/gatewaypanel
-sudo git clone https://github.com/cbladeOfficial/gatewaypanel.git /opt/gatewaypanel
-cd /opt/gatewaypanel
+sudo mkdir -p /opt/fiestapanel
+sudo git clone https://github.com/cbladeOfficial/FiestaPanel.git /opt/fiestapanel
+cd /opt/fiestapanel
 ```
 
 ---
@@ -103,7 +103,7 @@ Edit `config.json` to suit your server:
 }
 ```
 
-- `port`: Port GatewayPanel listens on.
+- `port`: Port FiestaPanel listens on.
 - `mc_path`: Absolute path to your Minecraft server root directory (where `server.properties`, `plugins/`, `world/` are stored).
 - `mc_service`: (Optional) Systemd service name running your Minecraft server.
 
@@ -112,7 +112,7 @@ Edit `config.json` to suit your server:
 ### 5. Link `panelctl` CLI Tool
 
 ```bash
-sudo ln -sf /opt/gatewaypanel/panelctl /usr/local/bin/panelctl
+sudo ln -sf /opt/fiestapanel/panelctl /usr/local/bin/panelctl
 sudo chmod +x /usr/local/bin/panelctl
 ```
 
@@ -120,18 +120,18 @@ sudo chmod +x /usr/local/bin/panelctl
 
 ### 6. Create Systemd Service
 
-Create `/etc/systemd/system/gatewaypanel.service`:
+Create `/etc/systemd/system/fiestapanel.service`:
 
 ```ini
 [Unit]
-Description=GatewayPanel Minecraft Management Suite
+Description=FiestaPanel Minecraft Management Suite
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/gatewaypanel
-ExecStart=/opt/gatewaypanel/venv/bin/python3 /opt/gatewaypanel/app.py
+WorkingDirectory=/opt/fiestapanel
+ExecStart=/opt/fiestapanel/venv/bin/python3 /opt/fiestapanel/app.py
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
@@ -143,8 +143,8 @@ WantedBy=multi-user.target
 Enable and start the service:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable gatewaypanel
-sudo systemctl start gatewaypanel
+sudo systemctl enable fiestapanel
+sudo systemctl start fiestapanel
 ```
 
 Check service status:
@@ -156,7 +156,7 @@ panelctl status
 
 ## 🌐 Setting Up a Reverse Proxy (Production & HTTPS)
 
-To access GatewayPanel over domain name with SSL encryption (e.g., `https://panel.yourdomain.com`), configure a reverse proxy.
+To access FiestaPanel over domain name with SSL encryption (e.g., `https://panel.yourdomain.com`), configure a reverse proxy.
 
 ### Nginx Configuration
 
@@ -165,7 +165,7 @@ To access GatewayPanel over domain name with SSL encryption (e.g., `https://pane
 sudo apt install -y nginx certbot python3-certbot-nginx
 ```
 
-2. Create `/etc/nginx/sites-available/gatewaypanel`:
+2. Create `/etc/nginx/sites-available/fiestapanel`:
 ```nginx
 server {
     listen 80;
@@ -193,7 +193,7 @@ server {
 
 3. Enable the site and obtain SSL certificate:
 ```bash
-sudo ln -s /etc/nginx/sites-available/gatewaypanel /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/fiestapanel /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 sudo certbot --nginx -d panel.yourdomain.com
@@ -215,7 +215,7 @@ panel.yourdomain.com {
 
 ## 🎮 CLI Management (`panelctl`)
 
-GatewayPanel includes a convenient command line interface:
+FiestaPanel includes a convenient command line interface:
 
 | Command | Description |
 |---|---|
@@ -232,12 +232,12 @@ GatewayPanel includes a convenient command line interface:
 
 ---
 
-## 🔄 Updating GatewayPanel
+## 🔄 Updating FiestaPanel
 
 To upgrade an existing installation to the latest version:
 
 ```bash
-cd /opt/gatewaypanel
+cd /opt/fiestapanel
 sudo git pull origin main
 sudo ./venv/bin/pip install -r requirements.txt
 panelctl restart

@@ -1,4 +1,4 @@
-# 📡 GatewayPanel REST API Reference
+# 📡 FiestaPanel REST API Reference
 
 All API routes communicate using JSON payloads and responses unless otherwise specified. Authentication is managed via secure HTTP cookies or session tokens.
 
@@ -7,7 +7,7 @@ All API routes communicate using JSON payloads and responses unless otherwise sp
 ## 🔐 Authentication
 
 ### `POST /login`
-Authenticate into GatewayPanel.
+Authenticate into FiestaPanel.
 
 - **Request Body**:
   ```json
@@ -232,7 +232,7 @@ Saves contents of a text file.
   ```json
   {
     "path": "server.properties",
-    "content": "motd=A GatewayPanel Managed Server\\n..."
+    "content": "motd=A FiestaPanel Managed Server\\n..."
   }
   ```
 

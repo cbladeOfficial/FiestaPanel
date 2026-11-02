@@ -1,6 +1,6 @@
-# 🌟 GatewayPanel Feature Guide
+# 🌟 FiestaPanel Feature Guide
 
-This guide covers all capabilities, controls, and workflows in **GatewayPanel**.
+This guide covers all capabilities, controls, and workflows in **FiestaPanel**.
 
 ---
 
@@ -61,7 +61,7 @@ A comprehensive toolset for moderating players and viewing their gear:
 
 ## 🔌 4. Modrinth Plugin Manager
 
-GatewayPanel features built-in search and 1-click installation from Modrinth:
+FiestaPanel features built-in search and 1-click installation from Modrinth:
 - **Online Catalog Search**: Search thousands of plugins directly from Modrinth's official repository.
 - **Compatibility Filtering**: Automatically filters for plugins compatible with your server version (e.g. 1.21.x) and engine (Paper, Purpur, Spigot).
 - **1-Click Installation**: Downloads and places JAR files directly into the `plugins/` directory.

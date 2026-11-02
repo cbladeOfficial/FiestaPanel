@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# GatewayPanel - Turnkey Minecraft Server Management Suite Installer
+# FiestaPanel - Turnkey Minecraft Server Management Suite Installer
 # Version: 2.0.0
 # License: MIT
 # Description: Automated one-line installer for Ubuntu / Debian / Linux servers
@@ -77,7 +77,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo -e "${COLOR_BOLD}Initializing GatewayPanel Installation...${COLOR_RESET}"
+echo -e "${COLOR_BOLD}Initializing FiestaPanel Installation...${COLOR_RESET}"
 echo "Target Platform: Linux ($(uname -m))"
 echo ""
 
@@ -147,7 +147,7 @@ elif command -v yum >/dev/null 2>&1; then
     yum install -y python3 python3-pip screen curl tar
 fi
 
-# 6. Deploy GatewayPanel Codebase
+# 6. Deploy FiestaPanel Codebase
 echo -e "${COLOR_CYAN}[2/6] Deploying application files into $TARGET_INSTALL_DIR...${COLOR_RESET}"
 mkdir -p "$TARGET_INSTALL_DIR"
 
@@ -162,8 +162,8 @@ if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/panelctl" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
 else
     # Remote one-line installer fetch mode
-    echo "Downloading GatewayPanel application package..."
-    curl -sSL "https://fiesta.debarkak.xyz/static/gatewaypanel-latest.tar.gz" | tar -xz -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
+    echo "Downloading FiestaPanel application package..."
+    curl -sSL "https://fiesta.debarkak.xyz/static/fiestapanel-latest.tar.gz" | tar -xz -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
         # Fallback to direct file download
         curl -sSL "https://fiesta.debarkak.xyz/app.py" -o "$TARGET_INSTALL_DIR/app.py"
     }
@@ -211,8 +211,8 @@ cat > "$TARGET_INSTALL_DIR/branding.json" << 'EOF'
   "brand_name": "GATEWAY-PRO",
   "tagline": "The Modern & Retro Minecraft Management Suite",
   "model_number": "Model No. GP-SERVER-X1",
-  "browser_title": "GatewayPanel | Console",
-  "footer_text": "GatewayPanel Software Suite • Open Source Minecraft Server Platform",
+  "browser_title": "FiestaPanel | Console",
+  "footer_text": "FiestaPanel Software Suite • Open Source Minecraft Server Platform",
   "server_desc": "Gateway Console",
   "header_icon": "tplink",
   "header_icon_custom": ""
@@ -231,7 +231,7 @@ fi
 echo -e "${COLOR_CYAN}[6/6] Configuring systemd daemon (gateway-panel.service)...${COLOR_RESET}"
 cat > /etc/systemd/system/gateway-panel.service << EOF
 [Unit]
-Description=GatewayPanel Minecraft Management Suite Daemon
+Description=FiestaPanel Minecraft Management Suite Daemon
 After=network.target
 
 [Service]
@@ -263,7 +263,7 @@ PUBLIC_IP=$(curl -s -m 3 https://api.ipify.org 2>/dev/null || hostname -I | awk 
 
 echo ""
 echo -e "${COLOR_GREEN}╔═══════════════════════════════════════════════════════════════════════╗${COLOR_RESET}"
-echo -e "${COLOR_GREEN}║             🎉 GATEWAYPANEL INSTALLED SUCCESSFULLY!                  ║${COLOR_RESET}"
+echo -e "${COLOR_GREEN}║             🎉 FIESTAPANEL INSTALLED SUCCESSFULLY!                  ║${COLOR_RESET}"
 echo -e "${COLOR_GREEN}╚═══════════════════════════════════════════════════════════════════════╝${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_BOLD}Access Credentials & URLs:${COLOR_RESET}"
@@ -280,5 +280,5 @@ echo -e "  • Restart panel:     ${COLOR_CYAN}panelctl restart${COLOR_RESET}"
 echo -e "  • Reset password:    ${COLOR_CYAN}panelctl reset-admin [new-password]${COLOR_RESET}"
 echo -e "  • Change web port:   ${COLOR_CYAN}panelctl set-port [new-port]${COLOR_RESET}"
 echo ""
-echo -e "${COLOR_GREEN}Thank you for installing GatewayPanel! Enjoy managing your server.${COLOR_RESET}"
+echo -e "${COLOR_GREEN}Thank you for installing FiestaPanel! Enjoy managing your server.${COLOR_RESET}"
 echo ""

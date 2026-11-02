@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# GatewayPanel CLI Management Utility (panelctl)
+# FiestaPanel CLI Management Utility (panelctl)
 # Version: 1.0.0
-# Description: Command-line control interface for GatewayPanel Server Software
+# Description: Command-line control interface for FiestaPanel Server Software
 # ==============================================================================
 
 set -e
@@ -36,7 +36,7 @@ COLOR_RED="\033[1;31m"
 print_banner() {
     echo -e "${COLOR_CYAN}"
     echo "  ╔═══════════════════════════════════════════════════════════════╗"
-    echo "  ║        GatewayPanel - Server Software Management CLI          ║"
+    echo "  ║        FiestaPanel - Server Software Management CLI          ║"
     echo "  ╚═══════════════════════════════════════════════════════════════╝"
     echo -e "${COLOR_RESET}"
 }
@@ -46,9 +46,9 @@ cmd_help() {
     echo "Usage: panelctl [COMMAND] [ARGS]"
     echo ""
     echo "Service Commands:"
-    echo "  start               Start GatewayPanel system daemon"
-    echo "  stop                Stop GatewayPanel system daemon"
-    echo "  restart             Restart GatewayPanel system daemon"
+    echo "  start               Start FiestaPanel system daemon"
+    echo "  stop                Stop FiestaPanel system daemon"
+    echo "  restart             Restart FiestaPanel system daemon"
     echo "  status              View daemon operational status"
     echo "  logs                Stream live log output (Ctrl+C to exit)"
     echo ""
@@ -239,7 +239,7 @@ cmd_info() {
 }
 
 cmd_version() {
-    echo "GatewayPanel Software Suite v2.0.0"
+    echo "FiestaPanel Software Suite v2.0.0"
 }
 
 # Main Command Router

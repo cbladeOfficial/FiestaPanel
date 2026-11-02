@@ -1,5 +1,5 @@
 {
-  "_comment": "GatewayPanel - Modern & Retro Minecraft Management Suite Configuration",
+  "_comment": "FiestaPanel - Modern & Retro Minecraft Management Suite Configuration",
   "admin_user": "admin",
   "admin_pass": "ChangeThisPassword123!",
   "server_dir": "/path/to/minecraft/server",

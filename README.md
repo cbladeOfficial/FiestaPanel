@@ -1,4 +1,4 @@
-# 🌐 GatewayPanel
+# 🌐 FiestaPanel
 
 > **The Modern & Retro Minecraft Server Management Suite**  
 > Nostalgic TP-Link & Windows 7 Aero Aesthetics • Real-Time Telemetry • Visual Inventory Inspector • Modrinth Plugin Manager • Jailed File Manager • Turnkey Deployment
@@ -20,8 +20,8 @@ curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
 
 Or clone and run locally:
 ```bash
-git clone https://github.com/cbladeOfficial/gatewaypanel.git /opt/gatewaypanel
-cd /opt/gatewaypanel
+git clone https://github.com/cbladeOfficial/FiestaPanel.git /opt/fiestapanel
+cd /opt/fiestapanel
 sudo bash install.sh
 ```
 
@@ -43,7 +43,7 @@ sudo bash install.sh
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        GatewayPanel Highlights                         │
+│                        FiestaPanel Highlights                         │
 ├───────────────────────────────────┬────────────────────────────────────┤
 │ 🎮 Full Process Control           │ 🎒 Visual Inventory Inspector      │
 │ Start, stop, restart, kill, and   │ Live armor, offhand, storage &     │
@@ -67,17 +67,17 @@ sudo bash install.sh
 
 ## 🧰 The `panelctl` CLI
 
-GatewayPanel installs a system management CLI accessible anywhere:
+FiestaPanel installs a system management CLI accessible anywhere:
 
 ```bash
 panelctl status        # Check daemon health and memory usage
-panelctl restart       # Gracefully restart GatewayPanel
+panelctl restart       # Gracefully restart FiestaPanel
 panelctl logs          # Tail live systemd journal logs
 panelctl reset-admin   # Interactively reset or generate admin password
 panelctl set-port 8080 # Update HTTP listener port
 panelctl set-mc-path   # Switch managed Minecraft server path
 panelctl info          # Print configuration overview
-panelctl version       # GatewayPanel Software Suite v2.0.0
+panelctl version       # FiestaPanel Software Suite v2.0.0
 ```
 
 ---
@@ -96,4 +96,4 @@ panelctl version       # GatewayPanel Software Suite v2.0.0
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).  
-Copyright (c) 2026 GatewayPanel Contributors & Fiesta Team.
+Copyright (c) 2026 FiestaPanel Contributors & Fiesta Team.

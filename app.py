@@ -2090,7 +2090,7 @@ def route_install_script():
     install_path = os.path.join(BASE_DIR, "install.sh")
     if os.path.exists(install_path):
         return send_file(install_path, mimetype="text/x-shellscript")
-    return "echo 'GatewayPanel: install.sh not found'; exit 1", 404, {"Content-Type": "text/plain"}
+    return "echo 'FiestaPanel: install.sh not found'; exit 1", 404, {"Content-Type": "text/plain"}
 
 if __name__ == "__main__":
     h = SERVER_CONFIG.get("host", "127.0.0.1")
