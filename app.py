@@ -577,7 +577,7 @@ def ping_mc():
         }
 
 # Initialize FiestaPanel Addons & Extension Engine
-addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc)
+addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc, SERVER_DIR)
 try:
     addon_manager.initialize()
 except Exception as e:
@@ -2587,6 +2587,43 @@ def api_panel_addons_store():
     return jsonify({
         "success": True,
         "catalog": addon_manager.get_store_catalog()
+    })
+
+@app.route("/api/panel-addons/repository", methods=["GET"])
+@login_required
+def api_panel_addons_repository():
+    repo = addon_manager.load_repository()
+    return jsonify({
+        "success": True,
+        "repository_info": {
+            "name": repo.get("repository_name", "FiestaPanel Official Addon Repository"),
+            "version": repo.get("repository_version", "1.0.0"),
+            "updated_at": repo.get("updated_at", ""),
+            "homepage": repo.get("homepage", "")
+        },
+        "catalog": addon_manager.get_store_catalog()
+    })
+
+@app.route("/api/panel-addons/info/<addon_id>", methods=["GET"])
+@login_required
+def api_panel_addons_info(addon_id):
+    info = addon_manager.get_addon_info(addon_id)
+    if not info:
+        return jsonify({"success": False, "error": f"Addon '{addon_id}' not found in repository or installed list."}), 404
+    return jsonify({
+        "success": True,
+        "addon": info
+    })
+
+@app.route("/api/panel-addons/repository/refresh", methods=["POST"])
+@login_required
+def api_panel_addons_repository_refresh():
+    repo = addon_manager.load_repository()
+    addon_manager.scan_addons()
+    return jsonify({
+        "success": True,
+        "message": "Addon repository synchronized successfully.",
+        "total": len(repo.get("addons", []))
     })
 
 @app.route("/api/panel-addons/store/install", methods=["POST"])

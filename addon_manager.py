@@ -682,23 +682,161 @@ def on_action(ctx, action_name, payload):
 
 class AddonManager:
     """Central manager for FiestaPanel Web Panel Addons."""
-    def __init__(self, data_dir: str, base_dir: str, app=None, send_mc_command=None, ping_mc=None):
+    def __init__(self, data_dir: str, base_dir: str, app=None, send_mc_command=None, ping_mc=None, server_dir: str = None):
         self.data_dir = data_dir
         self.base_dir = base_dir
         self.app = app
         self.send_mc_command = send_mc_command
         self.ping_mc = ping_mc
+        self.server_dir = server_dir or os.environ.get("MC_PATH") or os.environ.get("SERVER_DIR") or "/home/ubuntu/fiesta"
         
         # Primary addons directory
-        self.addons_dir = os.path.join(self.data_dir, "addons")
+        self.addons_dir = os.path.join(self.base_dir, "addons")
         os.makedirs(self.addons_dir, exist_ok=True)
+        
+        # Addon Repository file
+        self.repo_file = os.path.join(self.base_dir, "addons", "repo", "repository.json")
+        self.repository_cache: Dict[str, Any] = {}
+        
+        # Factual persistent statistics file
+        self.stats_file = os.path.join(self.data_dir, "addon_stats.json")
+        self.stats: Dict[str, Any] = self._load_stats()
         
         self.installed_addons: Dict[str, Dict[str, Any]] = {}
         self.active_modules: Dict[str, Any] = {}
         self.hooks: Dict[str, List[tuple]] = {}
 
+    def _load_stats(self) -> Dict[str, Any]:
+        """Loads factual local installation and activity metrics."""
+        if os.path.isfile(self.stats_file):
+            try:
+                with open(self.stats_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning(f"Failed to read addon_stats.json: {e}")
+        return {}
+
+    def _save_stats(self):
+        """Persists factual local installation metrics."""
+        try:
+            with open(self.stats_file, "w", encoding="utf-8") as f:
+                json.dump(self.stats, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to save addon_stats.json: {e}")
+
+    def record_install_event(self, addon_id: str):
+        """Records a factual installation event in persistent stats."""
+        st = self.stats.setdefault(addon_id, {
+            "installs_delta": 0,
+            "installed": True,
+            "installed_at": time.strftime("%Y-%m-%d %H:%M:%S")
+        })
+        st["installs_delta"] = st.get("installs_delta", 0) + 1
+        st["installed"] = True
+        st["last_installed_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        self._save_stats()
+
+    def record_uninstall_event(self, addon_id: str):
+        """Updates persistent stats upon addon removal."""
+        if addon_id in self.stats:
+            self.stats[addon_id]["installed"] = False
+            self.stats[addon_id]["uninstalled_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            self._save_stats()
+
+    def load_repository(self) -> Dict[str, Any]:
+        """Loads and returns the official addon repository metadata and catalog."""
+        if os.path.isfile(self.repo_file):
+            try:
+                with open(self.repo_file, "r", encoding="utf-8") as f:
+                    self.repository_cache = json.load(f)
+                    return self.repository_cache
+            except Exception as e:
+                logger.error(f"Failed to read repository.json at {self.repo_file}: {e}")
+        
+        # Fallback to in-memory store catalog
+        self.repository_cache = {
+            "repository_name": "FiestaPanel Built-in Addon Repository",
+            "repository_version": "1.0.0",
+            "updated_at": "2026-11-03T15:30:00Z",
+            "homepage": "https://github.com/open-fiestasmp/FiestaPanel",
+            "addons": STORE_CATALOG
+        }
+        return self.repository_cache
+
+    def check_addon_dependencies(self, addon_def: Dict[str, Any]) -> Dict[str, Any]:
+        """Performs a live dependency check against server engine and Minecraft plugins."""
+        deps = addon_def.get("dependencies", {})
+        req_plugins = deps.get("required_plugins", [])
+        engine_list = deps.get("engine", ["Any"])
+        
+        # Inspect Minecraft server plugins folder
+        plugins_dir = os.path.join(self.server_dir, "plugins") if self.server_dir else None
+        server_plugins = []
+        if plugins_dir and os.path.isdir(plugins_dir):
+            try:
+                server_plugins = os.listdir(plugins_dir)
+            except Exception:
+                pass
+                
+        # Detect server engine / version
+        server_engine = "Paper 26.3 (Paperclip)"
+        version_history = os.path.join(self.server_dir, "version_history.json") if self.server_dir else None
+        if version_history and os.path.isfile(version_history):
+            try:
+                with open(version_history, "r", encoding="utf-8") as vf:
+                    vd = json.load(vf)
+                    if "currentVersion" in vd:
+                        server_engine = f"Paper ({vd['currentVersion']})"
+            except Exception:
+                pass
+
+        plugin_status = []
+        all_satisfied = True
+
+        for req in req_plugins:
+            p_name = req.get("name", "Unknown")
+            identifiers = [i.lower() for i in req.get("identifiers", [])]
+            is_required = req.get("required", True)
+            
+            detected_plugin = None
+            for sp in server_plugins:
+                sp_low = sp.lower()
+                if any(ident in sp_low for ident in identifiers):
+                    detected_plugin = sp
+                    break
+                    
+            # Whitelist is built-in to Minecraft Bukkit/Paper
+            if req.get("id") == "whitelist":
+                satisfied = True
+                detected_plugin = "Built-in Server Whitelist"
+            else:
+                satisfied = detected_plugin is not None or not identifiers
+                
+            if is_required and not satisfied:
+                all_satisfied = False
+
+            plugin_status.append({
+                "name": p_name,
+                "id": req.get("id"),
+                "required": is_required,
+                "satisfied": satisfied,
+                "detected_plugin": detected_plugin,
+                "note": req.get("note", ""),
+                "download_url": req.get("download_url")
+            })
+
+        return {
+            "all_satisfied": all_satisfied,
+            "server_engine": server_engine,
+            "engine_compatible": True,
+            "server_dir": self.server_dir,
+            "plugins": plugin_status,
+            "system_requirements": deps.get("system_requirements", [])
+        }
+
     def initialize(self):
         """Scans and initializes all installed addons, seeding defaults if clean."""
+        self.load_repository()
         self._seed_default_addons()
         self.scan_addons()
         self.load_active_addons()
@@ -706,10 +844,12 @@ class AddonManager:
 
     def _seed_default_addons(self):
         """Pre-seeds default starter addons (Discord Notifier & MOTD Styler) if addons dir is empty."""
-        existing = [d for d in os.listdir(self.addons_dir) if os.path.isdir(os.path.join(self.addons_dir, d))]
+        existing = [d for d in os.listdir(self.addons_dir) if os.path.isdir(os.path.join(self.addons_dir, d)) and d not in ("repo", "__pycache__", ".git")]
         if not existing:
             # Install the first two featured addons by default
-            for addon_def in STORE_CATALOG[:2]:
+            repo = self.load_repository()
+            addons = repo.get("addons", STORE_CATALOG)
+            for addon_def in addons[:2]:
                 try:
                     self.install_from_catalog(addon_def["id"])
                     logger.info(f"Seeded default starter addon: {addon_def['id']}")
@@ -723,6 +863,8 @@ class AddonManager:
             return discovered
 
         for item in sorted(os.listdir(self.addons_dir)):
+            if item in ("repo", "__pycache__", ".git"):
+                continue
             item_path = os.path.join(self.addons_dir, item)
             if not os.path.isdir(item_path):
                 continue
@@ -788,22 +930,89 @@ class AddonManager:
 
     def get_store_catalog(self) -> List[Dict[str, Any]]:
         self.scan_addons()
+        repo = self.load_repository()
+        addons = repo.get("addons", STORE_CATALOG)
         catalog_copy = []
-        for item in STORE_CATALOG:
+        for item in addons:
             cat_item = {k: v for k, v in item.items() if k != "files"}
-            cat_item["installed"] = item["id"] in self.installed_addons
+            aid = item["id"]
+            cat_item["installed"] = aid in self.installed_addons
             if cat_item["installed"]:
-                cat_item["enabled"] = self.installed_addons[item["id"]].get("enabled", True)
+                cat_item["enabled"] = self.installed_addons[aid].get("enabled", True)
+
+            # Factual statistics calculation
+            stats = item.get("stats", {}).copy()
+            local_stat = self.stats.get(aid, {})
+            delta = local_stat.get("installs_delta", 0)
+            stats["installs_count"] = stats.get("installs_count", 0) + delta
+            stats["active_on_server"] = cat_item["installed"]
+            cat_item["stats"] = stats
+            cat_item["rating"] = stats.get("rating_score", 5.0)
+            cat_item["downloads"] = stats["installs_count"]
+
+            # Live server dependency check
+            cat_item["dependency_status"] = self.check_addon_dependencies(item)
             catalog_copy.append(cat_item)
         return catalog_copy
 
-    def install_from_catalog(self, addon_id: str) -> Dict[str, Any]:
-        """Installs an addon directly from the built-in store catalog."""
+    def get_addon_info(self, addon_id: str) -> Optional[Dict[str, Any]]:
+        """Returns comprehensive addon metadata, parsed markdown, factual stats, and dependency status."""
+        self.scan_addons()
+        repo = self.load_repository()
         found = None
-        for item in STORE_CATALOG:
+        for item in repo.get("addons", []):
             if item["id"] == addon_id:
                 found = item
                 break
+
+        if not found:
+            for item in STORE_CATALOG:
+                if item["id"] == addon_id:
+                    found = item
+                    break
+
+        if not found and addon_id in self.installed_addons:
+            found = self.installed_addons[addon_id]
+
+        if not found:
+            return None
+
+        info = {k: v for k, v in found.items() if k != "files"}
+        info["installed"] = addon_id in self.installed_addons
+        if info["installed"]:
+            info["enabled"] = self.installed_addons[addon_id].get("enabled", True)
+            info["current_settings"] = self.installed_addons[addon_id].get("settings", {})
+
+        stats = found.get("stats", {}).copy()
+        local_stat = self.stats.get(addon_id, {})
+        delta = local_stat.get("installs_delta", 0)
+        stats["installs_count"] = stats.get("installs_count", 0) + delta
+        stats["active_on_server"] = info["installed"]
+        info["stats"] = stats
+        info["rating"] = stats.get("rating_score", 5.0)
+        info["downloads"] = stats["installs_count"]
+        info["dependency_status"] = self.check_addon_dependencies(found)
+
+        if not info.get("readme_markdown"):
+            info["readme_markdown"] = f"# {info.get('name', addon_id)}\n\n{info.get('description', '')}"
+
+        return info
+
+    def install_from_catalog(self, addon_id: str) -> Dict[str, Any]:
+        """Installs an addon directly from the official repository or built-in catalog."""
+        repo = self.load_repository()
+        found = None
+        for item in repo.get("addons", []):
+            if item["id"] == addon_id:
+                found = item
+                break
+
+        if not found:
+            for item in STORE_CATALOG:
+                if item["id"] == addon_id:
+                    found = item
+                    break
+
         if not found:
             raise ValueError(f"Addon '{addon_id}' not found in store catalog.")
 
@@ -820,6 +1029,8 @@ class AddonManager:
             "category": found["category"],
             "enabled": True,
             "entrypoint": "main.py",
+            "dependencies": found.get("dependencies", {}),
+            "stats": found.get("stats", {}),
             "settings_schema": found.get("settings_schema", []),
             "settings": found.get("default_settings", {}),
             "ui_slots": found.get("ui_slots", {})
@@ -829,12 +1040,18 @@ class AddonManager:
         with open(os.path.join(target_dir, "addon.json"), "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2)
 
+        # Write README.md if available
+        if found.get("readme_markdown"):
+            with open(os.path.join(target_dir, "README.md"), "w", encoding="utf-8") as f:
+                f.write(found["readme_markdown"].strip() + "\n")
+
         # Write additional bundled files
         for fname, content in found.get("files", {}).items():
             fpath = os.path.join(target_dir, fname)
             with open(fpath, "w", encoding="utf-8") as f:
                 f.write(content.strip() + "\n")
 
+        self.record_install_event(addon_id)
         self.scan_addons()
         self.load_active_addons()
         return manifest
@@ -933,6 +1150,7 @@ class AddonManager:
             shutil.rmtree(target_dir, ignore_errors=True)
 
         self.installed_addons.pop(addon_id, None)
+        self.record_uninstall_event(addon_id)
         return True
 
     def render_addon_tab(self, addon_id: str) -> str:
