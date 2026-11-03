@@ -18,27 +18,32 @@ except ImportError:
     psutil = None
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
-USERS_FILE = os.path.join(SCRIPT_DIR, "users.json")
-PID_FILE = os.path.join(SCRIPT_DIR, ".fiestapanel.pid")
-LOG_FILE = os.path.join(SCRIPT_DIR, "fiestapanel.log")
+DATA_DIR = os.environ.get("FIESTA_DATA_DIR") or os.environ.get("GATEWAY_DATA_DIR") or SCRIPT_DIR
+CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
+PID_FILE = os.path.join(DATA_DIR, ".fiestapanel.pid")
+LOG_FILE = os.path.join(DATA_DIR, "fiestapanel.log")
 
 IS_WIN = platform.system() == "Windows"
 IS_MAC = platform.system() == "Darwin"
 IS_LINUX = platform.system() == "Linux"
 
 def load_config():
+    is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
     cfg = {
         "admin_user": "admin",
         "admin_pass": "admin",
-        "server_dir": os.path.join(SCRIPT_DIR, "minecraft_server"),
+        "server_dir": "/server" if is_docker else os.path.join(SCRIPT_DIR, "minecraft_server"),
         "service_name": "fiesta-portal",
         "host": "0.0.0.0",
         "port": 8080
     }
-    if os.path.exists(CONFIG_FILE):
+    target_cfg = CONFIG_FILE
+    if not os.path.exists(target_cfg) and DATA_DIR != SCRIPT_DIR and os.path.exists(os.path.join(SCRIPT_DIR, "config.json")):
+        target_cfg = os.path.join(SCRIPT_DIR, "config.json")
+    if os.path.exists(target_cfg):
         try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            with open(target_cfg, "r", encoding="utf-8") as f:
                 cfg.update(json.load(f))
         except Exception:
             pass

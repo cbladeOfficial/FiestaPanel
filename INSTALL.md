@@ -12,13 +12,13 @@ This guide walks you through deploying **FiestaPanel** across **Linux, macOS, an
 
 | Requirement | Minimum | Recommended |
 |---|---|---|
-| **Operating System** | Linux (Ubuntu, Debian, Fedora, Arch), macOS 11+, or Windows 10/11 | Ubuntu 22.04 / 24.04 LTS or Windows 11 |
+| **Operating System** | Linux (Ubuntu, Debian, Fedora, Arch), macOS 11+, Windows 10/11, or Docker | Ubuntu 22.04 / 24.04 LTS, Windows 11, or Docker Container |
 | **Python** | Python 3.9+ | Python 3.11+ |
-| **Java** | Java 17 or Java 21+ | OpenJDK / Temurin Java 21 (Required for MC 1.20.5+) |
+| **Java** | Java 17 or Java 21+ | OpenJDK / Temurin Java 21 (Required for MC 1.20.5+ and 26.x) |
 | **RAM** | 128 MB (for panel alone) | 512 MB+ (plus RAM for your Minecraft server) |
 | **Disk Space** | 100 MB free space | 2 GB+ |
 | **Network** | Port 8080 (customizable) | Standard HTTPS port 443 with Nginx reverse proxy |
-| **Minecraft Server** | Any Java edition (Auto-installable from web panel) | Purpur or Paper 1.21.x |
+| **Minecraft Server** | Any Java edition (Auto-installable from web panel) | Paper or Purpur 26.x / 1.21.x |
 
 ---
 
@@ -132,13 +132,101 @@ powershell -ExecutionPolicy Bypass -Command "irm https://fiesta.debarkak.xyz/ins
 
 ---
 
+## 🐳 Option 4: Docker & Docker Compose (Containerized)
+
+FiestaPanel includes first-class Docker support with a pre-configured Java 21 LTS runtime, isolated dependencies, and persistent volume mounts.
+
+### Method A: Quick Turnkey Setup with Docker Compose (Recommended)
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/open-fiestasmp/FiestaPanel.git
+   cd FiestaPanel
+   ```
+
+2. **Launch Container**:
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Check status**:
+   ```bash
+   docker compose ps
+   docker compose logs -f fiestapanel
+   ```
+
+4. Open your browser to **`http://localhost:8080`**.
+
+---
+
+### Method B: Single Command `docker run`
+
+Run FiestaPanel directly with automated storage mounts:
+
+```bash
+docker run -d \
+  --name fiestapanel \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -p 25565:25565 \
+  -p 19132:19132/udp \
+  -v $(pwd)/minecraft_server:/server \
+  -v $(pwd)/data:/app/data \
+  -e FIESTA_ADMIN_USER=admin \
+  -e FIESTA_ADMIN_PASS=FiestaSMP@2026 \
+  ghcr.io/open-fiestasmp/fiestapanel:latest
+```
+
+---
+
+### Method C: Build Docker Image Locally
+
+```bash
+git clone https://github.com/open-fiestasmp/FiestaPanel.git
+cd FiestaPanel
+docker build -t fiestapanel:latest .
+docker run -d --name fiestapanel -p 8080:8080 -p 25565:25565 -v $(pwd)/minecraft_server:/server -v $(pwd)/data:/app/data fiestapanel:latest
+```
+
+---
+
+### 📦 Container Configuration & Persistent Volumes
+
+| Mount Path | Host Target | Purpose |
+|---|---|---|
+| `/server` | `./minecraft_server` | Complete Minecraft server directory (`server.jar`, worlds, `plugins/`, `mods/`, logs) |
+| `/app/data` | `./data` | Panel persistence (`users.json`, `branding.json`, `config.json`, uploads) |
+
+### ⚙️ Container Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `FIESTA_PORT` | `8080` | Web panel HTTP listener port |
+| `FIESTA_HOST` | `0.0.0.0` | Bind host (container interface) |
+| `FIESTA_SERVER_DIR` | `/server` | Internal container path to Minecraft server root |
+| `FIESTA_DATA_DIR` | `/app/data` | Internal container path to panel data store |
+| `FIESTA_ADMIN_USER` | `admin` | Initial admin username if database not created |
+| `FIESTA_ADMIN_PASS` | `FiestaSMP@2026` | Initial admin password if database not created |
+
+### 🧰 Running `panelctl` Inside Container
+
+You can use the built-in management CLI inside your running container:
+
+```bash
+docker exec -it fiestapanel panelctl status
+docker exec -it fiestapanel panelctl reset-admin
+docker exec -it fiestapanel panelctl logs
+```
+
+---
+
 ## 🎮 Installing Minecraft Server Software from Web Panel
 
 Once logged into FiestaPanel:
 
 1. If no Minecraft server is installed yet, you will see a prominent banner:
    **"🚀 Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet"**
-2. Click **[ ⚡ Install Paper 1.21.4 ]** or navigate to **System Tools ➔ Software**.
+2. Click **[ ⚡ Install Paper 26.3 ]** or navigate to **System Tools ➔ Software**.
 3. Select your engine:
    - 🦅 **Purpur** (High-performance Paper fork with extensive customization)
    - 📄 **Paper** (Industry standard high-performance engine)

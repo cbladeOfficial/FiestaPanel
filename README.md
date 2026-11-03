@@ -12,7 +12,8 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-brightgreen.svg" alt="Python 3.9+"></a>
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-blue.svg" alt="Platform: Cross-Platform">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS%20%7C%20Docker-blue.svg" alt="Platform: Cross-Platform">
+  <img src="https://img.shields.io/badge/docker-ready-2496ED.svg?logo=docker&logoColor=white" alt="Docker Ready">
   <img src="https://img.shields.io/badge/Minecraft-Java%20Edition-success.svg" alt="Minecraft">
 </p>
 
@@ -37,6 +38,25 @@ irm https://fiesta.debarkak.xyz/install.ps1 | iex
 *(Or from GitHub: `irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex`)*  
 *(From Windows Command Prompt (CMD): `powershell -ExecutionPolicy Bypass -Command "irm https://fiesta.debarkak.xyz/install.ps1 | iex"`)*  
 *(Manual install: Clone repo and run `install.bat` or double-click `start.bat`)*
+
+### 🐳 Docker & Docker Compose (Container Install)
+Deploy FiestaPanel and your Minecraft server in an isolated container with Java 21 LTS pre-installed:
+
+```bash
+# Clone and launch turnkey container
+git clone https://github.com/open-fiestasmp/FiestaPanel.git
+cd FiestaPanel
+docker compose up -d
+```
+*(Or 1-line Docker run)*:
+```bash
+docker run -d --name fiestapanel --restart unless-stopped \
+  -p 8080:8080 -p 25565:25565 -p 19132:19132/udp \
+  -v $(pwd)/minecraft_server:/server \
+  -v $(pwd)/data:/app/data \
+  ghcr.io/open-fiestasmp/fiestapanel:latest
+```
+Open **`http://localhost:8080`** in your browser. Complete guide & options in [**INSTALL.md**](INSTALL.md#option-4-docker--docker-compose-containerized).
 
 > [!NOTE]
 > **No Pre-installed Server Required**: You do not need to install Minecraft beforehand. You can install and launch **Paper, Purpur, Fabric, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal!

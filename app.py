@@ -26,39 +26,53 @@ app = Flask(__name__)
 app.secret_key = os.urandom(32)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
+DATA_DIR = os.environ.get("FIESTA_DATA_DIR") or os.environ.get("GATEWAY_DATA_DIR") or BASE_DIR
+os.makedirs(DATA_DIR, exist_ok=True)
+CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 
 def load_server_config():
+    is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
     cfg = {
         "admin_user": "admin",
         "admin_pass": "FiestaSMP@Not-222",
-        "server_dir": "/home/ubuntu/fiesta",
+        "server_dir": "/server" if is_docker else "/home/ubuntu/fiesta",
         "service_name": "fiesta",
         "screen_session": "fiesta",
-        "host": "127.0.0.1",
+        "host": "0.0.0.0" if is_docker else "127.0.0.1",
         "port": 8080
     }
-    if os.path.exists(CONFIG_FILE):
+    target_cfg = CONFIG_FILE
+    if not os.path.exists(target_cfg) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "config.json")):
+        target_cfg = os.path.join(BASE_DIR, "config.json")
+    if os.path.exists(target_cfg):
         try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+            with open(target_cfg, "r", encoding="utf-8") as f:
                 cfg.update(json.load(f))
         except Exception:
             pass
-    if os.environ.get("GATEWAY_ADMIN_USER"):
-        cfg["admin_user"] = os.environ.get("GATEWAY_ADMIN_USER")
-    if os.environ.get("GATEWAY_ADMIN_PASS"):
-        cfg["admin_pass"] = os.environ.get("GATEWAY_ADMIN_PASS")
-    if os.environ.get("GATEWAY_SERVER_DIR"):
-        cfg["server_dir"] = os.environ.get("GATEWAY_SERVER_DIR")
-    if os.environ.get("GATEWAY_SERVICE_NAME"):
-        cfg["service_name"] = os.environ.get("GATEWAY_SERVICE_NAME")
-    if os.environ.get("GATEWAY_HOST"):
-        cfg["host"] = os.environ.get("GATEWAY_HOST")
-    if os.environ.get("GATEWAY_PORT"):
-        try:
-            cfg["port"] = int(os.environ.get("GATEWAY_PORT"))
-        except ValueError:
-            pass
+
+    for prefix in ["FIESTA_", "GATEWAY_", ""]:
+        u = os.environ.get(f"{prefix}ADMIN_USER")
+        if u:
+            cfg["admin_user"] = u
+        p = os.environ.get(f"{prefix}ADMIN_PASS") or os.environ.get(f"{prefix}ADMIN_PASSWORD")
+        if p:
+            cfg["admin_pass"] = p
+        sdir = os.environ.get(f"{prefix}SERVER_DIR") or os.environ.get(f"{prefix}MC_DIR") or os.environ.get(f"{prefix}MC_PATH")
+        if sdir:
+            cfg["server_dir"] = sdir
+        sname = os.environ.get(f"{prefix}SERVICE_NAME")
+        if sname:
+            cfg["service_name"] = sname
+        host = os.environ.get(f"{prefix}HOST")
+        if host:
+            cfg["host"] = host
+        port = os.environ.get(f"{prefix}PORT")
+        if port:
+            try:
+                cfg["port"] = int(port)
+            except ValueError:
+                pass
     return cfg
 
 SERVER_CONFIG = load_server_config()
@@ -70,7 +84,7 @@ SCREEN_SESSION = SERVER_CONFIG.get("screen_session", "fiesta")
 
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 MCASSETS_DIR = os.path.join(STATIC_DIR, "mcassets")
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
 LOG_FILE = os.path.join(SERVER_DIR, "logs", "latest.log")
 START_TIME = time.time()
 
@@ -377,7 +391,13 @@ def hash_password(pwd):
     return hashlib.sha256(pwd.encode('utf-8')).hexdigest()
 
 def load_users():
-    if not os.path.exists(USERS_FILE):
+    target = USERS_FILE
+    if not os.path.exists(target) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "users.json")):
+        try:
+            shutil.copy2(os.path.join(BASE_DIR, "users.json"), target)
+        except Exception:
+            target = os.path.join(BASE_DIR, "users.json")
+    if not os.path.exists(target):
         default_users = {
             ADMIN_USER: {
                 "username": ADMIN_USER,
@@ -389,22 +409,22 @@ def load_users():
             }
         }
         try:
-            with open(USERS_FILE, "w") as f:
+            with open(USERS_FILE, "w", encoding="utf-8") as f:
                 json.dump(default_users, f, indent=2)
         except Exception:
             pass
         return default_users
     try:
-        with open(USERS_FILE, "r") as f:
+        with open(target, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
 
 def save_users(users):
-    with open(USERS_FILE, "w") as f:
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, indent=2)
 
-BRANDING_FILE = os.path.join(BASE_DIR, "branding.json")
+BRANDING_FILE = os.path.join(DATA_DIR, "branding.json")
 
 DEFAULT_BRANDING = {
     "brand_name": "FIESTA-LINK",
@@ -444,10 +464,13 @@ def get_header_icon_svg(icon_key, custom_val=""):
 app.jinja_env.globals.update(get_header_icon_svg=get_header_icon_svg)
 
 def load_branding():
-    if not os.path.exists(BRANDING_FILE):
+    target = BRANDING_FILE
+    if not os.path.exists(target) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "branding.json")):
+        target = os.path.join(BASE_DIR, "branding.json")
+    if not os.path.exists(target):
         return DEFAULT_BRANDING.copy()
     try:
-        with open(BRANDING_FILE, "r", encoding="utf-8") as f:
+        with open(target, "r", encoding="utf-8") as f:
             data = json.load(f)
             merged = DEFAULT_BRANDING.copy()
             merged.update(data)
