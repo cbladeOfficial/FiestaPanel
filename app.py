@@ -21,6 +21,7 @@ import zipfile
 from PIL import Image
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
+from addon_manager import AddonManager
 
 app = Flask(__name__)
 app.secret_key = os.urandom(32)
@@ -434,7 +435,8 @@ DEFAULT_BRANDING = {
     "footer_text": "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
     "server_desc": "Server Gateway Console",
     "header_icon": "tplink",
-    "header_icon_custom": ""
+    "header_icon_custom": "",
+    "server_domain": ""
 }
 
 HEADER_ICONS = {
@@ -572,6 +574,13 @@ def ping_mc():
             'player_sample': [],
             'motd': ''
         }
+
+# Initialize FiestaPanel Addons & Extension Engine
+addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc)
+try:
+    addon_manager.initialize()
+except Exception as e:
+    app.logger.warning(f"Error during addon_manager initialization: {e}")
 
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
@@ -2449,6 +2458,122 @@ def api_mod_install_online():
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
+
+# ── Web Panel Addons & Extensions System ─────────────────────────────
+@app.route("/api/panel-addons", methods=["GET"])
+@login_required
+def api_panel_addons_list():
+    return jsonify({
+        "success": True,
+        "addons": addon_manager.get_installed_list(),
+        "total": len(addon_manager.installed_addons)
+    })
+
+@app.route("/api/panel-addons/<addon_id>/toggle", methods=["POST"])
+@login_required
+def api_panel_addons_toggle(addon_id):
+    data = request.get_json() or {}
+    enabled = bool(data.get("enabled", True))
+    try:
+        addon_manager.toggle_addon(addon_id, enabled)
+        return jsonify({"success": True, "addon_id": addon_id, "enabled": enabled})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/panel-addons/<addon_id>/settings", methods=["POST"])
+@login_required
+def api_panel_addons_settings(addon_id):
+    data = request.get_json() or {}
+    settings = data.get("settings", {})
+    try:
+        addon_manager.update_addon_settings(addon_id, settings)
+        return jsonify({"success": True, "message": "Settings updated successfully."})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/panel-addons/<addon_id>/uninstall", methods=["POST"])
+@login_required
+def api_panel_addons_uninstall(addon_id):
+    try:
+        addon_manager.uninstall_addon(addon_id)
+        return jsonify({"success": True, "message": f"Addon '{addon_id}' uninstalled successfully."})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/panel-addons/<addon_id>/view", methods=["GET"])
+@login_required
+def api_panel_addons_view(addon_id):
+    html = addon_manager.render_addon_tab(addon_id)
+    return html
+
+@app.route("/api/panel-addons/<addon_id>/action", methods=["POST"])
+@login_required
+def api_panel_addons_action(addon_id):
+    data = request.get_json() or {}
+    action_name = data.get("action", "")
+    payload = data.get("payload", {})
+    res = addon_manager.execute_addon_action(addon_id, action_name, payload)
+    return jsonify(res)
+
+@app.route("/api/panel-addons/store", methods=["GET"])
+@login_required
+def api_panel_addons_store():
+    return jsonify({
+        "success": True,
+        "catalog": addon_manager.get_store_catalog()
+    })
+
+@app.route("/api/panel-addons/store/install", methods=["POST"])
+@login_required
+def api_panel_addons_store_install():
+    data = request.get_json() or {}
+    addon_id = data.get("addon_id", "").strip()
+    if not addon_id:
+        return jsonify({"success": False, "error": "addon_id is required."}), 400
+    try:
+        manifest = addon_manager.install_from_catalog(addon_id)
+        return jsonify({"success": True, "message": f"Addon '{manifest.get('name', addon_id)}' installed successfully!", "manifest": manifest})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/panel-addons/upload", methods=["POST"])
+@login_required
+def api_panel_addons_upload():
+    if "addon_zip" not in request.files:
+        return jsonify({"success": False, "error": "No addon_zip file provided in form-data."}), 400
+    file = request.files["addon_zip"]
+    if not file.filename.endswith(".zip"):
+        return jsonify({"success": False, "error": "Only .zip archive packages are supported."}), 400
+    try:
+        zip_bytes = file.read()
+        manifest = addon_manager.install_from_zip(zip_bytes)
+        return jsonify({"success": True, "message": f"Addon '{manifest.get('name', manifest.get('id'))}' uploaded and installed!", "manifest": manifest})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/panel-addons/install-url", methods=["POST"])
+@login_required
+def api_panel_addons_install_url():
+    data = request.get_json() or {}
+    url = data.get("url", "").strip()
+    if not url or not url.startswith("http"):
+        return jsonify({"success": False, "error": "Valid HTTP(S) URL is required."}), 400
+    try:
+        manifest = addon_manager.install_from_url(url)
+        return jsonify({"success": True, "message": f"Addon '{manifest.get('name', manifest.get('id'))}' installed from URL!", "manifest": manifest})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+@app.route("/api/panel-addons/template/download", methods=["GET"])
+@login_required
+def api_panel_addons_template_download():
+    zip_bytes = addon_manager.generate_boilerplate_zip()
+    return send_file(
+        io.BytesIO(zip_bytes),
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="fiestapanel-addon-starter.zip"
+    )
 
 # ── Backups ──────────────────────────────────────────────────────────────────
 @app.route("/api/backups")

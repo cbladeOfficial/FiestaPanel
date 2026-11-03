@@ -1,0 +1,36 @@
+{
+  "id": "motd_gradient_styler",
+  "name": "Minecraft MOTD Gradient & MiniMessage Styler",
+  "version": "1.0.5",
+  "author": "FiestaSMP Team",
+  "description": "Interactive visual MOTD generator with RGB color gradients, bold/strikethrough formatting, live preview, and 1-click apply.",
+  "icon": "fas fa-paint-brush",
+  "category": "Tools",
+  "enabled": true,
+  "entrypoint": "main.py",
+  "settings_schema": [
+    {
+      "key": "line1",
+      "label": "MOTD Line 1",
+      "type": "text",
+      "default": "\u00a7b\u00a7l\u2726 FiestaSMP Network \u2726 \u00a77[1.21.x]"
+    },
+    {
+      "key": "line2",
+      "label": "MOTD Line 2",
+      "type": "text",
+      "default": "\u00a7eSurvival \u2022 Custom Items \u2022 Low Ping"
+    }
+  ],
+  "settings": {
+    "line1": "\u00a7b\u00a7l\u2726 FiestaSMP Network \u2726 \u00a77[1.21.x]",
+    "line2": "\u00a7eSurvival \u2022 Custom Items \u2022 Low Ping"
+  },
+  "ui_slots": {
+    "tab": {
+      "title": "MOTD Styler",
+      "icon": "fas fa-paint-brush",
+      "description": "Design vibrant multi-colored server descriptions with real-time multiplayer server list preview."
+    }
+  }
+}

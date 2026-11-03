@@ -223,8 +223,8 @@ draw.text((c1_x0 + 410, card_y0 + 70), "4.2 / 8.0 GB (52%)", font=f_card_mono, f
 # 1-Line Turnkey Box
 cmd_y0 = card_y0 + 104
 draw.rounded_rectangle([c1_x0 + 14, cmd_y0, c1_x1 - 14, cmd_y0 + 58], radius=6, fill=(2, 6, 23, 245), outline=(14, 165, 233, 190), width=1)
-draw.text((c1_x0 + 22, cmd_y0 + 10), "$ curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash", font=f_cmd, fill=(56, 189, 248, 255))
-draw.text((c1_x0 + 22, cmd_y0 + 32), "Windows: irm https://fiesta.debarkak.xyz/install.ps1 | iex   •   Docker Ready", font=f_cmd_sub, fill=(148, 163, 184, 255))
+draw.text((c1_x0 + 22, cmd_y0 + 10), "$ git clone https://github.com/open-fiestasmp/FiestaPanel.git", font=f_cmd, fill=(56, 189, 248, 255))
+draw.text((c1_x0 + 22, cmd_y0 + 32), "Linux: sudo bash install.sh   •   Windows: powershell ./install.ps1", font=f_cmd_sub, fill=(148, 163, 184, 255))
 
 # Right Card: Visual Inventory & Texture Engine
 c2_x0 = c1_x1 + 24

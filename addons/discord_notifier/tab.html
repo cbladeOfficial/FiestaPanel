@@ -1,0 +1,69 @@
+<div class="panel-box">
+  <div class="section-title-bar">
+    <span>Discord Webhook Bridge</span>
+    <span class="inline-badge" style="background:#5865f2;color:#fff;">Connected Bridge</span>
+  </div>
+  <p class="inline-hint" style="margin-bottom:14px;">
+    Transmit real-time Minecraft server events, player logins, and system health alerts to any Discord channel using native incoming webhooks.
+  </p>
+
+  <table class="form-layout-table">
+    <tr>
+      <td class="label-col">Discord Webhook URL:</td>
+      <td class="val-col">
+        <input type="password" id="addon-discord-url" class="ctrl-input" style="width:75%;" placeholder="https://discord.com/api/webhooks/...">
+        <button class="btn-classic" onclick="togglePasswordVisibility('addon-discord-url', this)">[ 👁️ Show ]</button>
+        <button class="btn-classic" style="margin-left:6px;font-weight:bold;color:#5865f2;" onclick="testDiscordWebhook()">[ 🚀 Test Ping ]</button>
+      </td>
+    </tr>
+    <tr>
+      <td class="label-col">Bot Display Name:</td>
+      <td class="val-col">
+        <input type="text" id="addon-discord-botname" class="ctrl-input" style="width:50%;" value="FiestaPanel Gateway">
+      </td>
+    </tr>
+    <tr>
+      <td class="label-col">Bot Avatar URL:</td>
+      <td class="val-col">
+        <input type="text" id="addon-discord-avatar" class="ctrl-input" style="width:75%;" placeholder="https://example.com/icon.png">
+      </td>
+    </tr>
+    <tr>
+      <td class="label-col">Notification Triggers:</td>
+      <td class="val-col">
+        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-start" checked> Server Online Event</label>
+        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-stop" checked> Server Stop Event</label>
+        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-join" checked> Player Join / Leave</label>
+      </td>
+    </tr>
+    <tr>
+      <td class="label-col">Embed Theme Color:</td>
+      <td class="val-col">
+        <input type="color" id="addon-discord-color" value="#38bdf8" style="vertical-align:middle;cursor:pointer;">
+        <span class="inline-hint" style="margin-left:8px;">Color accent applied to Discord embed borders</span>
+      </td>
+    </tr>
+  </table>
+
+  <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(128,128,128,0.2);">
+    <button class="btn-classic" style="font-weight:bold;padding:4px 18px;" onclick="saveDiscordSettings()">[ 💾 Save Webhook Settings ]</button>
+    <span id="addon-discord-msg" style="margin-left:12px;font-weight:bold;"></span>
+  </div>
+
+  <div class="section-sub-header" style="margin-top:20px;">Discord Live Embed Preview</div>
+  <div style="max-width:520px;background:#2b2d31;border-left:4px solid #38bdf8;border-radius:4px;padding:12px 16px;color:#dbdee1;font-family:'Segoe UI',sans-serif;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+    <div style="display:flex;align-items:center;margin-bottom:8px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:12px;margin-right:8px;">FP</div>
+      <div>
+        <strong style="color:#f2f3f5;" id="preview-botname">FiestaPanel Gateway</strong>
+        <span style="background:#5865f2;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px;">BOT</span>
+        <span style="font-size:11px;color:#949ba4;margin-left:6px;">Today at 12:00</span>
+      </div>
+    </div>
+    <div style="font-weight:bold;color:#f2f3f5;font-size:14px;margin-bottom:4px;">⚡ Server Online Notification</div>
+    <div style="color:#dbdee1;margin-bottom:8px;">Paper 26.3 is now running on port 25565. TPS is optimal at 20.0.</div>
+    <div style="font-size:11px;color:#949ba4;border-top:1px solid rgba(255,255,255,0.08);padding-top:6px;margin-top:8px;">
+      FiestaPanel Addon System • 0 / 20 Players Online
+    </div>
+  </div>
+</div>

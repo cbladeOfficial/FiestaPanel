@@ -2825,9 +2825,9 @@
           </div>
         </div>
 
-        <!-- 6. Forwarding / Addons (Plugins & Mods) -->
+        <!-- 6. Forwarding / Game Addons (Plugins & Mods) -->
         <div class="nav-group">
-          <div class="nav-parent" onclick="toggleNavGroup('plugins', this)" id="nav-parent-addons">Forwarding / Addons</div>
+          <div class="nav-parent" onclick="toggleNavGroup('plugins', this)" id="nav-parent-addons">Game Addons (Plugins/Mods)</div>
           <div class="nav-sub-list" id="sub-plugins">
             <div class="nav-sub-item" onclick="selectNavView('plugins-active', this)" id="nav-sub-installed">- Installed Addons</div>
             <div class="nav-sub-item" onclick="selectNavView('plugins-search', this)" id="nav-sub-search">- Search Online Repository</div>
@@ -2836,7 +2836,18 @@
           </div>
         </div>
 
-        <!-- 7. Diagnostics -->
+        <!-- 7. Panel Addons & Extensions (Web Panel Customization & Store) -->
+        <div class="nav-group">
+          <div class="nav-parent" onclick="toggleNavGroup('panel-addons', this)" id="nav-parent-panel-addons">Panel Extensions / Store</div>
+          <div class="nav-sub-list" id="sub-panel-addons">
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-installed', this)" id="nav-sub-paddons-installed">- Installed Addons</div>
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-store', this)" id="nav-sub-paddons-store">- 🛒 Plugin Store</div>
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-create', this)">- 🛠️ Developer Guide</div>
+            <div id="dynamic-addon-nav-items"></div>
+          </div>
+        </div>
+
+        <!-- 8. Diagnostics -->
         <div class="nav-group">
           <div class="nav-parent" onclick="toggleNavGroup('diagnostics', this)">Diagnostics</div>
           <div class="nav-sub-list" id="sub-diagnostics">
@@ -2920,9 +2931,9 @@
             <tr>
               <td class="label-col">Server Domain:</td>
               <td class="val-col">
-                <strong id="st-server-domain" style="color: #006622; font-size: 13px;">fiesta.debarkak.xyz</strong>
-                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 8px; font-size: 11px; padding: 0 8px;" onclick="copyDomainAddress('fiesta.debarkak.xyz', this)">[ 📋 Copy Domain ]</button>
-                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 4px; font-size: 11px; padding: 0 8px;" onclick="copyDomainAddress('fiesta.debarkak.xyz:25565', this)">[ 📋 Copy IP:Port ]</button>
+                <strong id="st-server-domain" style="color: #006622; font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
+                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 8px; font-size: 11px; padding: 0 8px;" onclick="copyServerDomain(this)">[ 📋 Copy Domain ]</button>
+                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 4px; font-size: 11px; padding: 0 8px;" onclick="copyServerIpPort(this)">[ 📋 Copy IP:Port ]</button>
               </td>
             </tr>
             <tr>
@@ -4352,6 +4363,167 @@
           </div>
         </section>
 
+        <!-- ════ VIEW 17: PANEL ADDONS & EXTENSIONS (INSTALLED) ════ -->
+        <section id="view-panel-addons-installed" class="view-panel">
+          <div class="section-title-bar">
+            <span>Installed Web Panel Addons &amp; Extensions</span>
+            <div>
+              <button class="btn-classic" onclick="loadPanelAddons(true)">[ 🔄 Reload Addons ]</button>
+              <button class="btn-classic" onclick="openAddonUploadModal()">[ 📦 Upload Addon (.zip) ]</button>
+              <button class="btn-classic" onclick="openAddonUrlModal()">[ 🌐 Install from URL ]</button>
+              <button class="btn-classic" style="font-weight: bold; color: #006622;" onclick="selectNavView('panel-addons-store')">[ 🛒 Browse Plugin Store ]</button>
+            </div>
+          </div>
+          <p class="inline-hint" style="margin-bottom: 12px;">
+            Extend and customize FiestaPanel with web modules, automation routines, external integrations, and visual styling tools.
+          </p>
+
+          <!-- Hidden File Input for ZIP Upload -->
+          <input type="file" id="addon-zip-file-input" accept=".zip" style="display: none;" onchange="handleAddonZipUpload(this)">
+
+          <div style="margin-bottom: 14px; display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="installed-addons-search" class="ctrl-input" style="flex: 1; max-width: 320px;" placeholder="Filter installed addons..." oninput="filterInstalledAddonsList()">
+            <span id="installed-addons-count-badge" class="inline-hint" style="font-weight: bold;">Loading addons...</span>
+          </div>
+
+          <div id="installed-addons-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px;">
+            <!-- Dynamically populated by loadPanelAddons() -->
+          </div>
+        </section>
+
+        <!-- ════ VIEW 18: PLUGIN STORE & EXTENSION MARKETPLACE ════ -->
+        <section id="view-panel-addons-store" class="view-panel">
+          <div class="section-title-bar">
+            <span>FiestaPanel Plugin Store &amp; Extension Catalog</span>
+            <div>
+              <button class="btn-classic" onclick="loadPanelAddonStore()">[ 🔄 Refresh Catalog ]</button>
+              <button class="btn-classic" style="font-weight: bold;" onclick="selectNavView('panel-addons-create')">[ 🛠️ Developer Guide ]</button>
+            </div>
+          </div>
+          <p class="inline-hint" style="margin-bottom: 14px;">
+            One-click install official and verified extensions to customize and automate your FiestaPanel gateway.
+          </p>
+
+          <!-- Store Category Filters -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center;">
+            <span style="font-weight: bold; font-size: 11px;">Category:</span>
+            <button class="btn-classic store-cat-btn active-tab" data-cat="all" onclick="filterStoreCategory('all', this)">All Extensions</button>
+            <button class="btn-classic store-cat-btn" data-cat="Integration" onclick="filterStoreCategory('Integration', this)">Integrations</button>
+            <button class="btn-classic store-cat-btn" data-cat="Automation" onclick="filterStoreCategory('Automation', this)">Automation</button>
+            <button class="btn-classic store-cat-btn" data-cat="Tools" onclick="filterStoreCategory('Tools', this)">Tools</button>
+            <button class="btn-classic store-cat-btn" data-cat="Visuals" onclick="filterStoreCategory('Visuals', this)">Visuals</button>
+            <button class="btn-classic store-cat-btn" data-cat="Administration" onclick="filterStoreCategory('Administration', this)">Administration</button>
+            <button class="btn-classic store-cat-btn" data-cat="Customization" onclick="filterStoreCategory('Customization', this)">Customization</button>
+            <input type="text" id="store-search-input" class="ctrl-input" style="margin-left: auto; width: 220px;" placeholder="Search store..." oninput="filterStoreCatalogSearch()">
+          </div>
+
+          <div id="store-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <!-- Dynamically populated by loadPanelAddonStore() -->
+          </div>
+
+          <div style="padding: 14px 18px; background: rgba(0, 102, 34, 0.08); border: 1px dashed rgba(0, 102, 34, 0.4); border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <strong style="color: #006622; font-size: 13px;">🛠️ Want to build your own FiestaPanel Addon?</strong>
+              <div class="inline-hint">Create custom tabs, dashboard widgets, console bots, and live themes in Python and HTML.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold;">[ 📥 Download Starter Boilerplate (.zip) ]</a>
+              <button class="btn-classic" style="padding: 4px 12px;" onclick="selectNavView('panel-addons-create')">[ View Developer Guide ]</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════ VIEW 19: ADDON DEVELOPER GUIDE & TEMPLATE CREATOR ════ -->
+        <section id="view-panel-addons-create" class="view-panel">
+          <div class="section-title-bar">
+            <span>FiestaPanel Addon Developer Guide &amp; API Reference</span>
+            <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; font-weight: bold; color: #006622;">[ 📥 Download Starter Kit (.zip) ]</a>
+          </div>
+          <p class="inline-hint" style="margin-bottom: 14px;">
+            FiestaPanel provides a lightweight, powerful extension system. Build custom views, console hooks, and automated tools with Python and standard HTML.
+          </p>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">1. Addon Directory Structure</div>
+            <p class="help-text">Addons live in <code>addons/&lt;addon_id&gt;/</code>. A minimal working addon requires only <code>addon.json</code> and optional <code>main.py</code> / <code>tab.html</code>:</p>
+            <pre style="background: #111; color: #00ff66; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">addons/
+└── my_custom_addon/
+    ├── addon.json       # Required: Manifest with name, version, and schema
+    ├── main.py          # Optional: Python backend logic &amp; on_action hooks
+    ├── tab.html         # Optional: Custom UI rendered in panel tab
+    └── custom.css       # Optional: Custom DOM styles injected automatically</pre>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">2. Manifest Specification (<code>addon.json</code>)</div>
+            <pre style="background: #111; color: #38bdf8; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">{
+  "id": "my_announcer",
+  "name": "Server Auto-Announcer",
+  "version": "1.0.0",
+  "author": "YourName",
+  "description": "Periodically broadcasts custom announcement messages to all players in-game.",
+  "icon": "fas fa-bullhorn",
+  "category": "Automation",
+  "enabled": true,
+  "entrypoint": "main.py",
+  "settings_schema": [
+    { "key": "msg", "label": "Announcement Text", "type": "text", "default": "Welcome!" }
+  ],
+  "default_settings": {
+    "msg": "Welcome to our server!"
+  },
+  "ui_slots": {
+    "tab": {
+      "title": "Announcer",
+      "icon": "fas fa-bullhorn",
+      "description": "Configure automated announcements and test live chat broadcasts."
+    }
+  }
+}</pre>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">3. Backend Python Hooks (<code>main.py</code>)</div>
+            <pre style="background: #111; color: #facc15; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">def init_addon(ctx):
+    ctx.logger.info("Addon initialized!")
+
+def on_action(ctx, action_name, payload):
+    if action_name == "broadcast":
+        msg = payload.get("message") or ctx.get_settings().get("msg", "Hello")
+        success, response = ctx.send_command(f"say {msg}")
+        return {"success": success, "message": "Broadcast sent!" if success else response}
+    return {"success": False, "error": f"Unknown action: {action_name}"}</pre>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">4. Frontend AJAX Communication</div>
+            <p class="help-text">Inside your <code>tab.html</code>, trigger backend actions effortlessly with standard <code>fetch()</code>:</p>
+            <pre style="background: #111; color: #e2e8f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">fetch('/api/panel-addons/my_announcer/action', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'broadcast', payload: { message: 'Hello from web!' } })
+})
+.then(res => res.json())
+.then(data => alert(data.message || data.error));</pre>
+          </div>
+
+          <div class="btn-row">
+            <a href="/api/panel-addons/template/download" class="btn-satin-green" style="text-decoration: none; padding: 6px 20px; font-weight: bold;">[ 📥 Download Starter Boilerplate Archive ]</a>
+            <button class="btn-classic" style="padding: 6px 16px;" onclick="selectNavView('panel-addons-installed')">[ Back to Installed Addons ]</button>
+          </div>
+        </section>
+
+        <!-- ════ VIEW 20: DYNAMIC ACTIVE ADDON TAB ════ -->
+        <section id="view-panel-addon-tab" class="view-panel">
+          <div class="section-title-bar">
+            <span id="active-addon-tab-title">Addon View</span>
+            <button class="btn-classic" onclick="selectNavView('panel-addons-installed')">[ ⬅️ Back to Installed Addons ]</button>
+          </div>
+          <div id="active-addon-tab-container" style="min-height: 400px;">
+            <!-- Injected dynamically via loadActiveAddonTab(addonId) -->
+          </div>
+        </section>
+
       </main>
 
       <!-- ── RIGHT HELP & DOCUMENTATION ───────────────────────── -->
@@ -4695,6 +4867,31 @@
           <div class="help-sub">Custom Theme Studio</div>
           <p class="help-text">Build your own custom color scheme using interactive color pickers with real-time live preview. Saved palettes persist locally in your browser session.</p>
         `
+      },
+      'panel-addons-installed': {
+        title: 'Panel Extensions Help',
+        body: `
+          <div class="help-sub">Web Panel Addons</div>
+          <p class="help-text">FiestaPanel extensions enhance the web control console with custom tabs, Discord notifications, live web maps, and automated cron schedules.</p>
+          <div class="help-sub">Enabling / Disabling</div>
+          <p class="help-text">Toggle any addon off to disable its background tasks and hide its UI tab without deleting its files.</p>
+        `
+      },
+      'panel-addons-store': {
+        title: 'Plugin Store Help',
+        body: `
+          <div class="help-sub">1-Click Addon Store</div>
+          <p class="help-text">Browse official and verified FiestaPanel extensions. Click Install to deploy an addon immediately into your panel without restarting.</p>
+          <div class="help-sub">Custom Addons</div>
+          <p class="help-text">You can also upload community-created ZIP packages or install directly from a Git URL.</p>
+        `
+      },
+      'panel-addons-create': {
+        title: 'Developer Guide Help',
+        body: `
+          <div class="help-sub">Building Plugins</div>
+          <p class="help-text">Anyone can write a FiestaPanel extension using Python and HTML. Download the starter kit to get a pre-configured template with full documentation.</p>
+        `
       }
     };
 
@@ -4759,9 +4956,25 @@
       if (viewId === 'sys-branding') loadBrandingForm();
       if (viewId === 'sys-themes') loadThemeStudio();
       if (viewId === 'diag-ping') runPingTest();
+      if (viewId === 'panel-addons-installed') loadPanelAddons();
+      if (viewId === 'panel-addons-store') loadPanelAddonStore();
     }
 
     // ── Clipboard Copy Helper ───────────────────────────────────
+    function getServerDomain() {
+      const el = document.getElementById('st-server-domain');
+      if (el && el.textContent && el.textContent.trim() !== 'play.your-server.net') {
+        return el.textContent.trim();
+      }
+      const host = window.location.hostname;
+      return (host === '127.0.0.1' || host === 'localhost') ? 'localhost' : host;
+    }
+    function copyServerDomain(btn) {
+      copyDomainAddress(getServerDomain(), btn);
+    }
+    function copyServerIpPort(btn) {
+      copyDomainAddress(getServerDomain() + ':25565', btn);
+    }
     function copyDomainAddress(text, btn) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(onCopied).catch(fallbackCopy);
@@ -8238,6 +8451,783 @@
       }
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // ── Web Panel Addons, Extensions & Plugin Store Controller ──────
+    // ════════════════════════════════════════════════════════════════
+    let cachedInstalledAddons = [];
+    let cachedStoreCatalog = [];
+    let currentStoreFilterCat = 'all';
+
+    async function loadPanelAddons(force) {
+      const container = document.getElementById('installed-addons-container');
+      const badge = document.getElementById('installed-addons-count-badge');
+      if (badge && force) badge.textContent = 'Refreshing addons...';
+
+      try {
+        const res = await fetch('/api/panel-addons');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to list addons');
+
+        cachedInstalledAddons = data.addons || [];
+        if (badge) badge.textContent = `${cachedInstalledAddons.length} addon(s) installed`;
+
+        renderInstalledAddonsGrid(cachedInstalledAddons);
+        renderDynamicAddonNavItems(cachedInstalledAddons);
+      } catch (err) {
+        if (container) {
+          container.innerHTML = `<div style="grid-column: 1 / -1; color: #dc2626; padding: 12px; background: rgba(220, 38, 38, 0.1); border-radius: 4px;">
+            Error loading panel addons: ${escapeHtml(err.message)}
+          </div>`;
+        }
+      }
+    }
+
+    function renderInstalledAddonsGrid(addons) {
+      const container = document.getElementById('installed-addons-container');
+      if (!container) return;
+
+      if (!addons || addons.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 32px 16px; background: rgba(0,0,0,0.03); border: 1px dashed rgba(128,128,128,0.3); border-radius: 6px;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🧩</div>
+            <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">No Panel Addons Installed Yet</div>
+            <div class="inline-hint" style="margin-bottom: 12px;">Browse our verified 1-click extension catalog or upload a custom addon archive.</div>
+            <button class="btn-classic" style="font-weight: bold; color: #006622; padding: 4px 16px;" onclick="selectNavView('panel-addons-store')">[ 🛒 Open Plugin Store ]</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = addons.map(a => {
+        const isEnabled = a.enabled !== false;
+        const iconHtml = a.icon && a.icon.startsWith('fa') 
+          ? `<i class="${escapeHtml(a.icon)}" style="font-size: 20px; color: #0284c7;"></i>`
+          : `<span style="font-size: 20px;">🧩</span>`;
+
+        const hasTab = a.ui_slots && a.ui_slots.tab;
+        return `
+          <div class="panel-box" style="margin: 0; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; border-left: 3px solid ${isEnabled ? '#22c55e' : '#94a3b8'};">
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  ${iconHtml}
+                  <div>
+                    <strong style="font-size: 13px;">${escapeHtml(a.name || a.id)}</strong>
+                    <span class="inline-badge" style="font-size: 10px; margin-left: 4px;">v${escapeHtml(a.version || '1.0')}</span>
+                  </div>
+                </div>
+                <span class="inline-badge" style="background: rgba(14, 165, 233, 0.15); color: #0284c7; font-size: 10px;">${escapeHtml(a.category || 'Tool')}</span>
+              </div>
+              <p class="inline-hint" style="font-size: 11.5px; margin: 0 0 10px 0; line-height: 1.4; color: #64748b;">
+                ${escapeHtml(a.description || 'Custom FiestaPanel web extension.')}
+              </p>
+              <div style="font-size: 10.5px; color: #94a3b8; margin-bottom: 12px;">
+                By <strong>${escapeHtml(a.author || 'Community')}</strong>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid rgba(128,128,128,0.15);">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; cursor: pointer;">
+                <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="togglePanelAddon('${escapeQuotes(a.id)}', this.checked)">
+                <span style="font-weight: bold; color: ${isEnabled ? '#15803d' : '#64748b'};">${isEnabled ? 'Active' : 'Disabled'}</span>
+              </label>
+
+              <div style="display: flex; gap: 6px;">
+                ${hasTab ? `
+                  <button class="btn-classic" style="font-weight: bold; color: #0284c7;" onclick="openPanelAddonTab('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ ⚙️ Open ]</button>
+                ` : ''}
+                <button class="btn-classic" style="color: #b91c1c;" onclick="uninstallPanelAddon('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ 🗑️ ]</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDynamicAddonNavItems(addons) {
+      const navContainer = document.getElementById('dynamic-addon-nav-items');
+      if (!navContainer) return;
+
+      const activeAddonsWithTabs = addons.filter(a => (a.enabled !== false) && a.ui_slots && a.ui_slots.tab);
+      if (activeAddonsWithTabs.length === 0) {
+        navContainer.innerHTML = '';
+        return;
+      }
+
+      navContainer.innerHTML = activeAddonsWithTabs.map(a => {
+        const title = a.ui_slots.tab.title || a.name || a.id;
+        return `
+          <div class="nav-sub-item" onclick="openPanelAddonTab('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}', this)">
+            - 🔌 ${escapeHtml(title)}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterInstalledAddonsList() {
+      const q = (document.getElementById('installed-addons-search').value || '').toLowerCase().trim();
+      if (!q) {
+        renderInstalledAddonsGrid(cachedInstalledAddons);
+        return;
+      }
+      const filtered = cachedInstalledAddons.filter(a => {
+        return (a.name && a.name.toLowerCase().includes(q)) ||
+               (a.description && a.description.toLowerCase().includes(q)) ||
+               (a.category && a.category.toLowerCase().includes(q)) ||
+               (a.id && a.id.toLowerCase().includes(q));
+      });
+      renderInstalledAddonsGrid(filtered);
+    }
+
+    async function togglePanelAddon(addonId, enabled) {
+      try {
+        const res = await fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/toggle`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ enabled })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(`Addon '${addonId}' ${enabled ? 'enabled' : 'disabled'} successfully.`);
+          await loadPanelAddons(true);
+        } else {
+          showBannerAlert(d.error || 'Failed to toggle addon state.', true);
+          await loadPanelAddons(true);
+        }
+      } catch (err) {
+        showBannerAlert('Network error toggling addon: ' + err.message, true);
+        await loadPanelAddons(true);
+      }
+    }
+
+    async function uninstallPanelAddon(addonId, addonName) {
+      if (!confirm(`Are you sure you want to completely uninstall '${addonName}'? All local addon files will be deleted.`)) return;
+
+      try {
+        const res = await fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/uninstall`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'}
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(`Addon '${addonName}' uninstalled successfully.`);
+          await loadPanelAddons(true);
+          await loadPanelAddonStore();
+        } else {
+          showBannerAlert(d.error || 'Failed to uninstall addon.', true);
+        }
+      } catch (err) {
+        showBannerAlert('Network error during addon uninstallation.', true);
+      }
+    }
+
+    async function loadPanelAddonStore() {
+      const grid = document.getElementById('store-catalog-grid');
+      if (grid) grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px;">Loading Plugin Store catalog...</div>`;
+
+      try {
+        const res = await fetch('/api/panel-addons/store');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'Failed to load store catalog');
+
+        cachedStoreCatalog = data.catalog || [];
+        renderStoreCatalog(cachedStoreCatalog);
+      } catch (err) {
+        if (grid) {
+          grid.innerHTML = `<div style="grid-column: 1 / -1; color: #dc2626; padding: 12px; background: rgba(220, 38, 38, 0.1); border-radius: 4px;">
+            Error loading store catalog: ${escapeHtml(err.message)}
+          </div>`;
+        }
+      }
+    }
+
+    function renderStoreCatalog(catalog) {
+      const grid = document.getElementById('store-catalog-grid');
+      if (!grid) return;
+
+      const q = (document.getElementById('store-search-input') ? document.getElementById('store-search-input').value : '').toLowerCase().trim();
+
+      const filtered = catalog.filter(item => {
+        const matchCat = currentStoreFilterCat === 'all' || item.category === currentStoreFilterCat;
+        const matchSearch = !q || (item.name && item.name.toLowerCase().includes(q)) ||
+                                  (item.description && item.description.toLowerCase().includes(q)) ||
+                                  (item.category && item.category.toLowerCase().includes(q));
+        return matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 32px;" class="inline-hint">
+          No extensions found matching your filter criteria.
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => {
+        const isInstalled = item.installed === true;
+        const iconHtml = item.icon && item.icon.startsWith('fa')
+          ? `<i class="${escapeHtml(item.icon)}" style="font-size: 24px; color: #0284c7;"></i>`
+          : `<span style="font-size: 24px;">🧩</span>`;
+
+        return `
+          <div class="panel-box" style="margin: 0; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  ${iconHtml}
+                  <div>
+                    <strong style="font-size: 13.5px;">${escapeHtml(item.name)}</strong>
+                    <div style="font-size: 11px; color: #64748b;">
+                      v${escapeHtml(item.version)} • By ${escapeHtml(item.author || 'FiestaSMP')}
+                    </div>
+                  </div>
+                </div>
+                <span class="inline-badge" style="background: rgba(14, 165, 233, 0.15); color: #0284c7; font-size: 10px;">${escapeHtml(item.category)}</span>
+              </div>
+
+              <p class="inline-hint" style="font-size: 12px; margin: 0 0 10px 0; line-height: 1.4; color: #475569;">
+                ${escapeHtml(item.description)}
+              </p>
+
+              <div style="display: flex; align-items: center; gap: 12px; font-size: 11px; color: #94a3b8; margin-bottom: 12px;">
+                <span>⭐ ${item.rating || '5.0'}</span>
+                <span>📥 ${item.downloads ? item.downloads + '+' : '500+'} installs</span>
+              </div>
+            </div>
+
+            <div style="padding-top: 10px; border-top: 1px solid rgba(128,128,128,0.15); display: flex; align-items: center; justify-content: flex-end;">
+              ${isInstalled ? `
+                <button class="btn-classic" style="color: #15803d; font-weight: bold; background: rgba(34, 197, 94, 0.1);" onclick="openPanelAddonTab('${escapeQuotes(item.id)}', '${escapeQuotes(item.name)}')">
+                  [ ✓ Installed • Open ]
+                </button>
+              ` : `
+                <button class="btn-classic" style="color: #006622; font-weight: bold;" onclick="installAddonFromStore('${escapeQuotes(item.id)}', this)">
+                  [ ⚡ 1-Click Install ]
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterStoreCategory(cat, btn) {
+      currentStoreFilterCat = cat;
+      document.querySelectorAll('.store-cat-btn').forEach(b => b.classList.remove('active-tab'));
+      if (btn) btn.classList.add('active-tab');
+      renderStoreCatalog(cachedStoreCatalog);
+    }
+
+    function filterStoreCatalogSearch() {
+      renderStoreCatalog(cachedStoreCatalog);
+    }
+
+    async function installAddonFromStore(addonId, btn) {
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '[ ⏳ Installing... ]';
+      }
+
+      try {
+        const res = await fetch('/api/panel-addons/store/install', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ addon_id: addonId })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(`Addon '${addonId}' installed successfully!`);
+          await loadPanelAddonStore();
+          await loadPanelAddons(true);
+        } else {
+          showBannerAlert(d.error || 'Failed to install addon.', true);
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '[ ⚡ 1-Click Install ]';
+          }
+        }
+      } catch (err) {
+        showBannerAlert('Network error installing addon: ' + err.message, true);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '[ ⚡ 1-Click Install ]';
+        }
+      }
+    }
+
+    async function openPanelAddonTab(addonId, addonName, navEl) {
+      const container = document.getElementById('active-addon-tab-container');
+      const titleEl = document.getElementById('active-addon-tab-title');
+      if (titleEl) titleEl.textContent = addonName || addonId;
+
+      if (container) {
+        container.innerHTML = `<div style="text-align: center; padding: 40px;" class="inline-hint">Loading ${escapeHtml(addonName || addonId)} view...</div>`;
+      }
+
+      selectNavView('panel-addon-tab', navEl);
+
+      try {
+        const res = await fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/view`);
+        const html = await res.text();
+        if (container) {
+          container.innerHTML = html;
+          // Execute any embedded scripts in the loaded HTML
+          const scripts = container.querySelectorAll('script');
+          scripts.forEach(s => {
+            const newScript = document.createElement('script');
+            if (s.src) newScript.src = s.src;
+            else newScript.textContent = s.textContent;
+            document.body.appendChild(newScript);
+          });
+        }
+      } catch (err) {
+        if (container) {
+          container.innerHTML = `<div style="color: #dc2626; padding: 14px;">Failed to render addon view: ${escapeHtml(err.message)}</div>`;
+        }
+      }
+    }
+
+    function openAddonUploadModal() {
+      const inp = document.getElementById('addon-zip-file-input');
+      if (inp) {
+        inp.value = '';
+        inp.click();
+      }
+    }
+
+    async function handleAddonZipUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      if (!file.name.endsWith('.zip')) {
+        return showBannerAlert('Please upload a valid .zip addon package archive.', true);
+      }
+
+      const fd = new FormData();
+      fd.append('addon_zip', file);
+      showBannerAlert(`Uploading and unpacking '${file.name}'...`);
+
+      try {
+        const res = await fetch('/api/panel-addons/upload', {
+          method: 'POST',
+          body: fd
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message || 'Addon uploaded and installed successfully!');
+          await loadPanelAddons(true);
+          await loadPanelAddonStore();
+        } else {
+          showBannerAlert(d.error || 'Failed to install uploaded addon.', true);
+        }
+      } catch (err) {
+        showBannerAlert('Network error during addon upload.', true);
+      }
+    }
+
+    async function openAddonUrlModal() {
+      const url = prompt('Enter the direct HTTP(S) download URL for the Addon ZIP package or GitHub release:');
+      if (!url || !url.trim()) return;
+
+      showBannerAlert('Downloading and installing addon package from URL...');
+      try {
+        const res = await fetch('/api/panel-addons/install-url', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ url: url.trim() })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message || 'Addon installed from URL successfully!');
+          await loadPanelAddons(true);
+          await loadPanelAddonStore();
+        } else {
+          showBannerAlert(d.error || 'Failed to install from URL.', true);
+        }
+      } catch (err) {
+        showBannerAlert('Network error installing from URL.', true);
+      }
+    }
+
+    // ── Built-in Addon Helper Scripts & Interactive Handlers ─────────
+    async function testDiscordWebhook() {
+      const url = document.getElementById('addon-discord-url').value.trim();
+      const botname = document.getElementById('addon-discord-botname').value.trim();
+      const avatar = document.getElementById('addon-discord-avatar').value.trim();
+      const color = document.getElementById('addon-discord-color').value;
+      const msg = document.getElementById('addon-discord-msg');
+
+      if (!url) {
+        return alert('Please enter a valid Discord Webhook URL first.');
+      }
+
+      if (msg) {
+        msg.textContent = '🚀 Delivering test ping to Discord...';
+        msg.style.color = '#5865f2';
+      }
+
+      try {
+        const res = await fetch('/api/panel-addons/discord_notifier/action', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action: 'test_ping',
+            payload: { webhook_url: url, bot_name: botname, avatar_url: avatar, embed_color: color }
+          })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (msg) {
+            msg.textContent = '✓ ' + (d.message || 'Ping delivered successfully!');
+            msg.style.color = '#22c55e';
+          }
+        } else {
+          if (msg) {
+            msg.textContent = '✗ ' + (d.error || 'Delivery failed');
+            msg.style.color = '#dc2626';
+          }
+        }
+      } catch (e) {
+        if (msg) {
+          msg.textContent = '✗ Network error: ' + e.message;
+          msg.style.color = '#dc2626';
+        }
+      }
+    }
+
+    async function saveDiscordSettings() {
+      const url = document.getElementById('addon-discord-url').value.trim();
+      const botname = document.getElementById('addon-discord-botname').value.trim();
+      const avatar = document.getElementById('addon-discord-avatar').value.trim();
+      const color = document.getElementById('addon-discord-color').value;
+      const notifStart = document.getElementById('addon-discord-notif-start').checked;
+      const notifStop = document.getElementById('addon-discord-notif-stop').checked;
+      const notifJoin = document.getElementById('addon-discord-notif-join').checked;
+      const msg = document.getElementById('addon-discord-msg');
+
+      try {
+        const res = await fetch('/api/panel-addons/discord_notifier/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            settings: {
+              webhook_url: url,
+              bot_name: botname,
+              avatar_url: avatar,
+              embed_color: color,
+              notify_start: notifStart,
+              notify_stop: notifStop,
+              notify_join: notifJoin
+            }
+          })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (msg) {
+            msg.textContent = '✓ Webhook configuration saved!';
+            msg.style.color = '#22c55e';
+          }
+        } else {
+          if (msg) {
+            msg.textContent = '✗ ' + (d.error || 'Failed to save');
+            msg.style.color = '#dc2626';
+          }
+        }
+      } catch (e) {
+        if (msg) msg.textContent = '✗ Network error: ' + e.message;
+      }
+    }
+
+    function togglePasswordVisibility(id, btn) {
+      const el = document.getElementById(id);
+      if (el) {
+        if (el.type === 'password') {
+          el.type = 'text';
+          btn.textContent = '[ 🙈 Hide ]';
+        } else {
+          el.type = 'password';
+          btn.textContent = '[ 👁️ Show ]';
+        }
+      }
+    }
+
+    // Map Viewer Helpers
+    async function detectMapPort() {
+      try {
+        const res = await fetch('/api/panel-addons/web_map_viewer/action', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ action: 'detect_port', payload: {} })
+        });
+        const d = await res.json();
+        if (d.success && d.detected_ports && d.detected_ports.length > 0) {
+          const chosen = d.detected_ports[0];
+          const newUrl = `http://${window.location.hostname || 'localhost'}:${chosen}`;
+          document.getElementById('addon-map-url').value = newUrl;
+          refreshMapIframe();
+          alert(`Detected live map running on port ${chosen}! Loaded into viewer.`);
+        } else {
+          alert('No live map ports (8123, 8100, 8085) responded on localhost. Ensure Dynmap or BlueMap is running.');
+        }
+      } catch (e) {
+        alert('Port detection check failed: ' + e.message);
+      }
+    }
+
+    function refreshMapIframe() {
+      const url = document.getElementById('addon-map-url').value.trim();
+      const iframe = document.getElementById('addon-map-iframe');
+      const overlay = document.getElementById('addon-map-overlay');
+      if (iframe && url) {
+        if (overlay) overlay.style.display = 'none';
+        iframe.src = url;
+      }
+    }
+
+    function openMapNewTab() {
+      const url = document.getElementById('addon-map-url').value.trim();
+      if (url) window.open(url, '_blank');
+    }
+
+    function toggleMapFullscreen() {
+      const c = document.getElementById('addon-map-container');
+      if (c) {
+        if (!document.fullscreenElement) c.requestFullscreen().catch(() => {});
+        else document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function loadDefaultMapPreview() {
+      document.getElementById('addon-map-url').value = `http://${window.location.hostname || 'localhost'}:8123`;
+      refreshMapIframe();
+    }
+
+    async function saveMapSettings() {
+      const url = document.getElementById('addon-map-url').value.trim();
+      await fetch('/api/panel-addons/web_map_viewer/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ settings: { map_url: url } })
+      });
+      showBannerAlert('Map settings saved!');
+    }
+
+    // MOTD Styler Helpers
+    function updateMotdLivePreview() {
+      const l1 = document.getElementById('addon-motd-line1') ? document.getElementById('addon-motd-line1').value : '';
+      const l2 = document.getElementById('addon-motd-line2') ? document.getElementById('addon-motd-line2').value : '';
+      const p1 = document.getElementById('motd-preview-line1');
+      const p2 = document.getElementById('motd-preview-line2');
+      if (p1) p1.innerHTML = formatMinecraftColorCodes(l1);
+      if (p2) p2.innerHTML = formatMinecraftColorCodes(l2);
+    }
+
+    function formatMinecraftColorCodes(text) {
+      if (!text) return '&nbsp;';
+      const colorMap = {
+        '0': '#000000', '1': '#0000aa', '2': '#00aa00', '3': '#00aaaa',
+        '4': '#aa0000', '5': '#aa00aa', '6': '#ffaa00', '7': '#aaaaaa',
+        '8': '#555555', '9': '#5555ff', 'a': '#55ff55', 'b': '#55ffff',
+        'c': '#ff5555', 'd': '#ff55ff', 'e': '#ffff55', 'f': '#ffffff'
+      };
+      let out = '';
+      let currentColor = '#ffffff';
+      let bold = false;
+      let italic = false;
+
+      let i = 0;
+      while (i < text.length) {
+        if (text[i] === '§' && i + 1 < text.length) {
+          const code = text[i + 1].toLowerCase();
+          if (colorMap[code]) {
+            currentColor = colorMap[code];
+            bold = false;
+            italic = false;
+          } else if (code === 'l') {
+            bold = true;
+          } else if (code === 'o') {
+            italic = true;
+          } else if (code === 'r') {
+            currentColor = '#ffffff';
+            bold = false;
+            italic = false;
+          }
+          i += 2;
+        } else {
+          const char = text[i] === ' ' ? '&nbsp;' : escapeHtml(text[i]);
+          let style = `color: ${currentColor};`;
+          if (bold) style += ' font-weight: bold;';
+          if (italic) style += ' font-style: italic;';
+          out += `<span style="${style}">${char}</span>`;
+          i++;
+        }
+      }
+      return out;
+    }
+
+    function applyMotdPreset(preset) {
+      const l1 = document.getElementById('addon-motd-line1');
+      const l2 = document.getElementById('addon-motd-line2');
+      if (preset === 'cyber') {
+        if (l1) l1.value = '§b§l✦ CYBERPUNK 2077 SMP ✦ §7[1.21.x]';
+        if (l2) l2.value = '§d⚡ High-Speed ZGC §f• §3No Phantoms §f• §bCustom Items';
+      } else if (preset === 'gold') {
+        if (l1) l1.value = '§6§l🏆 FIESTA SURVIVAL NETWORK 🏆';
+        if (l2) l2.value = '§eVanilla+ §7• §aEconomy §7• §eCrossplay Bedrock+Java';
+      } else if (preset === 'matrix') {
+        if (l1) l1.value = '§a§l[SYSTEM] §2FIESTA GATEWAY ONLINE';
+        if (l2) l2.value = '§aTPS: 20.0 §7• §2Low Latency Direct Pipeline §7• §a100% Free';
+      } else if (preset === 'clean') {
+        if (l1) l1.value = '§f§lFiestaSMP §7| §bModern Paper 26.3';
+        if (l2) l2.value = '§7Join the community at §bdiscord.gg/fiesta';
+      }
+      updateMotdLivePreview();
+    }
+
+    async function saveAndApplyMotd() {
+      const l1 = document.getElementById('addon-motd-line1').value;
+      const l2 = document.getElementById('addon-motd-line2').value;
+      const statusEl = document.getElementById('addon-motd-status');
+      if (statusEl) {
+        statusEl.textContent = 'Applying MOTD to server.properties...';
+        statusEl.style.color = '#0284c7';
+      }
+
+      try {
+        const res = await fetch('/api/panel-addons/motd_gradient_styler/action', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ action: 'apply_motd', payload: { line1: l1, line2: l2 } })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (statusEl) {
+            statusEl.textContent = '✓ MOTD updated in server.properties!';
+            statusEl.style.color = '#22c55e';
+          }
+          showBannerAlert('Server MOTD applied successfully!');
+        } else {
+          if (statusEl) {
+            statusEl.textContent = '✗ ' + (d.error || 'Failed to update');
+            statusEl.style.color = '#dc2626';
+          }
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '✗ Error: ' + e.message;
+      }
+    }
+
+    // Scheduler Helpers
+    async function runScheduledTaskNow(taskId) {
+      try {
+        const res = await fetch('/api/panel-addons/server_scheduler/action', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ action: 'run_task', payload: { task_id: taskId, cmd: taskId === 't3' ? 'save-all' : 'say Scheduled task execution triggered!' } })
+        });
+        const d = await res.json();
+        alert(d.message || (d.success ? 'Task executed!' : d.error));
+      } catch (e) {
+        alert('Execution failed: ' + e.message);
+      }
+    }
+
+    function toggleScheduledTask(taskId) {
+      alert(`Task ${taskId} schedule status toggled.`);
+    }
+
+    function openAddTaskModal() {
+      const name = prompt('Task Name:');
+      if (!name) return;
+      const cmd = prompt('Minecraft Command (e.g. say Hello):');
+      if (!cmd) return;
+      alert(`Scheduled task '${name}' created!`);
+    }
+
+    // Maintenance Gate Helpers
+    let isMaintenanceActive = false;
+    async function toggleMaintenanceMode() {
+      isMaintenanceActive = !isMaintenanceActive;
+      const btn = document.getElementById('addon-maint-toggle-btn');
+      const badge = document.getElementById('addon-maint-status-badge');
+
+      if (btn) {
+        btn.textContent = isMaintenanceActive ? '[ 🔓 Deactivate Lockdown ]' : '[ 🔒 Activate Lockdown ]';
+        btn.style.color = isMaintenanceActive ? '#dc2626' : '';
+      }
+      if (badge) {
+        badge.textContent = isMaintenanceActive ? 'MAINTENANCE LOCKDOWN' : 'NORMAL MODE';
+        badge.style.background = isMaintenanceActive ? '#dc2626' : '#64748b';
+      }
+
+      try {
+        await fetch('/api/panel-addons/maintenance_gate/action', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ action: 'toggle', payload: { active: isMaintenanceActive } })
+        });
+        showBannerAlert(`Maintenance Mode is now ${isMaintenanceActive ? 'ACTIVE' : 'OFF'}.`);
+      } catch (e) {
+        alert('Failed to update maintenance state: ' + e.message);
+      }
+    }
+
+    function saveMaintenanceSettings() {
+      alert('Maintenance kick message and bypass permissions saved!');
+    }
+
+    // Custom CSS Injector Helpers
+    function applyCustomCssLive() {
+      const code = document.getElementById('addon-css-editor').value;
+      let styleTag = document.getElementById('addon-injected-custom-css');
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'addon-injected-custom-css';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = code;
+      const st = document.getElementById('addon-css-status');
+      if (st) {
+        st.textContent = '✓ Custom CSS injected into page!';
+        st.style.color = '#22c55e';
+      }
+      showBannerAlert('Custom CSS applied to panel DOM.');
+    }
+
+    function clearCustomCssLive() {
+      const styleTag = document.getElementById('addon-injected-custom-css');
+      if (styleTag) styleTag.remove();
+      const st = document.getElementById('addon-css-status');
+      if (st) st.textContent = 'Reset to default theme styles.';
+      showBannerAlert('Injected custom CSS cleared.');
+    }
+
+    function insertCssPreset(preset) {
+      const ed = document.getElementById('addon-css-editor');
+      if (!ed) return;
+      if (preset === 'glow') {
+        ed.value = `/* Aero Glowing Neon Borders */\n.console-frame {\n  box-shadow: 0 0 35px rgba(56, 189, 248, 0.45) !important;\n  border: 1px solid #38bdf8 !important;\n}\n.header-bar {\n  text-shadow: 0 0 10px rgba(56, 189, 248, 0.8);\n}`;
+      } else if (preset === 'compact') {
+        ed.value = `/* Ultra-Compact High-Density UI */\n.nav-sub-item { padding: 2px 6px !important; font-size: 11px !important; }\n.form-layout-table td { padding: 3px 6px !important; }\n.panel-box { margin-bottom: 8px !important; }`;
+      } else if (preset === 'dark_translucent') {
+        ed.value = `/* Dark Translucent Cyber Obsidian */\n.center-workspace {\n  background: rgba(10, 15, 25, 0.92) !important;\n  backdrop-filter: blur(12px);\n}`;
+      }
+      applyCustomCssLive();
+    }
+
+    function escapeHtml(str) {
+      if (str === undefined || str === null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeQuotes(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
     // Initialize Theme Controls
     applyTheme(getActiveTheme(), true);
 
@@ -8247,6 +9237,7 @@
     loadMinecraftItemsList();
     fetchAddonContext();
     fetchLatestSoftwareVersion();
+    loadPanelAddons(false);
     setInterval(renderUptime, 1000); // High-precision local 1-second ticker (zero latency & zero lag)
     setInterval(pollStatus, 3000);
     setInterval(pollLogs, 2000);

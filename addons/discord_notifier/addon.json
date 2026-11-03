@@ -1,0 +1,72 @@
+{
+  "id": "discord_notifier",
+  "name": "Discord Alerts & Webhook Bridge",
+  "version": "1.2.0",
+  "author": "FiestaSMP Team",
+  "description": "Broadcasts server start/stop alerts, player join events, and TPS health warnings to your Discord channel via webhooks.",
+  "icon": "fab fa-discord",
+  "category": "Integration",
+  "enabled": true,
+  "entrypoint": "main.py",
+  "settings_schema": [
+    {
+      "key": "webhook_url",
+      "label": "Discord Webhook URL",
+      "type": "text",
+      "default": "",
+      "placeholder": "https://discord.com/api/webhooks/..."
+    },
+    {
+      "key": "bot_name",
+      "label": "Bot Username",
+      "type": "text",
+      "default": "FiestaPanel Gateway"
+    },
+    {
+      "key": "avatar_url",
+      "label": "Bot Avatar URL",
+      "type": "text",
+      "default": "https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/assets/banner.png"
+    },
+    {
+      "key": "notify_start",
+      "label": "Notify on Server Start",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "key": "notify_stop",
+      "label": "Notify on Server Stop",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "key": "notify_join",
+      "label": "Notify on Player Joins",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "key": "embed_color",
+      "label": "Embed Color (Hex)",
+      "type": "color",
+      "default": "#38bdf8"
+    }
+  ],
+  "settings": {
+    "webhook_url": "",
+    "bot_name": "FiestaPanel Gateway",
+    "avatar_url": "https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/assets/banner.png",
+    "notify_start": true,
+    "notify_stop": true,
+    "notify_join": true,
+    "embed_color": "#38bdf8"
+  },
+  "ui_slots": {
+    "tab": {
+      "title": "Discord Alerts",
+      "icon": "fab fa-discord",
+      "description": "Configure Discord webhook bridge, test connectivity, and customize embed styles."
+    }
+  }
+}

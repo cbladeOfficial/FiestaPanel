@@ -753,11 +753,11 @@
         </div>
         <div class="info-row">
           <span class="label">Java Edition IP:</span>
-          <span class="val">fiesta.debarkak.xyz:25565</span>
+          <span class="val" id="login-java-ip">{{ branding.server_domain or 'play.your-server.net' }}:25565</span>
         </div>
         <div class="info-row">
           <span class="label">Bedrock Edition IP:</span>
-          <span class="val">fiesta.debarkak.xyz:19132</span>
+          <span class="val" id="login-bedrock-ip">{{ branding.server_domain or 'play.your-server.net' }}:19132</span>
         </div>
       </div>
 
@@ -824,6 +824,17 @@
         btn.disabled = false;
       }
     });
+
+    // Dynamically adapt server connection IP from current hostname if not explicitly configured
+    (function() {
+      const cfgDomain = "{{ branding.server_domain }}";
+      if (!cfgDomain && window.location.hostname && window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost') {
+        const jEl = document.getElementById('login-java-ip');
+        const bEl = document.getElementById('login-bedrock-ip');
+        if (jEl) jEl.textContent = window.location.hostname + ':25565';
+        if (bEl) bEl.textContent = window.location.hostname + ':19132';
+      }
+    })();
   </script>
 </body>
 </html>

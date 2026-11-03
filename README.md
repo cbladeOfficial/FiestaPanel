@@ -22,17 +22,17 @@
 
 ### 🐧 Linux & 🍎 macOS (1-Line Install)
 ```bash
-curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash
 ```
-*(Or from GitHub: `curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | bash`)*
+*(Or via short mirror: `curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash`)*
 
 ### 🪟 Windows 10 / 11 / Server (1-Line PowerShell Install)
 Open PowerShell (as regular user or Administrator) and run:
 ```powershell
-irm https://fiesta.debarkak.xyz/install.ps1 | iex
+irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex
 ```
-*(Or from GitHub: `irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex`)*  
-*(From Windows Command Prompt (CMD): `powershell -ExecutionPolicy Bypass -Command "irm https://fiesta.debarkak.xyz/install.ps1 | iex"`)*  
+*(From Windows Command Prompt (CMD): `powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex"`)*  
+*(Or via short mirror: `irm https://fiesta.debarkak.xyz/install.ps1 | iex`)*  
 *(Manual install: Clone repo and run `install.bat` or double-click `start.bat`)*
 
 ### 🐳 Docker & Docker Compose (Container Install)
@@ -64,6 +64,7 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 | Guide | Description |
 |---|---|
 | 🚀 [**Installation Guide**](INSTALL.md) | Complete step-by-step setup, 1-line Windows/Linux/macOS installers, systemd, and Nginx SSL setup |
+| 🧩 [**Addon Developer Guide**](docs/ADDONS_GUIDE.md) | How to build custom FiestaPanel extensions, UI tabs, Discord webhooks, and submit to the Plugin Store |
 | 🏗️ [**Architecture & Design**](docs/ARCHITECTURE.md) | Deep-dive into process model, daemon control, texture atlas, and data flow |
 | 🌟 [**Feature Tour**](docs/FEATURES.md) | Exhaustive guide covering console, inventory inspector, Modrinth, world controls, etc. |
 | 📡 [**REST API Reference**](docs/API.md) | Full JSON API specification for headless integrations and automation |
@@ -76,8 +77,9 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 | Feature | Highlights |
 |---|---|
 | 🎮 **Full Process Control** | Start, stop, restart, and tail live ANSI logs with top/bottom scroll navigation. |
+| 🧩 **Web Panel Addon System & Store** | Modular Python & HTML extensions with 1-click in-panel Plugin Store (Discord Webhooks, Dynmap/BlueMap viewer, Cron Schedulers, MOTD Styler, Maintenance Gate). |
 | 🎒 **Visual Inventory Inspector** | Real-time armor, offhand, storage & hotbar viewer with authentic 1.21 item textures and giving search tool. |
-| 🔌 **Addons (Plugins & Mods) Engine** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with 1-click Modrinth directory installation. |
+| 🔌 **Game Addons (Plugins & Mods)** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with 1-click Modrinth directory installation. |
 | 📁 **Jailed File Manager** | In-browser code & config editor, directory navigation, and drag-and-drop file uploads with traversal protection. |
 | 🌍 **World & Weather Controls** | Day/Noon/Night cycles, weather clear/rain/thunder toggles, and safe world flushing (`/save-all`). |
 | 👥 **Sub-Users & Access Control** | Multi-user roles (Admin, Operator, Viewer) with salted PBKDF2 password hashing. |

@@ -168,14 +168,23 @@ if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/items_textures.json" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/branding.json" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/requirements.txt" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/addon_manager.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/addons" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/start.sh" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
 else
-    echo "Downloading FiestaPanel application package..."
-    curl -sSL "https://fiesta.debarkak.xyz/static/fiestapanel-latest.tar.gz" | tar -xz -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
-        curl -sSL "https://fiesta.debarkak.xyz/app.py" -o "$TARGET_INSTALL_DIR/app.py"
-    }
+    echo "Downloading FiestaPanel application package from GitHub..."
+    if command -v git >/dev/null 2>&1; then
+        git clone --depth 1 https://github.com/open-fiestasmp/FiestaPanel.git "$TARGET_INSTALL_DIR" 2>/dev/null || true
+    fi
+    if [ ! -f "$TARGET_INSTALL_DIR/app.py" ]; then
+        curl -sSL "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/main.tar.gz" | tar -xz --strip-components=1 -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
+            curl -sSL "https://fiesta.debarkak.xyz/static/fiestapanel-latest.tar.gz" | tar -xz -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
+                curl -sSL "https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/app.py" -o "$TARGET_INSTALL_DIR/app.py"
+            }
+        }
+    fi
 fi
 
 # 7. Setup Virtual Environment & Python Packages

@@ -24,18 +24,19 @@ This guide walks you through deploying **FiestaPanel** across **Linux, macOS, an
 
 ## 🐧 Option 1: Linux & macOS (1-Line Quick Install)
 
-Run the automated installer in your terminal:
+Run the automated installer directly from GitHub via your terminal:
 
 ```bash
-curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash
 ```
+*(Or via short mirror: `curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash`)*
 
 ### Unattended / Custom Flags
 Pass environment variables to customize your setup:
 
 ```bash
 # Custom HTTP Port & Minecraft Server Directory
-PORT=9000 MC_PATH=/opt/minecraft curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
+PORT=9000 MC_PATH=/opt/minecraft curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash
 ```
 
 ### What the Automated Installer Does:
@@ -56,20 +57,20 @@ FiestaPanel natively supports Windows without requiring WSL or Docker!
 
 ### Method A: 1-Line Automated Install (Recommended)
 
-Open **PowerShell** (no Administrator rights strictly required, but recommended) and run:
+Open **PowerShell** (no Administrator rights strictly required, but recommended) and run directly from GitHub:
 
-```powershell
-irm https://fiesta.debarkak.xyz/install.ps1 | iex
-```
-
-*(Or via GitHub Raw)*:
 ```powershell
 irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex
 ```
 
 *(From Windows Command Prompt / CMD)*:
 ```cmd
-powershell -ExecutionPolicy Bypass -Command "irm https://fiesta.debarkak.xyz/install.ps1 | iex"
+powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex"
+```
+
+*(Or via short mirror)*:
+```powershell
+irm https://fiesta.debarkak.xyz/install.ps1 | iex
 ```
 
 #### What the Windows 1-Line Installer Does:

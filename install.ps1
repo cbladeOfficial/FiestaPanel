@@ -1,14 +1,14 @@
 # ==============================================================================
 # FiestaPanel - Windows 1-Line Turnkey Installer & Setup Script
 #
-# One-Line Install from PowerShell (Run as Administrator or regular user):
-#   irm https://fiesta.debarkak.xyz/install.ps1 | iex
-#
-# Alternative (GitHub Raw):
+# One-Line Install from PowerShell (Direct from GitHub):
 #   irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex
 #
 # From Windows Command Prompt (CMD):
-#   powershell -ExecutionPolicy Bypass -Command "irm https://fiesta.debarkak.xyz/install.ps1 | iex"
+#   powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex"
+#
+# Mirror (Optional):
+#   irm https://fiesta.debarkak.xyz/install.ps1 | iex
 #
 # Local Execution:
 #   powershell -ExecutionPolicy Bypass -File install.ps1
@@ -87,8 +87,8 @@ if (-not $IsLocal) {
 
     $Downloaded = $false
     $DownloadUrls = @(
-        "https://fiesta.debarkak.xyz/static/fiestapanel-latest.zip",
-        "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/main.zip"
+        "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/main.zip",
+        "https://fiesta.debarkak.xyz/static/fiestapanel-latest.zip"
     )
 
     foreach ($url in $DownloadUrls) {

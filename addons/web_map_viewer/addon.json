@@ -1,0 +1,50 @@
+{
+  "id": "web_map_viewer",
+  "name": "Dynmap & BlueMap Live Map Viewer",
+  "version": "1.1.0",
+  "author": "FiestaSMP Team",
+  "description": "Seamlessly embeds live 2D/3D web maps (Dynmap, BlueMap, Squaremap, Pl3xMap) directly into FiestaPanel with full-screen mode.",
+  "icon": "fas fa-map-marked-alt",
+  "category": "Visuals",
+  "enabled": true,
+  "entrypoint": "main.py",
+  "settings_schema": [
+    {
+      "key": "map_url",
+      "label": "Web Map URL or Port",
+      "type": "text",
+      "default": "http://localhost:8123",
+      "placeholder": "http://127.0.0.1:8123 or https://map.domain.com"
+    },
+    {
+      "key": "map_engine",
+      "label": "Map Software",
+      "type": "select",
+      "options": [
+        "Dynmap",
+        "BlueMap",
+        "Squaremap",
+        "Pl3xMap"
+      ],
+      "default": "Dynmap"
+    },
+    {
+      "key": "allow_fullscreen",
+      "label": "Enable Fullscreen Toggle",
+      "type": "checkbox",
+      "default": true
+    }
+  ],
+  "settings": {
+    "map_url": "http://localhost:8123",
+    "map_engine": "Dynmap",
+    "allow_fullscreen": true
+  },
+  "ui_slots": {
+    "tab": {
+      "title": "Live World Map",
+      "icon": "fas fa-map-marked-alt",
+      "description": "Interactive real-time map browser with 3D terrain and player markers."
+    }
+  }
+}

@@ -1,0 +1,56 @@
+<div class="panel-box">
+  <div class="section-title-bar">
+    <span>Visual MOTD Generator &amp; Color Gradient Styler</span>
+  </div>
+  <p class="inline-hint" style="margin-bottom:12px;">
+    Craft vibrant, attractive server descriptions that stand out in the Minecraft multiplayer server browser.
+  </p>
+
+  <div class="section-sub-header">Multiplayer Server List Live Preview</div>
+  <div style="background:#131518;border:2px solid #333;border-radius:4px;padding:12px 16px;max-width:680px;margin-bottom:16px;display:flex;align-items:center;gap:14px;box-shadow:inset 0 0 10px rgba(0,0,0,0.5);">
+    <div style="width:64px;height:64px;background:#222;border:2px solid #555;display:flex;align-items:center;justify-content:center;font-size:28px;">
+      🎮
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-weight:bold;color:#fff;font-size:14px;">FiestaSMP Minecraft Server</span>
+        <span style="color:#aaa;font-size:12px;">5 / 20 &nbsp; <span style="color:#55ff55;">📶</span></span>
+      </div>
+      <div id="motd-preview-line1" style="font-family:'Courier New',monospace;font-size:13px;line-height:18px;color:#38bdf8;font-weight:bold;">
+        ✦ FiestaSMP Network ✦ [1.21.x]
+      </div>
+      <div id="motd-preview-line2" style="font-family:'Courier New',monospace;font-size:13px;line-height:18px;color:#facc15;">
+        Survival • Custom Items • Low Ping
+      </div>
+    </div>
+  </div>
+
+  <table class="form-layout-table">
+    <tr>
+      <td class="label-col">MOTD Line 1:</td>
+      <td class="val-col">
+        <input type="text" id="addon-motd-line1" class="ctrl-input" style="width:80%;font-family:monospace;" value="§b§l✦ FiestaSMP Network ✦ §7[1.21.x]" oninput="updateMotdLivePreview()">
+      </td>
+    </tr>
+    <tr>
+      <td class="label-col">MOTD Line 2:</td>
+      <td class="val-col">
+        <input type="text" id="addon-motd-line2" class="ctrl-input" style="width:80%;font-family:monospace;" value="§eSurvival • Custom Items • Low Ping" oninput="updateMotdLivePreview()">
+      </td>
+    </tr>
+    <tr>
+      <td class="label-col">Quick Presets:</td>
+      <td class="val-col">
+        <button class="btn-classic" onclick="applyMotdPreset('cyber')">[ 🌌 Cyber Neon ]</button>
+        <button class="btn-classic" onclick="applyMotdPreset('gold')">[ 🏆 Sunset Gold ]</button>
+        <button class="btn-classic" onclick="applyMotdPreset('matrix')">[ ⚡ Matrix Emerald ]</button>
+        <button class="btn-classic" onclick="applyMotdPreset('clean')">[ ❄️ Clean Aero Ice ]</button>
+      </td>
+    </tr>
+  </table>
+
+  <div style="margin-top:16px;">
+    <button class="btn-classic" style="font-weight:bold;padding:4px 18px;color:#006622;" onclick="saveAndApplyMotd()">[ ⚡ Apply to server.properties ]</button>
+    <span id="addon-motd-status" style="margin-left:12px;font-weight:bold;"></span>
+  </div>
+</div>
