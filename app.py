@@ -2615,6 +2615,27 @@ def api_panel_addons_info(addon_id):
         "addon": info
     })
 
+@app.route("/api/panel-addons/<addon_id>/review", methods=["POST"])
+@login_required
+def api_panel_addons_submit_review(addon_id):
+    data = request.get_json() or {}
+    rating = data.get("rating")
+    comment = (data.get("comment") or "").strip()
+    reviewer = session.get("username", "admin")
+
+    try:
+        rating_int = int(rating)
+        if rating_int < 1 or rating_int > 5:
+            return jsonify({"success": False, "error": "Rating must be an integer between 1 and 5 stars."}), 400
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid rating format."}), 400
+
+    if not comment:
+        return jsonify({"success": False, "error": "Review comment cannot be empty."}), 400
+
+    res = addon_manager.add_addon_review(addon_id, reviewer, rating_int, comment)
+    return jsonify(res)
+
 @app.route("/api/panel-addons/repository/refresh", methods=["POST"])
 @login_required
 def api_panel_addons_repository_refresh():

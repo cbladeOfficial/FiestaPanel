@@ -28,6 +28,7 @@
   </script>
   <!-- 7.css by Khang NT (https://github.com/khang-nd/7.css) for authentic Windows 7 Aero styling -->
   <link rel="stylesheet" href="/static/7.scoped.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     /* ── NATIVE THEME DEFINITIONS ────────────────────────────── */
     :root, [data-theme="classic"] {
@@ -2858,6 +2859,118 @@
     .markdown-body table tr:nth-child(even) td {
       background: rgba(0, 0, 0, 0.02);
     }
+
+    /* Big Addon Modal Tab Navigation & Proper Selected Tab Styling */
+    .addon-modal-tab-bar {
+      display: flex;
+      gap: 6px;
+      padding: 10px 18px 0;
+      background: rgba(0, 0, 0, 0.05);
+      border-bottom: 2px solid #0284c7;
+      position: relative;
+    }
+    .addon-modal-tab-btn {
+      height: 32px;
+      padding: 0 16px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 5px 5px 0 0;
+      border: 1px solid var(--terminal-border, #cbd5e1);
+      border-bottom: none;
+      background: #e2e8f0;
+      color: #64748b;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+      position: relative;
+      margin-bottom: -2px;
+      user-select: none;
+      transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+      opacity: 0.82;
+    }
+    .addon-modal-tab-btn:hover {
+      background: #cbd5e1;
+      color: #1e293b;
+      opacity: 1;
+    }
+    .addon-modal-tab-btn.active-tab {
+      background: var(--modal-bg, #ffffff) !important;
+      color: #0284c7 !important;
+      font-weight: 700 !important;
+      border: 2px solid #0284c7 !important;
+      border-top: 3px solid #0284c7 !important;
+      border-bottom: 2px solid var(--modal-bg, #ffffff) !important;
+      box-shadow: 0 -2px 8px rgba(2, 132, 199, 0.18) !important;
+      z-index: 5;
+      opacity: 1 !important;
+    }
+    .addon-modal-tab-btn.active-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--modal-bg, #ffffff);
+      z-index: 6;
+    }
+    [data-theme="dark"] .addon-modal-tab-bar {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom-color: #38bdf8;
+    }
+    [data-theme="dark"] .addon-modal-tab-btn {
+      background: #181d22;
+      border-color: #333d47;
+      color: #94a3b8;
+    }
+    [data-theme="dark"] .addon-modal-tab-btn:hover {
+      background: #232b33;
+      color: #f1f5f9;
+    }
+    [data-theme="dark"] .addon-modal-tab-btn.active-tab {
+      background: #1a1e22 !important;
+      border: 2px solid #38bdf8 !important;
+      border-top: 3px solid #38bdf8 !important;
+      border-bottom: 2px solid #1a1e22 !important;
+      color: #38bdf8 !important;
+      box-shadow: 0 -2px 8px rgba(56, 189, 248, 0.2) !important;
+    }
+    [data-theme="dark"] .addon-modal-tab-btn.active-tab::after {
+      background: #1a1e22 !important;
+    }
+    [data-theme="win7"] .addon-modal-tab-bar {
+      background: linear-gradient(180deg, #dbe7f5 0%, #ccdcf0 100%);
+      border-bottom: 2px solid #167cd4;
+    }
+    [data-theme="win7"] .addon-modal-tab-btn {
+      background: linear-gradient(180deg, #f0f4f9 0%, #d8e2ee 100%);
+      border: 1px solid #7f9db9;
+      border-bottom: none;
+      color: #1e395b;
+    }
+    [data-theme="win7"] .addon-modal-tab-btn:hover {
+      background: linear-gradient(180deg, #e5f1fb 0%, #cce4f7 100%);
+      border-color: #3c7fb1;
+      color: #0c2b48;
+    }
+    [data-theme="win7"] .addon-modal-tab-btn.active-tab {
+      background: #ffffff !important;
+      border: 2px solid #167cd4 !important;
+      border-top: 3px solid #167cd4 !important;
+      border-bottom: 2px solid #ffffff !important;
+      color: #003e7a !important;
+      box-shadow: 0 -2px 8px rgba(22, 124, 212, 0.25) !important;
+    }
+    [data-theme="win7"] .addon-modal-tab-btn.active-tab::after {
+      background: #ffffff !important;
+    }
+    .store-cat-btn.active-tab {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #0369a1 !important;
+    }
   </style>
 </head>
 <body>
@@ -4847,13 +4960,13 @@ def on_action(ctx, action_name, payload):
         <!-- Factual Stats Block -->
         <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.05); padding: 6px 12px; border-radius: 4px; border: 1px solid rgba(128,128,128,0.2);">
           <div style="text-align: center;">
-            <div id="addon-modal-stat-rating" style="font-size: 14px; font-weight: bold; color: #eab308;">★ 5.0 / 5.0</div>
-            <div id="addon-modal-stat-reviews" style="font-size: 10px; color: #64748b;">184 verified reviews</div>
+            <div id="addon-modal-stat-rating" style="font-size: 14px; font-weight: bold; color: #eab308;">5.0 / 5.0</div>
+            <div id="addon-modal-stat-reviews" style="font-size: 10px; color: #64748b;">0 user reviews</div>
           </div>
           <div style="width: 1px; height: 24px; background: rgba(128,128,128,0.3);"></div>
           <div style="text-align: center;">
-            <div id="addon-modal-stat-installs" style="font-size: 14px; font-weight: bold; color: #0284c7;">1,420</div>
-            <div style="font-size: 10px; color: #64748b;">verified installs</div>
+            <div id="addon-modal-stat-installs" style="font-size: 14px; font-weight: bold; color: #0284c7;">0</div>
+            <div style="font-size: 10px; color: #64748b;">local installs</div>
           </div>
           <div style="width: 1px; height: 24px; background: rgba(128,128,128,0.3);"></div>
           <div style="text-align: center;">
@@ -4864,16 +4977,24 @@ def on_action(ctx, action_name, payload):
       </div>
 
       <!-- Dependency Alert Ribbon (Live server scan results) -->
-      <div id="addon-modal-deps-banner" style="padding: 9px 18px; border-bottom: 1px solid var(--terminal-border, rgba(128,128,128,0.2)); font-size: 12px; display: flex; align-items: center; justify-content: space-between;">
+      <div id="addon-modal-deps-banner" style="padding: 9px 18px; border-bottom: 1px solid var(--terminal-border, rgba(128,128,128,0.2)); font-size: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: nowrap; overflow: hidden;">
         <!-- Filled dynamically -->
       </div>
 
-      <!-- Navigation Tabs -->
-      <div style="display: flex; gap: 6px; padding: 8px 18px 0; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--terminal-border, rgba(128,128,128,0.2));">
-        <button class="btn-classic addon-modal-tab-btn active-tab" data-tab="docs" onclick="switchAddonModalTab('docs', this)">📖 Documentation &amp; Setup</button>
-        <button class="btn-classic addon-modal-tab-btn" data-tab="deps" onclick="switchAddonModalTab('deps', this)">🔌 Dependencies &amp; Compatibility</button>
-        <button class="btn-classic addon-modal-tab-btn" data-tab="config" onclick="switchAddonModalTab('config', this)">⚙️ Settings Schema</button>
-        <button class="btn-classic addon-modal-tab-btn" data-tab="reviews" onclick="switchAddonModalTab('reviews', this)">⭐ Reviews &amp; Rating Breakdown</button>
+      <!-- Navigation Tabs (With distinct active tab highlighting) -->
+      <div class="addon-modal-tab-bar">
+        <button class="addon-modal-tab-btn active-tab" data-tab="docs" onclick="switchAddonModalTab('docs', this)">
+          <i class="fa-solid fa-book-open"></i> Documentation &amp; Setup
+        </button>
+        <button class="addon-modal-tab-btn" data-tab="deps" onclick="switchAddonModalTab('deps', this)">
+          <i class="fa-solid fa-puzzle-piece"></i> Dependencies &amp; Compatibility
+        </button>
+        <button class="addon-modal-tab-btn" data-tab="config" onclick="switchAddonModalTab('config', this)">
+          <i class="fa-solid fa-sliders"></i> Settings Schema
+        </button>
+        <button class="addon-modal-tab-btn" data-tab="reviews" onclick="switchAddonModalTab('reviews', this)">
+          <i class="fa-solid fa-star"></i> Reviews &amp; Ratings
+        </button>
       </div>
 
       <!-- Tab Body Scrollable Container -->
@@ -8820,6 +8941,27 @@ def on_action(ctx, action_name, payload):
       }
     }
 
+    function getAddonIconHtml(iconClass, size = 20) {
+      if (iconClass && typeof iconClass === 'string' && (iconClass.includes('fa-') || iconClass.startsWith('fa ') || iconClass.startsWith('fas ') || iconClass.startsWith('far ') || iconClass.startsWith('fab '))) {
+        return `<i class="${escapeHtml(iconClass)}" style="font-size: ${size}px; color: #0284c7; width: ${size}px; height: ${size}px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;"></i>`;
+      }
+      // Generic crisp SVG puzzle piece / plugin icon for extensions without icons
+      return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#0284c7" style="display: inline-block; vertical-align: middle; flex-shrink: 0;" aria-label="Addon"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5s-1.12-2.5-2.5-2.5z"/></svg>`;
+    }
+
+    function renderStarRating(rating) {
+      const r = Math.round(Number(rating) || 0);
+      let html = '';
+      for (let i = 1; i <= 5; i++) {
+        if (i <= r) {
+          html += '<i class="fa-solid fa-star" style="color: #eab308; margin-right: 2px;"></i>';
+        } else {
+          html += '<i class="fa-regular fa-star" style="color: #cbd5e1; margin-right: 2px;"></i>';
+        }
+      }
+      return html;
+    }
+
     function renderInstalledAddonsGrid(addons) {
       const container = document.getElementById('installed-addons-container');
       if (!container) return;
@@ -8840,9 +8982,7 @@ def on_action(ctx, action_name, payload):
 
       container.innerHTML = addons.map(a => {
         const isEnabled = a.enabled !== false;
-        const iconHtml = a.icon && a.icon.startsWith('fa') 
-          ? `<i class="${escapeHtml(a.icon)}" style="font-size: 20px; color: #0284c7;"></i>`
-          : `<span style="font-size: 11px; font-weight: bold; color: #0284c7;">[EXT]</span>`;
+        const iconHtml = getAddonIconHtml(a.icon, 20);
 
         const hasTab = a.ui_slots && a.ui_slots.tab;
         return `
@@ -8873,7 +9013,7 @@ def on_action(ctx, action_name, payload):
               </label>
 
               <div style="display: flex; gap: 6px;">
-                <button class="btn-classic" style="font-weight: bold;" onclick="openAddonDetailModal('${escapeQuotes(a.id)}')">[ 📖 Docs ]</button>
+                <button class="btn-classic" style="font-weight: bold;" onclick="openAddonDetailModal('${escapeQuotes(a.id)}')">[ Docs ]</button>
                 ${hasTab ? `
                   <button class="btn-classic" style="font-weight: bold; color: #0284c7;" onclick="openPanelAddonTab('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ Open ]</button>
                 ` : ''}
@@ -9005,27 +9145,26 @@ def on_action(ctx, action_name, payload):
 
       grid.innerHTML = filtered.map(item => {
         const isInstalled = item.installed === true;
-        const iconHtml = item.icon && item.icon.startsWith('fa')
-          ? `<i class="${escapeHtml(item.icon)}" style="font-size: 24px; color: #0284c7;"></i>`
-          : `<span style="font-size: 11px; font-weight: bold; color: #0284c7;">[EXT]</span>`;
+        const iconHtml = getAddonIconHtml(item.icon, 24);
 
         const stats = item.stats || {};
-        const ratingScore = (stats.rating_score || item.rating || 5.0).toFixed(2);
-        const reviewsCount = stats.reviews_count || 0;
-        const installsCount = (stats.installs_count || item.downloads || 0).toLocaleString();
+        const ratingVal = stats.rating_score !== undefined ? stats.rating_score : (item.rating || 0);
+        const ratingStr = ratingVal > 0 ? ratingVal.toFixed(1) + ' / 5.0' : 'Unrated';
+        const reviewsCount = stats.reviews_count !== undefined ? stats.reviews_count : 0;
+        const localInstalls = stats.install_count !== undefined ? stats.install_count : (item.installed ? 1 : 0);
 
         // Dependencies chip
         const depStatus = item.dependency_status || { all_satisfied: true, plugins: [] };
         let depBadgeHtml = '';
         if (depStatus.all_satisfied) {
           if (depStatus.plugins && depStatus.plugins.length > 0) {
-            depBadgeHtml = `<span class="inline-badge" style="background: rgba(34, 197, 94, 0.12); color: #16a34a; font-size: 10px; border: 1px solid rgba(34, 197, 94, 0.3);">✓ Dependencies Detected</span>`;
+            depBadgeHtml = `<span class="inline-badge" style="background: rgba(34, 197, 94, 0.12); color: #16a34a; font-size: 10px; border: 1px solid rgba(34, 197, 94, 0.3);"><i class="fa-solid fa-check" style="margin-right: 3px;"></i> Dependencies Detected</span>`;
           } else {
             depBadgeHtml = `<span class="inline-badge" style="background: rgba(14, 165, 233, 0.1); color: #0284c7; font-size: 10px; border: 1px solid rgba(14, 165, 233, 0.25);">Standalone (No Plugins Required)</span>`;
           }
         } else {
           const missing = depStatus.plugins.filter(p => !p.satisfied && p.required).map(p => escapeHtml(p.name)).join(', ');
-          depBadgeHtml = `<span class="inline-badge" style="background: rgba(245, 158, 11, 0.15); color: #b45309; font-size: 10px; border: 1px solid rgba(245, 158, 11, 0.35);">⚠ Requires: ${missing || 'Plugin'}</span>`;
+          depBadgeHtml = `<span class="inline-badge" style="background: rgba(245, 158, 11, 0.15); color: #b45309; font-size: 10px; border: 1px solid rgba(245, 158, 11, 0.35);"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 3px;"></i> Requires: ${missing || 'Plugin'}</span>`;
         }
 
         return `
@@ -9055,27 +9194,29 @@ def on_action(ctx, action_name, payload):
 
               <!-- Factual Telemetry & Rating -->
               <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; margin-bottom: 12px; background: rgba(0,0,0,0.03); padding: 5px 8px; border-radius: 4px; border: 1px solid rgba(128,128,128,0.15);">
-                <span title="${reviewsCount} verified community ratings" style="font-weight: 600; color: #d97706;">
-                  ★ ${ratingScore} / 5.0 <span style="font-weight: normal; font-size: 10px; color: #64748b;">(${reviewsCount} reviews)</span>
+                <span title="${reviewsCount} verified user reviews" style="font-weight: 600; color: #d97706; display: flex; align-items: center; gap: 4px;">
+                  <i class="fa-solid fa-star" style="font-size: 11px; color: #eab308;"></i>
+                  <span>${ratingStr}</span>
+                  <span style="font-weight: normal; font-size: 10px; color: #64748b;">(${reviewsCount} reviews)</span>
                 </span>
                 <span style="font-weight: 600; color: #0284c7;">
-                  ${installsCount} <span style="font-weight: normal; font-size: 10px; color: #64748b;">installs</span>
+                  ${localInstalls} <span style="font-weight: normal; font-size: 10px; color: #64748b;">local install(s)</span>
                 </span>
               </div>
             </div>
 
             <div style="padding-top: 10px; border-top: 1px solid rgba(128,128,128,0.15); display: flex; align-items: center; justify-content: space-between; gap: 6px;">
               <button class="btn-classic" style="font-weight: bold; font-size: 11.5px;" onclick="openAddonDetailModal('${escapeQuotes(item.id)}')">
-                [ 📖 Details &amp; Docs ]
+                [ Details &amp; Docs ]
               </button>
 
               ${isInstalled ? `
                 <button class="btn-classic" style="color: #15803d; font-weight: bold; background: rgba(34, 197, 94, 0.1);" onclick="openPanelAddonTab('${escapeQuotes(item.id)}', '${escapeQuotes(item.name)}')">
-                  [ ✓ Installed • Open ]
+                  [ Installed • Open ]
                 </button>
               ` : `
                 <button class="btn-classic" style="color: #006622; font-weight: bold;" onclick="installAddonFromStore('${escapeQuotes(item.id)}', this)">
-                  [ ⬇ Install Addon ]
+                  [ Install Addon ]
                 </button>
               `}
             </div>
@@ -9137,15 +9278,15 @@ def on_action(ctx, action_name, payload):
         const alertType = type.toLowerCase();
         const cleanContent = contentLines.split('\n').map(l => l.replace(/^>[ ]?/, '')).join('\n').trim();
         let title = type.toUpperCase();
-        let icon = 'ℹ️';
-        if (alertType === 'tip') icon = '💡';
-        else if (alertType === 'important') icon = '🟣';
-        else if (alertType === 'warning') icon = '⚠️';
-        else if (alertType === 'caution') icon = '🛑';
+        let iconHtml = '<i class="fa-solid fa-circle-info" style="color: #0284c7;"></i>';
+        if (alertType === 'tip') iconHtml = '<i class="fa-solid fa-lightbulb" style="color: #16a34a;"></i>';
+        else if (alertType === 'important') iconHtml = '<i class="fa-solid fa-circle-exclamation" style="color: #9333ea;"></i>';
+        else if (alertType === 'warning') iconHtml = '<i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i>';
+        else if (alertType === 'caution') iconHtml = '<i class="fa-solid fa-ban" style="color: #dc2626;"></i>';
 
         return `\n<div class="markdown-alert markdown-alert-${alertType}">
           <div style="font-weight: bold; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            <span>${icon}</span> <span>${title}</span>
+            ${iconHtml} <span>${title}</span>
           </div>
           <div>${renderInline(cleanContent)}</div>
         </div>\n`;
@@ -9268,23 +9409,29 @@ def on_action(ctx, action_name, payload):
         document.getElementById('addon-modal-author').textContent = `By ${addon.author || 'FiestaSMP Team'} • Official Verified Package`;
 
         // Icon
+        const headerIcon = document.getElementById('addon-modal-header-icon');
+        if (headerIcon) {
+          if (addon.icon && addon.icon.startsWith('fa')) {
+            headerIcon.className = addon.icon;
+          } else {
+            headerIcon.className = 'fas fa-puzzle-piece';
+          }
+        }
+
         const iconBadge = document.getElementById('addon-modal-icon-badge');
         if (iconBadge) {
-          if (addon.icon && addon.icon.startsWith('fa')) {
-            iconBadge.innerHTML = `<i class="${escapeHtml(addon.icon)}"></i>`;
-          } else {
-            iconBadge.innerHTML = `<span style="font-size: 13px; font-weight: bold;">EXT</span>`;
-          }
+          iconBadge.innerHTML = getAddonIconHtml(addon.icon, 28);
         }
 
         // Factual stats
         const stats = addon.stats || {};
-        const ratingVal = (stats.rating_score || addon.rating || 5.0).toFixed(2);
-        const reviewsCount = stats.reviews_count || 0;
-        const installsCount = (stats.installs_count || addon.downloads || 0).toLocaleString();
+        const ratingVal = stats.rating_score !== undefined ? stats.rating_score : (addon.rating || 0);
+        const ratingStr = ratingVal > 0 ? ratingVal.toFixed(1) + ' / 5.0' : 'Unrated';
+        const reviewsCount = stats.reviews_count !== undefined ? stats.reviews_count : (addon.reviews ? addon.reviews.length : 0);
+        const installsCount = stats.install_count !== undefined ? stats.install_count : (addon.installed ? 1 : 0);
 
-        document.getElementById('addon-modal-stat-rating').textContent = `★ ${ratingVal} / 5.0`;
-        document.getElementById('addon-modal-stat-reviews').textContent = `${reviewsCount} verified reviews`;
+        document.getElementById('addon-modal-stat-rating').textContent = ratingStr;
+        document.getElementById('addon-modal-stat-reviews').textContent = `${reviewsCount} user review(s)`;
         document.getElementById('addon-modal-stat-installs').textContent = installsCount;
         
         const statusEl = document.getElementById('addon-modal-stat-status');
@@ -9298,7 +9445,7 @@ def on_action(ctx, action_name, payload):
           }
         }
 
-        // Dependency ribbon
+        // Dependency ribbon (With non-wrapping buttons and clean icons)
         const depStatus = addon.dependency_status || { all_satisfied: true, plugins: [] };
         const depsBanner = document.getElementById('addon-modal-deps-banner');
         if (depsBanner) {
@@ -9306,11 +9453,13 @@ def on_action(ctx, action_name, payload):
             depsBanner.style.background = 'rgba(34, 197, 94, 0.08)';
             depsBanner.style.borderBottomColor = 'rgba(34, 197, 94, 0.3)';
             depsBanner.innerHTML = `
-              <div style="display: flex; align-items: center; gap: 8px; color: #15803d;">
-                <span style="font-size: 14px;">✅</span>
-                <span><strong>All Server Dependencies Satisfied:</strong> Verified compatible with <strong>${escapeHtml(depStatus.server_engine || 'Paper')}</strong>.</span>
+              <div style="display: flex; align-items: center; gap: 8px; color: #15803d; min-width: 0; flex: 1; overflow: hidden;">
+                <i class="fa-solid fa-circle-check" style="font-size: 14px; flex-shrink: 0; color: #16a34a;"></i>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><strong>All Server Dependencies Satisfied:</strong> Verified compatible with <strong>${escapeHtml(depStatus.server_engine || 'Paper')}</strong>.</span>
               </div>
-              <button class="btn-classic" style="font-size: 10px; padding: 2px 8px;" onclick="switchAddonModalTab('deps')">[ View Dependency Spec ]</button>
+              <div style="flex-shrink: 0; white-space: nowrap;">
+                <button class="btn-classic" style="font-size: 11px; padding: 3px 10px; white-space: nowrap; font-weight: bold;" onclick="switchAddonModalTab('deps')">[ Dependency Spec ]</button>
+              </div>
             `;
           } else {
             const missingList = depStatus.plugins.filter(p => !p.satisfied && p.required);
@@ -9318,13 +9467,13 @@ def on_action(ctx, action_name, payload):
             depsBanner.style.background = 'rgba(245, 158, 11, 0.12)';
             depsBanner.style.borderBottomColor = 'rgba(245, 158, 11, 0.35)';
             depsBanner.innerHTML = `
-              <div style="display: flex; align-items: center; gap: 8px; color: #b45309;">
-                <span style="font-size: 14px;">⚠️</span>
-                <span><strong>Plugin Dependency Required:</strong> Missing <strong>${missingNames}</strong> in Minecraft /plugins directory.</span>
+              <div style="display: flex; align-items: center; gap: 8px; color: #b45309; min-width: 0; flex: 1; overflow: hidden;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 14px; flex-shrink: 0; color: #d97706;"></i>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Missing ${missingNames} in /plugins"><strong>Plugin Dependency Required:</strong> Missing <strong>${missingNames}</strong> in /plugins.</span>
               </div>
-              <div style="display: flex; gap: 6px;">
-                ${missingList[0] && missingList[0].download_url ? `<a href="${missingList[0].download_url}" target="_blank" rel="noopener" class="btn-classic" style="text-decoration:none;font-weight:bold;color:#006622;font-size:10px;padding:2px 8px;">[ Download Plugin ↗ ]</a>` : ''}
-                <button class="btn-classic" style="font-size: 10px; padding: 2px 8px;" onclick="switchAddonModalTab('deps')">[ Details ]</button>
+              <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; white-space: nowrap;">
+                ${missingList[0] && missingList[0].download_url ? `<a href="${missingList[0].download_url}" target="_blank" rel="noopener" class="btn-classic" style="text-decoration:none;font-weight:bold;color:#006622;font-size:11px;padding:3px 10px;white-space:nowrap;display:inline-block;">[ Download Plugin ]</a>` : ''}
+                <button class="btn-classic" style="font-size: 11px; padding: 3px 10px; white-space: nowrap; font-weight: bold;" onclick="switchAddonModalTab('deps')">[ Dependency Details ]</button>
               </div>
             `;
           }
@@ -9354,15 +9503,15 @@ def on_action(ctx, action_name, payload):
                 <td><span class="inline-badge" style="${p.required ? 'background:#fee2e2;color:#991b1b;' : 'background:#f1f5f9;color:#475569;'}">${p.required ? 'Mandatory' : 'Optional'}</span></td>
                 <td>
                   ${p.satisfied ? `
-                    <span style="color:#16a34a;font-weight:bold;">✓ Satisfied</span>
+                    <span style="color:#16a34a;font-weight:bold;"><i class="fa-solid fa-check" style="margin-right:4px;"></i> Satisfied</span>
                     ${p.detected_plugin ? `<div style="font-size:10px;color:#64748b;">Detected: ${escapeHtml(p.detected_plugin)}</div>` : ''}
                   ` : `
-                    <span style="color:#dc2626;font-weight:bold;">✗ Not Found in /plugins</span>
+                    <span style="color:#dc2626;font-weight:bold;"><i class="fa-solid fa-xmark" style="margin-right:4px;"></i> Not Found in /plugins</span>
                   `}
                 </td>
                 <td>
                   ${p.download_url ? `
-                    <a href="${p.download_url}" target="_blank" rel="noopener" class="btn-classic" style="text-decoration:none;font-weight:bold;color:#006622;font-size:11px;padding:2px 8px;">[ Download Plugin ↗ ]</a>
+                    <a href="${p.download_url}" target="_blank" rel="noopener" class="btn-classic" style="text-decoration:none;font-weight:bold;color:#006622;font-size:11px;padding:3px 10px;white-space:nowrap;display:inline-block;">[ Download Plugin ]</a>
                   ` : `<span style="color:#94a3b8;font-size:11px;">Included</span>`}
                 </td>
               </tr>
@@ -9447,33 +9596,61 @@ def on_action(ctx, action_name, payload):
           }
         }
 
-        // Tab 4: Reviews & Rating Breakdown
+        // Tab 4: Factual Reviews & Dynamic Submission Form
         const reviewsTab = document.getElementById('addon-modal-tab-reviews');
         if (reviewsTab) {
-          const breakdown = stats.rating_breakdown || { "5_star": 100, "4_star": 10, "3_star": 2, "2_star": 0, "1_star": 0 };
-          const totalRev = reviewsCount || 1;
+          const breakdown = stats.rating_breakdown || { "5_star": 0, "4_star": 0, "3_star": 0, "2_star": 0, "1_star": 0 };
+          const totalRev = reviewsCount || 0;
           const stars = [5, 4, 3, 2, 1];
           const barsHtml = stars.map(s => {
             const count = breakdown[`${s}_star`] || 0;
-            const pct = Math.round((count / totalRev) * 100);
+            const pct = totalRev > 0 ? Math.round((count / totalRev) * 100) : 0;
             return `
               <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 11.5px;">
-                <span style="width: 50px; text-align: right; color: #eab308; font-weight: bold;">${s} ★</span>
+                <span style="width: 55px; text-align: right; color: #d97706; font-weight: bold;">${s} Stars</span>
                 <div style="flex: 1; height: 10px; background: rgba(0,0,0,0.1); border-radius: 5px; overflow: hidden;">
                   <div style="width: ${pct}%; height: 100%; background: #eab308; border-radius: 5px;"></div>
                 </div>
-                <span style="width: 70px; color: #64748b; font-size: 10.5px;">${count} (${pct}%)</span>
+                <span style="width: 75px; color: #64748b; font-size: 10.5px;">${count} (${pct}%)</span>
               </div>
             `;
           }).join('');
 
+          const reviewsList = addon.reviews || [];
+          let reviewsListHtml = '';
+          if (reviewsList.length === 0) {
+            reviewsListHtml = `
+              <div class="inline-hint" style="padding: 20px; text-align: center; background: rgba(0,0,0,0.02); border-radius: 4px; border: 1px dashed rgba(128,128,128,0.2);">
+                No user reviews submitted yet for this addon. Be the first to share your review below!
+              </div>
+            `;
+          } else {
+            reviewsListHtml = reviewsList.map(r => `
+              <div style="padding: 12px 14px; background: rgba(0,0,0,0.02); border-left: 3px solid #0284c7; border-radius: 0 4px 4px 0; margin-bottom: 10px; border: 1px solid rgba(128,128,128,0.15); border-left-width: 3px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px;">
+                  <div>
+                    <strong style="color: #0284c7;"><i class="fa-solid fa-user" style="font-size: 11px; margin-right: 4px;"></i>${escapeHtml(r.reviewer || 'Administrator')}</strong>
+                    <span style="font-size: 10.5px; color: #64748b; margin-left: 8px;">${escapeHtml(r.created_at || '')}</span>
+                  </div>
+                  <div style="color: #eab308; font-weight: bold; font-size: 11.5px; display: flex; align-items: center;">
+                    ${renderStarRating(r.rating)}
+                    <span style="font-size: 11px; color: #64748b; margin-left: 6px;">(${r.rating}/5)</span>
+                  </div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-color, #334155); line-height: 1.45;">
+                  ${escapeHtml(r.comment)}
+                </div>
+              </div>
+            `).join('');
+          }
+
           reviewsTab.innerHTML = `
             <div style="display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap;">
-              <div style="text-align: center; padding: 18px 24px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px solid rgba(128,128,128,0.2); min-width: 160px;">
-                <div style="font-size: 34px; font-weight: bold; color: #d97706; line-height: 1;">${ratingVal}</div>
-                <div style="color: #eab308; font-size: 16px; margin: 4px 0;">★★★★★</div>
-                <div style="font-size: 11px; color: #64748b;">${reviewsCount} verified ratings</div>
-                <div style="font-size: 10px; color: #16a34a; margin-top: 6px; font-weight: bold;">✓ 100% Authentic Telemetry</div>
+              <div style="text-align: center; padding: 18px 24px; background: rgba(0,0,0,0.03); border-radius: 6px; border: 1px solid rgba(128,128,128,0.2); min-width: 170px;">
+                <div style="font-size: 32px; font-weight: bold; color: #d97706; line-height: 1;">${ratingVal > 0 ? ratingVal.toFixed(1) : '—'}</div>
+                <div style="color: #eab308; font-size: 14px; margin: 6px 0;">${renderStarRating(ratingVal)}</div>
+                <div style="font-size: 11px; color: #64748b;">${reviewsCount} verified user review(s)</div>
+                <div style="font-size: 11px; color: #0284c7; margin-top: 8px; font-weight: bold;">${installsCount} local server install(s)</div>
               </div>
               <div style="flex: 1; min-width: 260px;">
                 <h4 style="margin: 0 0 10px 0; font-size: 13px;">Rating Distribution</h4>
@@ -9481,26 +9658,31 @@ def on_action(ctx, action_name, payload):
               </div>
             </div>
 
-            <h4 style="margin: 0 0 10px 0; font-size: 13px;">Community Feedback &amp; Verification</h4>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              <div style="padding: 10px 14px; background: rgba(0,0,0,0.02); border-left: 3px solid #22c55e; border-radius: 0 4px 4px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
-                  <strong style="color: #15803d;">Verified Server Administrator</strong>
-                  <span style="color: #eab308;">★★★★★</span>
-                </div>
-                <div style="font-size: 12px; color: #475569;">
-                  Production-tested on Paper 26.3 with 0 TPS degradation. Setup completed in under 2 minutes.
-                </div>
+            <!-- Submit Review Form -->
+            <div style="background: rgba(0,0,0,0.03); border: 1px solid var(--terminal-border, rgba(128,128,128,0.2)); border-radius: 6px; padding: 14px 18px; margin-bottom: 22px;">
+              <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #0284c7;">Submit a Review</h4>
+              <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: bold;">Rating Score:</label>
+                <select id="addon-review-rating-select" class="ctrl-input" style="width: 160px; font-size: 12px; height: 26px;">
+                  <option value="5" selected>5 Stars (Excellent)</option>
+                  <option value="4">4 Stars (Good)</option>
+                  <option value="3">3 Stars (Average)</option>
+                  <option value="2">2 Stars (Poor)</option>
+                  <option value="1">1 Star (Terrible)</option>
+                </select>
               </div>
-              <div style="padding: 10px 14px; background: rgba(0,0,0,0.02); border-left: 3px solid #0284c7; border-radius: 0 4px 4px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
-                  <strong style="color: #0369a1;">FiestaSMP Core Team</strong>
-                  <span style="color: #eab308;">★★★★★</span>
-                </div>
-                <div style="font-size: 12px; color: #475569;">
-                  Officially maintained, signed, and tested against all recent Minecraft server builds.
-                </div>
+              <div style="margin-bottom: 10px;">
+                <textarea id="addon-review-comment-input" class="ctrl-input" style="width: 100%; height: 60px; font-size: 12px; padding: 6px 8px; box-sizing: border-box; resize: vertical;" placeholder="Write your review or feedback about this addon..."></textarea>
               </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <button id="addon-review-submit-btn" class="btn-classic" style="font-weight: bold; padding: 4px 16px; color: #0284c7;" onclick="submitAddonReview('${escapeQuotes(addon.id)}')">[ Submit Review ]</button>
+                <span id="addon-review-form-status" style="font-size: 11.5px; font-weight: bold;"></span>
+              </div>
+            </div>
+
+            <h4 style="margin: 0 0 12px 0; font-size: 13px;">User Reviews (${reviewsList.length})</h4>
+            <div id="addon-modal-reviews-list" style="display: flex; flex-direction: column;">
+              ${reviewsListHtml}
             </div>
           `;
         }
@@ -9515,13 +9697,13 @@ def on_action(ctx, action_name, payload):
         if (footerActions) {
           if (addon.installed) {
             footerActions.innerHTML = `
-              <button class="btn-classic" style="color: #b91c1c; font-weight: bold;" onclick="uninstallFromModal('${escapeQuotes(addon.id)}')">[ 🗑️ Uninstall ]</button>
-              <button class="btn-classic" style="color: #15803d; font-weight: bold; background: rgba(34,197,94,0.1);" onclick="openAddonFromModal('${escapeQuotes(addon.id)}', '${escapeQuotes(addon.name)}')">[ 🚀 Open Addon Tab ]</button>
+              <button class="btn-classic" style="color: #b91c1c; font-weight: bold;" onclick="uninstallFromModal('${escapeQuotes(addon.id)}')">[ Uninstall ]</button>
+              <button class="btn-classic" style="color: #15803d; font-weight: bold; background: rgba(34,197,94,0.1);" onclick="openAddonFromModal('${escapeQuotes(addon.id)}', '${escapeQuotes(addon.name)}')">[ Open Addon Tab ]</button>
               <button class="btn-classic" style="font-weight: bold;" onclick="closeAddonDetailModal()">[ Close ]</button>
             `;
           } else {
             footerActions.innerHTML = `
-              <button class="btn-classic" style="color: #006622; font-weight: bold; padding: 4px 18px;" onclick="installFromModal('${escapeQuotes(addon.id)}', this)">[ ⬇️ Install Addon ]</button>
+              <button class="btn-classic" style="color: #006622; font-weight: bold; padding: 4px 18px;" onclick="installFromModal('${escapeQuotes(addon.id)}', this)">[ Install Addon ]</button>
               <button class="btn-classic" style="font-weight: bold;" onclick="closeAddonDetailModal()">[ Close ]</button>
             `;
           }
@@ -9536,6 +9718,60 @@ def on_action(ctx, action_name, payload):
       const modal = document.getElementById('tp-addon-detail-modal');
       if (modal) modal.style.display = 'none';
       currentModalAddon = null;
+    }
+
+    async function submitAddonReview(addonId) {
+      const selectEl = document.getElementById('addon-review-rating-select');
+      const commentEl = document.getElementById('addon-review-comment-input');
+      const statusEl = document.getElementById('addon-review-form-status');
+      const btnEl = document.getElementById('addon-review-submit-btn');
+
+      if (!commentEl || !commentEl.value.trim()) {
+        if (statusEl) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = 'Please enter a review comment.';
+        }
+        return;
+      }
+
+      const rating = parseInt(selectEl.value, 10);
+      const comment = commentEl.value.trim();
+
+      if (btnEl) btnEl.disabled = true;
+      if (statusEl) {
+        statusEl.style.color = '#0284c7';
+        statusEl.textContent = 'Submitting review...';
+      }
+
+      try {
+        const res = await fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating, comment })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (statusEl) {
+            statusEl.style.color = '#16a34a';
+            statusEl.textContent = 'Review submitted successfully!';
+          }
+          await openAddonDetailModal(addonId);
+          switchAddonModalTab('reviews');
+          await loadPanelAddonStore();
+        } else {
+          if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.textContent = data.error || 'Failed to submit review.';
+          }
+          if (btnEl) btnEl.disabled = false;
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = 'Network error submitting review.';
+        }
+        if (btnEl) btnEl.disabled = false;
+      }
     }
 
     function switchAddonModalTab(tabName, btn) {
