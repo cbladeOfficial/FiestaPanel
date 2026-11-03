@@ -9,6 +9,9 @@
       try {
         var t = localStorage.getItem('fiesta_portal_theme') || 'classic';
         document.documentElement.setAttribute('data-theme', t);
+        if (t === 'win7') {
+          document.documentElement.classList.add('win7');
+        }
         if (t === 'custom') {
           var c = localStorage.getItem('fiesta_portal_custom_theme');
           if (c) {
@@ -23,6 +26,8 @@
       } catch(e) {}
     })();
   </script>
+  <!-- 7.css by Khang NT (https://github.com/khang-nd/7.css) for authentic Windows 7 Aero styling -->
+  <link rel="stylesheet" href="/static/7.scoped.css">
   <style>
     /* ── NATIVE THEME DEFINITIONS ────────────────────────────── */
     :root, [data-theme="classic"] {
@@ -1222,194 +1227,370 @@
     }
 
     [data-theme="win7"] {
-      --bg-page: #0b2034;
-      --bg-frame: rgba(255, 255, 255, 0.95);
-      --border-frame: #3c7fb1;
-      --header-grad-1: #9fd1fa;
-      --header-grad-2: #4a90d9;
-      --header-grad-3: #2e74be;
-      --header-top-border: rgba(255, 255, 255, 0.85);
-      --header-bot-border: #1d5796;
-      --header-sub-color: #0c325c;
-      --header-link-color: #004080;
+      --bg-page: #06192d;
+      --bg-frame: rgba(255, 255, 255, 0.96);
+      --border-frame: #3285c7;
+      --header-grad-1: #8eccf9;
+      --header-grad-2: #2f8ee2;
+      --header-grad-3: #115da8;
+      --header-top-border: rgba(255, 255, 255, 0.95);
+      --header-bot-border: #0a4076;
+      --header-sub-color: #05264a;
+      --header-link-color: #003e7e;
       
-      --nav-bg: #edf4fa;
-      --nav-border-top: #d4e5f5;
-      --nav-border-bot: #a8c8e6;
-      --nav-parent-hover: #d8ecfa;
-      --nav-parent-active-bg: #b8dbf7;
-      --nav-parent-active-text: #003366;
+      --nav-bg: #eaf3fb;
+      --nav-border-top: #cbe0f4;
+      --nav-border-bot: #9ec3e5;
+      --nav-parent-hover: #d5e9f8;
+      --nav-parent-active-bg: #a8d5f8;
+      --nav-parent-active-text: #022549;
       --nav-sub-bg: #f4f9fd;
-      --nav-sub-item-color: #1a3d60;
+      --nav-sub-item-color: #103356;
       --nav-sub-item-hover-bg: #dbeefa;
-      --nav-sub-item-active-color: #004b91;
-      --nav-sub-item-active-bg: #cbe5f8;
+      --nav-sub-item-active-color: #003e7a;
+      --nav-sub-item-active-bg: #c4e4fb;
       
       --workspace-bg: #ffffff;
-      --text-main: #1a1a1a;
-      --text-bold: #0c2b4e;
-      --text-sub: #4b6584;
+      --text-main: #111111;
+      --text-bold: #052242;
+      --text-sub: #3d5e82;
       
-      --sec-bar-bg: #b8dbf7;
-      --sec-bar-text: #0c3562;
-      --sec-bar-border: #7eaed7;
-      --sec-sub-bg: #f0f6fc;
-      --sec-sub-border: #8cb8df;
-      --sec-sub-text: #0f3b6c;
+      --sec-bar-bg: #a8d5f8;
+      --sec-bar-text: #062b54;
+      --sec-bar-border: #6fa7d5;
+      --sec-sub-bg: #eff6fd;
+      --sec-sub-border: #7eaed7;
+      --sec-sub-text: #093462;
       
-      --table-border: #c3d9ed;
-      --table-th-bg: #e5f0fa;
-      --table-th-border: #b6d2ea;
-      --table-th-text: #0c3562;
-      --table-td-border: #e2edf7;
-      --table-td-text: #1a1a1a;
-      --table-even-row: #f8fbfe;
-      --table-hover-row: #e5f3fc;
-      --form-td-border: #edf4fa;
+      --table-border: #b8d4ed;
+      --table-th-bg: #e2f0fb;
+      --table-th-border: #9ec6e8;
+      --table-th-text: #062b54;
+      --table-td-border: #dbe9f6;
+      --table-td-text: #111111;
+      --table-even-row: #f6fafe;
+      --table-hover-row: #e0f1fd;
+      --form-td-border: #e6f0fa;
       
       --input-bg: #ffffff;
       --input-border: #7f9db9;
       --input-text: #000000;
-      --input-focus-border: #3c7fb1;
-      --input-focus-shadow: 0 0 4px #34deff;
+      --input-focus-border: #2b7bb8;
+      --input-focus-shadow: 0 0 6px #34deff;
       
-      --btn-classic-grad-1: #f2f2f2;
+      --btn-classic-grad-1: #f8f8f8;
       --btn-classic-grad-2: #cfcfcf;
-      --btn-classic-border: #8e8f8f;
-      --btn-classic-text: #1a1a1a;
-      --btn-classic-hover-1: #eaf6fd;
-      --btn-classic-hover-2: #a7d9f5;
-      --btn-classic-active-bg: #98d1ef;
+      --btn-classic-border: #7b7d80;
+      --btn-classic-text: #111111;
+      --btn-classic-hover-1: #eef7fe;
+      --btn-classic-hover-2: #a5d7f7;
+      --btn-classic-active-bg: #8ecbf7;
       
-      --btn-satin-grad-1: #4aa3e8;
-      --btn-satin-grad-2: #1d6bb3;
-      --btn-satin-border: #155694;
-      --btn-satin-hover-1: #62b4f3;
-      --btn-satin-hover-2: #257ecf;
-      --btn-satin-active-bg: #155598;
+      --btn-satin-grad-1: #5bb4f8;
+      --btn-satin-grad-2: #166bb5;
+      --btn-satin-border: #134e85;
+      --btn-satin-hover-1: #74c3fc;
+      --btn-satin-hover-2: #1f7ecc;
+      --btn-satin-active-bg: #124c82;
       
-      --help-bg: #f5f9fc;
-      --help-border: #c8ddf0;
-      --help-header-text: #004080;
-      --help-sub-text: #1c5fa0;
-      --help-body-text: #2c4660;
+      --help-bg: #f4f9fd;
+      --help-border: #bfdaf0;
+      --help-header-text: #003e7e;
+      --help-sub-text: #165694;
+      --help-body-text: #244160;
       
-      --footer-bg: #dceaf5;
-      --footer-border: #b0cde6;
-      --footer-text: #4b6a8a;
+      --footer-bg: #d7e8f5;
+      --footer-border: #a4c7e4;
+      --footer-text: #3c5e82;
       
       --modal-bg: #ffffff;
-      --modal-border: #3c7fb1;
-      --terminal-bg: #0d1721;
-      --terminal-border: #3c7fb1;
-      --terminal-text: #80d4ff;
+      --modal-border: #2f8ee2;
+      --terminal-bg: #07131f;
+      --terminal-border: #2f8ee2;
+      --terminal-text: #66ccff;
       
       --card-bg: #ffffff;
-      --card-border: #b6d2ea;
-      --card-hover-border: #3c7fb1;
-      --card-active-bg: #eaf5fd;
-      --badge-perm-bg: #e1edf7;
-      --badge-perm-border: #aed1ed;
-      --badge-perm-text: #0a3d70;
+      --card-border: #a8cded;
+      --card-hover-border: #2b7bb8;
+      --card-active-bg: #e6f3fd;
+      --badge-perm-bg: #d7ecfc;
+      --badge-perm-border: #9ec9f0;
+      --badge-perm-text: #08386b;
     }
 
-    /* Windows 7 Aero Glass Engine Overrides (based on 7.css) */
+    /* Windows 7 Aero Glass Engine (Powered by 7.css by Khang NT) */
     [data-theme="win7"] body {
-      background: radial-gradient(ellipse at 50% 20%, #205c90 0%, #0d2844 60%, #051424 100%) fixed !important;
-      font-family: "Segoe UI", "SegoeUI", Tahoma, Verdana, sans-serif !important;
+      background: 
+        radial-gradient(circle at 50% 8%, rgba(68, 179, 255, 0.85) 0%, rgba(26, 120, 205, 0.7) 25%, transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(0, 45, 95, 0.9) 0%, rgba(3, 16, 32, 0.98) 100%),
+        linear-gradient(180deg, #1860a4 0%, #0c3666 40%, #051a33 75%, #020b17 100%) fixed !important;
+      background-color: #06192d !important;
+      font-family: "Segoe UI", "SegoeUI", "Noto Sans", sans-serif !important;
     }
 
     [data-theme="win7"] .console-frame {
       border-radius: 8px !important;
       overflow: hidden;
-      border: 1px solid rgba(60, 127, 177, 0.7) !important;
-      box-shadow: 0 12px 36px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.4) inset !important;
+      border: 1px solid rgba(130, 195, 255, 0.85) !important;
+      box-shadow: 
+        0 20px 60px rgba(0, 15, 45, 0.8), 
+        0 0 0 1px rgba(255, 255, 255, 0.75) inset, 
+        0 0 30px rgba(0, 150, 255, 0.5) !important;
+      backdrop-filter: blur(16px) saturate(190%) !important;
+      background: rgba(255, 255, 255, 0.96) !important;
     }
 
     [data-theme="win7"] .header-bar {
-      background: linear-gradient(to bottom, rgba(255,255,255,0.75) 0%, rgba(200,230,255,0.45) 45%, rgba(130,185,240,0.5) 46%, rgba(175,215,255,0.75) 100%), linear-gradient(to bottom, #72aade, #3c7fb1) !important;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
-      border-top: 1px solid rgba(255,255,255,0.9) !important;
-      border-bottom: 2px solid #1d5796 !important;
+      background: 
+        linear-gradient(to bottom, 
+          rgba(255,255,255,0.9) 0%, 
+          rgba(220,242,255,0.6) 45%, 
+          rgba(100,185,250,0.5) 46%, 
+          rgba(170,225,255,0.85) 100%
+        ),
+        linear-gradient(180deg, #2587db 0%, #115ea9 50%, #0a437c 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 6px rgba(0,20,50,0.25) !important;
+      border-top: 1px solid rgba(255,255,255,0.95) !important;
+      border-bottom: 2px solid #093b6e !important;
+      position: relative;
+    }
+
+    [data-theme="win7"] .win7-title-controls {
+      display: flex !important;
+      align-items: stretch;
+      height: 20px;
+      margin-left: 8px;
+      border: 1px solid rgba(10, 50, 100, 0.65);
+      border-top: none;
+      border-radius: 0 0 3px 3px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="win7"] .win7-btn-min,
+    [data-theme="win7"] .win7-btn-max,
+    [data-theme="win7"] .win7-btn-close {
+      width: 28px;
+      height: 20px;
+      border: none;
+      border-right: 1px solid rgba(0, 40, 80, 0.3);
+      cursor: pointer;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.75) 0%, rgba(210,235,255,0.45) 48%, rgba(145,200,250,0.55) 49%, rgba(195,230,255,0.75) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      outline: none;
+    }
+
+    [data-theme="win7"] .win7-btn-min:hover,
+    [data-theme="win7"] .win7-btn-max:hover {
+      background: linear-gradient(to bottom, #eff8fe 0%, #d8ecfc 48%, #a4d6f9 49%, #c0e4fb 100%) !important;
+      box-shadow: 0 0 8px rgba(50, 170, 255, 0.9), inset 0 1px 0 #ffffff !important;
+    }
+
+    [data-theme="win7"] .win7-btn-close {
+      width: 44px;
+      border-right: none;
+      background: linear-gradient(to bottom, #f79688 0%, #e95343 48%, #cc2414 49%, #e45544 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 0 4px rgba(220, 40, 20, 0.4);
+    }
+
+    [data-theme="win7"] .win7-btn-close:hover {
+      background: linear-gradient(to bottom, #ffa799 0%, #fc6454 48%, #e12d1d 49%, #f46353 100%) !important;
+      box-shadow: 0 0 12px rgba(255, 60, 30, 0.95), inset 0 1px 0 #ffffff !important;
+    }
+
+    [data-theme="win7"] .win7-btn-min::after {
+      content: "";
+      width: 9px;
+      height: 2px;
+      background: #002244;
+      display: block;
+      margin-top: 6px;
+    }
+
+    [data-theme="win7"] .win7-btn-max::after {
+      content: "";
+      width: 9px;
+      height: 8px;
+      border: 1px solid #002244;
+      border-top-width: 2px;
+      display: block;
+    }
+
+    [data-theme="win7"] .win7-btn-close::after {
+      content: "✕";
+      font-size: 11px;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(50, 0, 0, 0.8);
+      line-height: 1;
     }
 
     [data-theme="win7"] .brand-logo {
-      color: #08213e !important;
-      text-shadow: 0 0 10px #ffffff, 0 0 4px #ffffff !important;
-      font-weight: bold;
+      color: #031c38 !important;
+      text-shadow: 
+        0 0 16px #ffffff, 
+        0 0 8px #ffffff, 
+        0 0 4px #b8e2ff, 
+        0 1px 2px rgba(0, 20, 60, 0.8) !important;
+      font-weight: 700 !important;
     }
 
     [data-theme="win7"] .brand-sub {
-      color: #0c325c !important;
-      text-shadow: 0 0 8px rgba(255,255,255,0.8) !important;
+      color: #062b54 !important;
+      text-shadow: 0 0 10px rgba(255,255,255,0.95), 0 1px 1px rgba(0,0,0,0.15) !important;
+      font-weight: 600;
     }
 
-    [data-theme="win7"] .model-title {
-      color: #08213e !important;
-      text-shadow: 0 0 10px #ffffff, 0 0 4px #ffffff !important;
+    [data-theme="win7"] .model-title,
+    [data-theme="win7"] .model-info-block strong {
+      color: #031c38 !important;
+      text-shadow: 0 0 10px #ffffff, 0 0 4px #b8e2ff !important;
     }
 
     [data-theme="win7"] .model-info-block div {
-      color: #08213e !important;
-      text-shadow: 0 0 8px rgba(255,255,255,0.7);
-    }
-    [data-theme="win7"] .model-info-block strong {
-      color: #003366 !important;
+      color: #052447 !important;
+      text-shadow: 0 0 8px rgba(255,255,255,0.85);
     }
 
     [data-theme="win7"] .section-title-bar,
     [data-theme="win7"] .section-sub-header {
-      background: linear-gradient(to bottom, #f2f7fc 0%, #dceefc 45%, #b8dbf7 46%, #cde5f9 100%) !important;
-      color: #0c3562 !important;
-      border: 1px solid #7eaed7 !important;
+      background: linear-gradient(to bottom, #f2f8fe 0%, #d4eafc 45%, #a8d5f8 46%, #c2e2fa 100%) !important;
+      color: #072a50 !important;
+      border: 1px solid #6fa7d5 !important;
       border-radius: 3px !important;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.06) !important;
+      font-weight: 700;
     }
 
-    [data-theme="win7"] .btn-classic {
-      background: linear-gradient(to bottom, #f2f2f2 45%, #ebebeb 45%, #cfcfcf) !important;
-      border: 1px solid #8e8f8f !important;
-      border-radius: 3px !important;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8) !important;
-      color: #222222 !important;
-      transition: all 0.2s ease;
-    }
-    [data-theme="win7"] .btn-classic:hover {
-      background: linear-gradient(to bottom, #eaf6fd 45%, #bee6fd 45%, #a7d9f5) !important;
-      border-color: #3c7fb1 !important;
-      box-shadow: 0 0 4px #34deff !important;
-    }
-
-    [data-theme="win7"] .btn-satin-green,
-    [data-theme="win7"] .login-btn {
-      background: linear-gradient(to bottom, #5cb4f8 0%, #3695e2 45%, #186bb5 46%, #287fce 100%) !important;
-      border: 1px solid #155694 !important;
-      border-radius: 3px !important;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7) !important;
-      color: #ffffff !important;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.4) !important;
-    }
-    [data-theme="win7"] .btn-satin-green:hover,
-    [data-theme="win7"] .login-btn:hover {
-      background: linear-gradient(to bottom, #72c1fb 0%, #4da7ec 45%, #207ecf 46%, #3392e2 100%) !important;
-      box-shadow: 0 0 6px #34deff, inset 0 1px 0 rgba(255,255,255,0.9) !important;
+    [data-theme="win7"] .nav-frame {
+      background: linear-gradient(180deg, #f2f7fd 0%, #e1effa 100%) !important;
+      border-right: 1px solid #a8cde8 !important;
     }
 
     [data-theme="win7"] .nav-parent {
       border-radius: 3px;
-      margin: 2px 4px;
+      margin: 3px 6px;
+      transition: all 0.15s ease;
     }
+
+    [data-theme="win7"] .nav-parent:hover {
+      background: linear-gradient(to bottom, #eef6fd 0%, #d8ecfc 100%) !important;
+      color: #042549 !important;
+      box-shadow: 0 0 4px rgba(60, 160, 240, 0.4);
+    }
+
     [data-theme="win7"] .nav-parent.active {
-      background: linear-gradient(to bottom, #e5f2fd 0%, #cbe4f9 100%) !important;
-      color: #003366 !important;
-      border: 1px solid #7eaed7;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+      background: linear-gradient(to bottom, #dbeffc 0%, #b3ddfb 48%, #85c4f5 49%, #aee0fb 100%) !important;
+      color: #02244a !important;
+      border: 1px solid #3c88c7 !important;
+      box-shadow: inset 0 1px 0 #ffffff, 0 0 6px rgba(40, 150, 245, 0.6) !important;
+      font-weight: 700;
     }
-    [data-theme="win7"] .nav-sub-item.active {
+
+    [data-theme="win7"] .nav-sub-item:hover {
+      background: #e4f2fc !important;
       color: #004b91 !important;
-      background: #cbe5f8 !important;
-      font-weight: bold;
+    }
+
+    [data-theme="win7"] .nav-sub-item.active {
+      color: #003e7a !important;
+      background: linear-gradient(to bottom, #e0f0fd 0%, #c4e4fb 100%) !important;
+      font-weight: 700 !important;
+      border-left: 3px solid #167cd4 !important;
       border-radius: 2px;
+    }
+
+    [data-theme="win7"] .btn-classic {
+      background: linear-gradient(to bottom, #f6f6f6 0%, #f0f0f0 45%, #e0e0e0 46%, #d4d4d4 100%) !important;
+      border: 1px solid #7c7e80 !important;
+      border-radius: 3px !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.08) !important;
+      color: #1a1a1a !important;
+      font-family: "Segoe UI", sans-serif !important;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    [data-theme="win7"] .btn-classic:hover {
+      background: linear-gradient(to bottom, #eff8fe 0%, #e2f2fd 45%, #bee4fc 46%, #a9d9f8 100%) !important;
+      border-color: #3c7fb1 !important;
+      box-shadow: 0 0 6px #34deff, inset 0 1px 0 #ffffff !important;
+      color: #002b55 !important;
+    }
+
+    [data-theme="win7"] .btn-classic:active {
+      background: linear-gradient(to bottom, #d6edfc 0%, #b8e0fa 45%, #8ecbf7 46%, #6bb8ef 100%) !important;
+      border-color: #27628c !important;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.2) !important;
+    }
+
+    [data-theme="win7"] .btn-satin-green,
+    [data-theme="win7"] .login-btn {
+      background: linear-gradient(to bottom, #5bb4f8 0%, #3594e2 48%, #1569b4 49%, #277ece 100%) !important;
+      border: 1px solid #134e85 !important;
+      border-radius: 3px !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 0 6px rgba(25, 120, 220, 0.4) !important;
+      color: #ffffff !important;
+      text-shadow: 0 1px 2px rgba(0, 30, 80, 0.6) !important;
+      font-family: "Segoe UI", sans-serif !important;
+      font-weight: 700;
+    }
+
+    [data-theme="win7"] .btn-satin-green:hover,
+    [data-theme="win7"] .login-btn:hover {
+      background: linear-gradient(to bottom, #74c3fc 0%, #4ea9ed 48%, #1f7ecc 49%, #3493e3 100%) !important;
+      border-color: #104273 !important;
+      box-shadow: 0 0 10px #38d6ff, inset 0 1px 0 #ffffff !important;
+    }
+
+    [data-theme="win7"] .btn-danger-red {
+      background: linear-gradient(to bottom, #f68979 0%, #ea4f3f 48%, #c82010 49%, #e24e3e 100%) !important;
+      border: 1px solid #99190c !important;
+      border-radius: 3px !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 0 4px rgba(200, 30, 20, 0.3) !important;
+      color: #ffffff !important;
+      text-shadow: 0 1px 2px rgba(60, 0, 0, 0.6) !important;
+    }
+
+    [data-theme="win7"] .btn-danger-red:hover {
+      background: linear-gradient(to bottom, #ff9e8f 0%, #fc5e4e 48%, #de2818 49%, #f05c4c 100%) !important;
+      box-shadow: 0 0 8px rgba(255, 60, 30, 0.8), inset 0 1px 0 #ffffff !important;
+    }
+
+    [data-theme="win7"] .data-grid-table th {
+      background: linear-gradient(to bottom, #f5fafd 0%, #dceefc 48%, #bfe0fa 49%, #d2e8fb 100%) !important;
+      border-right: 1px solid #9ec6e8 !important;
+      border-bottom: 2px solid #5a9fd6 !important;
+      color: #072e56 !important;
+      font-weight: 700 !important;
+      box-shadow: inset 0 1px 0 #ffffff !important;
+    }
+
+    [data-theme="win7"] .data-grid-table tr:hover td {
+      background: #e4f3fd !important;
+    }
+
+    [data-theme="win7"] input[type="text"],
+    [data-theme="win7"] input[type="password"],
+    [data-theme="win7"] input[type="number"],
+    [data-theme="win7"] select,
+    [data-theme="win7"] textarea {
+      border: 1px solid #7f9db9 !important;
+      border-radius: 2px !important;
+      box-shadow: inset 1px 1px 2px rgba(0,0,0,0.12) !important;
+      font-family: "Segoe UI", sans-serif !important;
+    }
+
+    [data-theme="win7"] input:focus,
+    [data-theme="win7"] select:focus,
+    [data-theme="win7"] textarea:focus {
+      border-color: #3c7fb1 !important;
+      box-shadow: 0 0 6px #34deff, inset 0 0 0 1px #98d1ef !important;
+      outline: none !important;
     }
 
     [data-theme="win7"] .console-footer {
@@ -2556,6 +2737,11 @@
             <option value="custom">🎨 Custom Palette (Studio)</option>
           </select>
           <button class="btn-theme-quick" onclick="openThemeStudio()" title="Open Theme Studio &amp; Customizer">[ 🎨 Studio ]</button>
+          <div class="win7-title-controls" style="display: none;">
+            <button class="win7-btn-min" title="Minimize Window" type="button" onclick="windowToggleMin()"></button>
+            <button class="win7-btn-max" title="Maximize Window" type="button" onclick="windowToggleMax()"></button>
+            <button class="win7-btn-close" title="Close Session / Logout" type="button" onclick="window.location.href='/logout'"></button>
+          </div>
         </div>
         <div>
           User: <strong style="color: #ffffff;">{{ user }}</strong> (<span style="text-transform: capitalize;">{{ role }}</span>) | Gateway: <span id="top-online-state" class="badge-status online">● Online</span>
@@ -3975,6 +4161,17 @@
             <div class="section-sub-header">Built-in Themes Gallery</div>
             <div class="theme-gallery-grid" id="theme-gallery-grid">
               <!-- Rendered via JS loadThemeStudio() -->
+            </div>
+
+            <!-- Windows 7 & 7.css Framework Attribution -->
+            <div style="background: linear-gradient(to right, rgba(30, 112, 184, 0.08), rgba(52, 222, 255, 0.12)); border: 1px solid #7daed9; border-radius: 4px; padding: 10px 14px; margin: 10px 0 18px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <svg viewBox="0 0 32 32" width="26" height="24"><path d="M4 6 C8 4 12 7 15 6 L15 15 C12 16 8 13 4 15 Z" fill="#e73827"/><path d="M17 6 C20 4 24 7 28 5 L28 14 C24 16 20 13 17 15 Z" fill="#4fae32"/><path d="M4 17 C8 15 12 18 15 17 L15 26 C12 27 8 24 4 26 Z" fill="#0080ff"/><path d="M17 17 C20 15 24 18 28 16 L28 25 C24 27 20 24 17 26 Z" fill="#fbb03b"/></svg>
+                <div style="font-size: 11px; color: #003366; line-height: 1.4;">
+                  <strong>Windows 7 Aero Glass Theme:</strong> Faithfully styled with <a href="https://github.com/khang-nd/7.css" target="_blank" rel="noopener noreferrer" style="color: #0066cc; font-weight: bold; text-decoration: underline;">7.css</a> (Created by <strong>Khang NT</strong>, MIT License). Features authentic Aero Glass specular gloss highlights, Segoe UI typography, and 3D beveled push buttons.
+                </div>
+              </div>
+              <a href="https://github.com/khang-nd/7.css" target="_blank" rel="noopener noreferrer" class="btn-classic" style="text-decoration: none; padding: 3px 10px; font-size: 11px; font-weight: bold; color: #003366;">[ ↗ 7.css on GitHub ]</a>
             </div>
 
             <!-- Custom Theme Studio Section -->
@@ -7250,7 +7447,7 @@
       { id: 'nordic', name: '❄️ Nordic Glacier', desc: 'Crisp arctic ice-blue palette with high readability', mode: 'light', swatches: ['#244b6b', '#0288d1', '#ffffff', '#263238'] },
       { id: 'catppuccin', name: '☕ Catppuccin Mocha', desc: 'Cozy pastel developer palette with lavender accents', mode: 'dark', swatches: ['#1e1e2e', '#cba6f7', '#181825', '#cdd6f4'] },
       { id: 'win98', name: '🪟 Windows 98', desc: 'Nostalgic 1998 desktop OS teal wallpaper with 3D gray beveled dialogs', mode: 'retro', swatches: ['#000080', '#008080', '#c0c0c0', '#000000'] },
-      { id: 'win7', name: '🪟 Windows 7 Aero', desc: 'Aero Glass sky-blue gloss buttons & window chrome (7.css)', mode: 'glass', swatches: ['#4a90d9', '#3c7fb1', '#ffffff', '#003366'] },
+      { id: 'win7', name: '🪟 Windows 7 Aero', desc: 'Authentic Windows 7 Aero Glass styling powered by 7.css (by Khang NT)', mode: 'glass', swatches: ['#1e78c8', '#34deff', '#ffffff', '#042549'] },
       { id: 'custom', name: '🎨 Custom Palette', desc: 'Your personalized user-defined theme created in the studio below', mode: 'custom', swatches: ['#3a1359', '#00f0ff', '#181b1f', '#e2d4f5'] }
     ];
 
@@ -7339,6 +7536,13 @@
       }
 
       document.documentElement.setAttribute('data-theme', themeName);
+      if (themeName === 'win7') {
+        document.documentElement.classList.add('win7');
+        if (document.body) document.body.classList.add('win7');
+      } else {
+        document.documentElement.classList.remove('win7');
+        if (document.body) document.body.classList.remove('win7');
+      }
       try {
         localStorage.setItem('fiesta_portal_theme', themeName);
       } catch (e) {}
@@ -7398,6 +7602,38 @@
 
     function changeTheme(themeName) {
       applyTheme(themeName, false);
+    }
+
+    function windowToggleMin() {
+      const mb = document.querySelector('.main-body');
+      const foot = document.querySelector('.console-footer');
+      if (mb) {
+        const isCollapsed = mb.style.display === 'none';
+        mb.style.display = isCollapsed ? 'flex' : 'none';
+        if (foot) foot.style.display = isCollapsed ? 'flex' : 'none';
+        showBannerAlert(isCollapsed ? 'Window restored.' : 'Window minimized to title bar.');
+      }
+    }
+
+    function windowToggleMax() {
+      const frame = document.querySelector('.console-frame');
+      if (frame) {
+        frame.classList.toggle('maximized-window');
+        const isMax = frame.classList.contains('maximized-window');
+        if (isMax) {
+          frame.style.maxWidth = '100vw';
+          frame.style.width = '100vw';
+          frame.style.minHeight = '100vh';
+          frame.style.borderRadius = '0';
+          frame.style.margin = '0';
+        } else {
+          frame.style.maxWidth = '';
+          frame.style.width = '';
+          frame.style.minHeight = '';
+          frame.style.borderRadius = '';
+          frame.style.margin = '';
+        }
+      }
     }
 
     function openThemeStudio() {

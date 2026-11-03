@@ -89,12 +89,20 @@ panelctl version       # FiestaPanel Software Suite v2.0.0
 
 ## 🖼️ Themes Supported
 
-- **Windows 7 Aero**: Recreated with authentic specular gradient buttons, frosted glass window borders, and Segoe UI typography inspired by `7.css`.
+- **Windows 7 Aero**: Authentic design powered by [**7.css**](https://github.com/khang-nd/7.css) by Khang NT. Vibrant electric azure Aero Glass frames, specular glass reflection buttons, interactive titlebar controls (minimize/maximize/close), and Segoe UI typography.
 - **TP-Link Classic**: Retro 2000s router web interface.
 - **Windows 98**: Classic desktop bevels and teal aesthetic.
 - **Dark Mode**: High contrast OLED dark styling.
 - **Cyberpunk**: Neon cyan and magenta terminal aesthetics.
 - **Matrix**: Phosphor green CRT monitor glow.
+
+---
+
+## 🙏 Acknowledgements & Credits
+
+- [**7.css**](https://github.com/khang-nd/7.css) by **Khang NT** ([@khang-nd](https://github.com/khang-nd)) — Powers the authentic Windows 7 Aero Glass styling, glossy specular highlights, and window control buttons (MIT License).
+- [**Modrinth API**](https://modrinth.com) — Powers the built-in online Mod & Plugin search engine and 1-click installations.
+- [**PaperMC API**](https://papermc.io) — Real-time upstream server software version detection and binary downloads.
 
 ---
 

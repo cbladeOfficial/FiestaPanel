@@ -9,6 +9,9 @@
       try {
         var t = localStorage.getItem('fiesta_portal_theme') || 'classic';
         document.documentElement.setAttribute('data-theme', t);
+        if (t === 'win7') {
+          document.documentElement.classList.add('win7');
+        }
         if (t === 'custom') {
           var c = localStorage.getItem('fiesta_portal_custom_theme');
           if (c) {
@@ -23,6 +26,8 @@
       } catch(e) {}
     })();
   </script>
+  <!-- 7.css by Khang NT (https://github.com/khang-nd/7.css) for authentic Windows 7 Aero styling -->
+  <link rel="stylesheet" href="/static/7.scoped.css">
   <style>
     /* ── NATIVE THEME DEFINITIONS ────────────────────────────── */
     :root, [data-theme="classic"] {
@@ -312,55 +317,84 @@
     }
 
     [data-theme="win7"] {
-      --bg-page: #0b2034;
-      --bg-frame: rgba(255, 255, 255, 0.94);
-      --border-frame: #3c7fb1;
-      --header-grad-1: #9fd1fa;
-      --header-grad-2: #4a90d9;
-      --header-grad-3: #2e74be;
-      --header-top-border: rgba(255, 255, 255, 0.8);
-      --header-bot-border: #1d5796;
-      --header-sub-color: #0c325c;
-      --sec-bar-bg: #4aa3e8;
-      --sec-bar-border: #155694;
-      --text-main: #1a1a1a;
-      --text-sub: #4b6584;
+      --bg-page: #06192d;
+      --bg-frame: rgba(255, 255, 255, 0.96);
+      --border-frame: #3285c7;
+      --header-grad-1: #8eccf9;
+      --header-grad-2: #2f8ee2;
+      --header-grad-3: #115da8;
+      --header-top-border: rgba(255, 255, 255, 0.95);
+      --header-bot-border: #0a4076;
+      --header-sub-color: #05264a;
+      --sec-bar-bg: #a8d5f8;
+      --sec-bar-border: #6fa7d5;
+      --text-main: #111111;
+      --text-sub: #3d5e82;
       --input-bg: #ffffff;
       --input-border: #7f9db9;
       --input-badge-bg: #eaf3fb;
       --input-text: #000000;
-      --input-focus: #3c7fb1;
-      --btn-grad-1: #4aa3e8;
-      --btn-grad-2: #1d6bb3;
-      --btn-border: #155694;
-      --info-border: #c8ddf0;
-      --info-val: #004080;
+      --input-focus: #2b7bb8;
+      --btn-grad-1: #5bb4f8;
+      --btn-grad-2: #166bb5;
+      --btn-border: #134e85;
+      --info-border: #b8d4ed;
+      --info-val: #003e7e;
     }
 
     [data-theme="win7"] body {
-      background: radial-gradient(ellipse at 50% 20%, #205c90 0%, #0d2844 60%, #051424 100%) fixed !important;
+      background: 
+        radial-gradient(circle at 50% 8%, rgba(68, 179, 255, 0.85) 0%, rgba(26, 120, 205, 0.7) 25%, transparent 60%),
+        radial-gradient(ellipse at 50% 100%, rgba(0, 45, 95, 0.9) 0%, rgba(3, 16, 32, 0.98) 100%),
+        linear-gradient(180deg, #1860a4 0%, #0c3666 40%, #051a33 75%, #020b17 100%) fixed !important;
+      font-family: "Segoe UI", "SegoeUI", "Noto Sans", sans-serif !important;
     }
     [data-theme="win7"] .login-container {
       border-radius: 8px !important;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.4) inset !important;
+      border: 1px solid rgba(130, 195, 255, 0.85) !important;
+      box-shadow: 
+        0 20px 60px rgba(0, 15, 45, 0.8), 
+        0 0 0 1px rgba(255, 255, 255, 0.75) inset, 
+        0 0 30px rgba(0, 150, 255, 0.5) !important;
+      backdrop-filter: blur(16px) saturate(190%) !important;
+      background: rgba(255, 255, 255, 0.96) !important;
     }
     [data-theme="win7"] .header-bar {
-      background: linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(200,230,255,0.4) 40%, rgba(130,185,240,0.5) 41%, rgba(175,215,255,0.7) 100%), linear-gradient(to bottom, #72aade, #3c7fb1) !important;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+      background: 
+        linear-gradient(to bottom, 
+          rgba(255,255,255,0.9) 0%, 
+          rgba(220,242,255,0.6) 45%, 
+          rgba(100,185,250,0.5) 46%, 
+          rgba(170,225,255,0.85) 100%
+        ),
+        linear-gradient(180deg, #2587db 0%, #115ea9 50%, #0a437c 100%) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 2px 6px rgba(0,20,50,0.25) !important;
+      border-top: 1px solid rgba(255,255,255,0.95) !important;
+      border-bottom: 2px solid #093b6e !important;
     }
     [data-theme="win7"] .brand-logo {
-      color: #0a2544 !important;
-      text-shadow: 0 0 10px #ffffff, 0 0 4px #ffffff !important;
+      color: #031c38 !important;
+      text-shadow: 0 0 16px #ffffff, 0 0 8px #ffffff, 0 0 4px #b8e2ff, 0 1px 2px rgba(0, 20, 60, 0.8) !important;
+      font-weight: 700 !important;
     }
     [data-theme="win7"] .header-model {
-      color: #0a2544 !important;
-      text-shadow: 0 0 10px #ffffff, 0 0 4px #ffffff !important;
+      color: #031c38 !important;
+      text-shadow: 0 0 10px #ffffff, 0 0 4px #b8e2ff !important;
+      font-weight: 600 !important;
     }
     [data-theme="win7"] .login-btn {
-      background: linear-gradient(to bottom, #4aa3e8 0%, #1d6bb3 100%) !important;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6) !important;
+      background: linear-gradient(to bottom, #5bb4f8 0%, #3594e2 48%, #1569b4 49%, #277ece 100%) !important;
+      border: 1px solid #134e85 !important;
       border-radius: 3px !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 0 6px rgba(25, 120, 220, 0.4) !important;
+      color: #ffffff !important;
+      text-shadow: 0 1px 2px rgba(0, 30, 80, 0.6) !important;
+      font-weight: 700;
+    }
+    [data-theme="win7"] .login-btn:hover {
+      background: linear-gradient(to bottom, #74c3fc 0%, #4ea9ed 48%, #1f7ecc 49%, #3493e3 100%) !important;
+      box-shadow: 0 0 10px #38d6ff, inset 0 1px 0 #ffffff !important;
     }
 
     * {

@@ -129,11 +129,20 @@ Personalize the panel for your server community:
   - Change Hardware Model Number (e.g. `Model No. SRV-ENTERPRISE-X`).
   - Custom Footer Notice.
 - **Header Icon Selector**:
-  - Choose from 12 built-in icon presets or provide custom SVG/image URL.
+  - Choose from 12 built-in icon presets, direct local file upload (PNG, JPG, SVG, WebP, GIF), or custom image/SVG URL.
 - **Theme Selection**:
-  - **Windows 7 Aero**: Frosted glass windows, 7.css specular reflection buttons, Segoe UI.
+  - **Windows 7 Aero**: Faithfully styled using [**7.css**](https://github.com/khang-nd/7.css) by Khang NT (MIT License). Features vibrant electric azure Aero Glass frames, 3D specular reflection buttons, frosted blur (`backdrop-filter`), authentic interactive titlebar window controls (minimize, maximize/restore, close), and Segoe UI typography.
   - **TP-Link Classic**: Retro 2000s router web interface.
   - **Windows 98**: Classic desktop bevels and teal aesthetic.
   - **Dark Mode**: Modern OLED dark contrast.
   - **Cyberpunk**: Glowing neon teal and magenta.
   - **Matrix**: Phosphor green CRT terminal style.
+
+---
+
+## 🙏 Credits & Acknowledgements
+
+- **7.css** by [Khang NT](https://github.com/khang-nd) ([@khang-nd/7.css](https://github.com/khang-nd/7.css)) - Authentic design system and styles for Windows 7 Aero Glass components and controls.
+- **Modrinth** ([modrinth.com](https://modrinth.com)) - Public open-source Minecraft mod and plugin repository API.
+- **PaperMC** ([papermc.io](https://papermc.io)) - High-performance Minecraft server software API and version builds.
+
