@@ -610,6 +610,46 @@ def dashboard():
         branding=load_branding()
     )
 
+LATEST_PAPER_VERSION_CACHE = {"version": "1.21.11", "ts": 0}
+
+def get_latest_paper_version():
+    global LATEST_PAPER_VERSION_CACHE
+    now = time.time()
+    if now - LATEST_PAPER_VERSION_CACHE["ts"] < 300:
+        return LATEST_PAPER_VERSION_CACHE["version"]
+
+    try:
+        req = urllib.request.Request(
+            "https://fill.papermc.io/v3/projects/paper",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as r:
+            d = json.loads(r.read())
+            v_dict = d.get("versions", {})
+            for group, vers in v_dict.items():
+                if group.startswith("1."):
+                    for v in vers:
+                        if "-" not in v:
+                            LATEST_PAPER_VERSION_CACHE["version"] = v
+                            LATEST_PAPER_VERSION_CACHE["ts"] = now
+                            return v
+    except Exception:
+        pass
+
+    return LATEST_PAPER_VERSION_CACHE["version"]
+
+@app.route("/api/software/latest", methods=["GET"])
+@login_required
+def api_software_latest():
+    sw = request.args.get("software", "paper").lower().strip()
+    ver = get_latest_paper_version()
+    return jsonify({
+        "success": True,
+        "software": sw,
+        "latest_version": ver,
+        "display_label": f"Paper {ver}"
+    })
+
 @app.route("/api/status")
 @login_required
 def api_status():
@@ -681,6 +721,7 @@ def api_status():
         "platform": f"{platform.system()} ({platform.machine()})",
         "os_platform": platform.system(),
         "server_installed": jar_exists,
+        "latest_paper_version": get_latest_paper_version(),
         "server_dir": SERVER_DIR,
         "java_version": detect_java_version_str(),
         "runtime_config": server_runner.load_runtime_config(),

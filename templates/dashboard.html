@@ -2670,8 +2670,8 @@
                 <div style="font-size: 11px; color: #cbd5e1;">No server JAR found in directory. You can install Paper, Purpur, Fabric, Spigot, or Vanilla in 1-click directly from this web panel without opening SSH or terminal.</div>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallPreset('paper', '1.21.4')">[ ⚡ Install Paper 1.21.4 ]</button>
-                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="showView('sys-software')">[ 🛠️ Custom Software Wizard ]</button>
+                <button type="button" id="btn-quick-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ ⚡ Install Latest Paper ]</button>
+                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ 🛠️ Custom Software Wizard ]</button>
               </div>
             </div>
           </div>
@@ -3302,7 +3302,10 @@
                 <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">⚠️ Server Software Not Installed</div>
                 <div style="font-size: 11px; color: #cbd5e1;">Install Minecraft server software in 1-click to begin streaming live logs and sending commands.</div>
               </div>
-              <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="showView('sys-software')">[ ⚡ Install Server Software ]</button>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" id="btn-console-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ ⚡ Install Latest Paper ]</button>
+                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ 🛠️ Custom Software Wizard ]</button>
+              </div>
             </div>
           </div>
 
@@ -4588,6 +4591,9 @@
         const uninstalledBanners = document.querySelectorAll('.uninstalled-server-banner');
         if (d.server_installed === false) {
           uninstalledBanners.forEach(b => b.style.display = 'block');
+          if (d.latest_paper_version) {
+            updateUninstalledBannerVersion(d.latest_paper_version);
+          }
           const stState = document.getElementById('st-mc-state');
           if (stState) {
             stState.className = 'badge-status offline';
@@ -7124,6 +7130,107 @@
       }
     }
 
+    // ── Quick Install & Dynamic Version Resolution ──────────────
+    let latestDetectedPaperVersion = '1.21.11';
+
+    function updateUninstalledBannerVersion(version) {
+      if (!version) return;
+      latestDetectedPaperVersion = version;
+      const btn1 = document.getElementById('btn-quick-install-paper');
+      if (btn1) {
+        btn1.textContent = `[ ⚡ Install Paper ${version} ]`;
+      }
+      const btn2 = document.getElementById('btn-console-install-paper');
+      if (btn2) {
+        btn2.textContent = `[ ⚡ Install Paper ${version} ]`;
+      }
+    }
+
+    async function fetchLatestSoftwareVersion() {
+      try {
+        const res = await fetch('/api/software/latest?software=paper');
+        if (!res.ok) return;
+        const d = await res.json();
+        if (d.success && d.latest_version) {
+          updateUninstalledBannerVersion(d.latest_version);
+        }
+      } catch (e) {}
+    }
+
+    async function quickInstallLatestPaper() {
+      const version = latestDetectedPaperVersion || '1.21.11';
+      const conf = confirm(
+        `Install & Launch Minecraft Server?\n\n` +
+        `• Target Engine: Paper ${version} (Latest Stable Release)\n` +
+        `• Memory: 4 GB Heap RAM\n` +
+        `• EULA: Automatically Accepted\n` +
+        `• Port: 25565\n\n` +
+        `FiestaPanel will automatically download the server jar, initialize configuration files, and launch the server daemon without SSH.`
+      );
+      if (!conf) return;
+
+      const buttons = [
+        document.getElementById('btn-quick-install-paper'),
+        document.getElementById('btn-console-install-paper')
+      ].filter(Boolean);
+
+      buttons.forEach(b => {
+        b.disabled = true;
+        b.textContent = `Downloading Paper ${version}...`;
+        b.style.opacity = '0.7';
+      });
+
+      showBannerAlert(`Downloading and deploying Paper ${version} from upstream PaperMC repository...`);
+
+      try {
+        const res = await fetch('/api/software/install', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            software: 'paper',
+            version: version,
+            build: 'latest',
+            ram_gb: 4,
+            auto_eula: true,
+            autostart: true
+          })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message);
+          buttons.forEach(b => {
+            b.textContent = `✓ Installed & Running`;
+            b.style.background = '#008822';
+            b.style.color = '#ffffff';
+          });
+          setTimeout(pollStatus, 1500);
+        } else {
+          showBannerAlert(d.message || 'Installation failed.', true);
+          buttons.forEach(b => {
+            b.disabled = false;
+            b.textContent = `[ ⚡ Install Paper ${version} ]`;
+            b.style.opacity = '1';
+          });
+        }
+      } catch (e) {
+        showBannerAlert('Network error during quick installation.', true);
+        buttons.forEach(b => {
+          b.disabled = false;
+          b.textContent = `[ ⚡ Install Paper ${version} ]`;
+          b.style.opacity = '1';
+        });
+      }
+    }
+
+    function quickInstallPreset(software, version) {
+      if (version) latestDetectedPaperVersion = version;
+      quickInstallLatestPaper();
+    }
+
+    window.showView = function(viewId) {
+      selectNavView(viewId);
+    };
+
     // ── Native Theme & Visual Customization System ─────────────
     const THEMES = [
       'classic', 'dark', 'archer', 'archer-dark', 'amber', 'amber-dark',
@@ -7839,6 +7946,7 @@
     pollLogs();
     loadMinecraftItemsList();
     fetchAddonContext();
+    fetchLatestSoftwareVersion();
     setInterval(pollStatus, 3000);
     setInterval(pollLogs, 2000);
   </script>
