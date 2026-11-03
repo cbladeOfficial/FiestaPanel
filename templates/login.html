@@ -383,6 +383,17 @@
       text-shadow: 0 0 10px #ffffff, 0 0 4px #b8e2ff !important;
       font-weight: 600 !important;
     }
+    [data-theme="win7"] .header-model-badge {
+      background: rgba(255, 255, 255, 0.5) !important;
+      border-color: rgba(255, 255, 255, 0.85) !important;
+      color: #031c38 !important;
+      text-shadow: 0 0 8px #ffffff !important;
+    }
+    [data-theme="win7"] .header-desc {
+      color: #031c38 !important;
+      text-shadow: 0 0 6px #ffffff !important;
+      font-weight: 600 !important;
+    }
     [data-theme="win7"] .login-btn {
       background: linear-gradient(to bottom, #5bb4f8 0%, #3594e2 48%, #1569b4 49%, #277ece 100%) !important;
       border: 1px solid #134e85 !important;
@@ -418,21 +429,28 @@
     }
 
     .login-container {
-      width: 450px;
+      width: 100%;
+      max-width: 490px;
+      min-width: 310px;
+      margin: 24px auto;
       background: var(--bg-frame);
       border: 1px solid var(--border-frame);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-      transition: background-color 0.15s, border-color 0.15s;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.12);
+      transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
     }
 
     .header-bar {
       background: linear-gradient(to bottom, var(--header-grad-1) 0%, var(--header-grad-2) 36%, var(--header-grad-3) 100%);
-      padding: 12px 18px;
+      padding: 14px 22px;
       border-top: 2px solid var(--header-top-border);
       border-bottom: 3px solid var(--header-bot-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
       color: #ffffff;
       transition: all 0.15s;
     }
@@ -440,59 +458,120 @@
     .header-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      min-width: 0;
+      flex: 1 1 200px;
+    }
+
+    .brand-logo-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 38px;
+      height: 38px;
+    }
+
+    .brand-logo-icon svg {
+      width: 38px;
+      height: 38px;
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+    }
+
+    .brand-logo-icon img {
+      max-width: 38px;
+      max-height: 38px;
+      object-fit: contain;
     }
 
     .brand-text {
       display: flex;
       flex-direction: column;
+      min-width: 0;
     }
 
     .brand-logo {
       font-size: 21px;
       font-weight: 900;
       letter-spacing: 0.5px;
-      line-height: 1.1;
+      line-height: 1.15;
       font-style: italic;
       color: #ffffff;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      word-break: break-word;
     }
 
     .brand-sub {
-      font-size: 9px;
+      font-size: 9.5px;
       color: var(--header-sub-color);
       letter-spacing: 0.5px;
       text-transform: uppercase;
       font-style: normal;
       font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .header-model {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
       text-align: right;
-      font-size: 10px;
-      color: #e2fbe6;
+      min-width: 0;
+      flex: 1 1 auto;
+      gap: 4px;
     }
 
-    .header-model strong {
-      font-size: 12px;
+    .header-model-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    .header-model-badge {
+      font-size: 11px;
+      font-weight: 700;
       color: #ffffff;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 3px;
+      padding: 2px 7px;
       display: inline-block;
+      word-break: break-word;
+      max-width: 100%;
+      letter-spacing: 0.4px;
+    }
+
+    .header-desc {
+      font-size: 10px;
+      color: #e2fbe6;
+      line-height: 1.25;
+      word-break: break-word;
+      max-width: 240px;
     }
 
     .btn-theme-quick {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.35);
       color: #ffffff;
-      border-radius: 2px;
+      border-radius: 3px;
       font-size: 10px;
       font-weight: bold;
-      padding: 1px 7px;
+      padding: 2px 8px;
       cursor: pointer;
-      height: 20px;
+      height: 22px;
       line-height: 16px;
       transition: all 0.15s;
       outline: none;
-      margin-left: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     .btn-theme-quick:hover {
       background: rgba(255, 255, 255, 0.25);
@@ -504,9 +583,10 @@
       color: #ffffff;
       font-size: 11px;
       font-weight: bold;
-      padding: 5px 18px;
+      padding: 6px 22px;
       border-bottom: 1px solid var(--sec-bar-border);
       transition: background-color 0.15s;
+      letter-spacing: 0.3px;
     }
 
     .content-box {
@@ -660,19 +740,25 @@
     .info-row {
       display: flex;
       justify-content: space-between;
-      padding: 4px 0;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 5px 0;
       border-bottom: 1px solid var(--info-border);
       font-size: 11px;
     }
 
     .info-row span.label {
       color: var(--text-sub);
+      flex-shrink: 0;
     }
 
     .info-row span.val {
       font-weight: bold;
       color: var(--info-val);
       font-family: "Courier New", Courier, monospace;
+      word-break: break-all;
+      text-align: right;
     }
 
     .footer-note {
@@ -680,6 +766,7 @@
       color: var(--text-sub);
       font-size: 10px;
       margin-top: 16px;
+      word-break: break-word;
     }
   </style>
 </head>
@@ -699,11 +786,11 @@
         </div>
       </div>
       <div class="header-model">
-        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-bottom: 2px;">
-          <strong>{{ branding.model_number }}</strong>
-          <button id="login-theme-toggle" class="btn-theme-quick" onclick="toggleLoginTheme()" title="Toggle Dark/Light Mode">[ 🌙 Dark ]</button>
+        <div class="header-model-row">
+          <span class="header-model-badge">{{ branding.model_number }}</span>
+          <button id="login-theme-toggle" class="btn-theme-quick" onclick="toggleLoginTheme()" title="Toggle Dark/Light Mode">[ Dark Mode ]</button>
         </div>
-        <span>{{ branding.server_desc }}</span>
+        <span class="header-desc">{{ branding.server_desc }}</span>
       </div>
     </div>
 
@@ -773,7 +860,7 @@
       const isDark = cur === 'dark' || cur.endsWith('-dark') || cur === 'matrix' || cur === 'synthwave' || cur === 'nighthawk' || cur === 'catppuccin';
       const btn = document.getElementById('login-theme-toggle');
       if (btn) {
-        btn.textContent = isDark ? '[ ☀️ Light ]' : '[ 🌙 Dark ]';
+        btn.textContent = isDark ? '[ Light Mode ]' : '[ Dark Mode ]';
       }
     }
 

@@ -18,6 +18,7 @@ import io
 import re
 import hashlib
 import zipfile
+import gzip
 from PIL import Image
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
@@ -803,41 +804,106 @@ def api_server_power():
 
     return jsonify({"success": False, "message": "Unknown power action"}), 400
 
+@app.route("/api/logs/archive")
+@login_required
+def api_logs_archive():
+    logs_dir = os.path.join(SERVER_DIR, "logs")
+    if not os.path.isdir(logs_dir):
+        return jsonify({"success": True, "files": []})
+
+    files_list = []
+    try:
+        for entry in os.listdir(logs_dir):
+            if entry == "latest.log" or entry.endswith(".log.gz") or entry.endswith(".log"):
+                fp = os.path.join(logs_dir, entry)
+                if os.path.isfile(fp):
+                    st = os.stat(fp)
+                    files_list.append({
+                        "name": entry,
+                        "size": st.st_size,
+                        "size_str": format_file_size(st.st_size),
+                        "mtime": st.st_mtime,
+                        "date": datetime.datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                        "is_latest": (entry == "latest.log")
+                    })
+        # Sort: latest.log first, then remaining files by modification time descending
+        files_list.sort(key=lambda x: (not x["is_latest"], -x["mtime"]))
+        return jsonify({"success": True, "files": files_list})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/api/logs")
 @login_required
 def api_logs():
     lines_count = int(request.args.get("lines", 100))
     query = request.args.get("q", "").strip().lower()
     level = request.args.get("level", "ALL").upper()
+    req_file = request.args.get("file", "latest.log").strip()
 
-    if not os.path.exists(LOG_FILE):
-        return jsonify({"logs": ["Log file not found."]})
+    req_file = os.path.basename(req_file)
+    if not (req_file.endswith(".log") or req_file.endswith(".log.gz")):
+        req_file = "latest.log"
+
+    target_log = os.path.join(SERVER_DIR, "logs", req_file)
+    if not os.path.exists(target_log):
+        return jsonify({"logs": [f"Log file '{req_file}' not found."], "file": req_file, "is_latest": (req_file == "latest.log")})
+
     try:
-        raw_lines = tail_file(LOG_FILE, lines_count * 2)
+        raw_lines = []
+        if req_file.endswith(".gz"):
+            with gzip.open(target_log, "rt", encoding="utf-8", errors="replace") as gz:
+                gz_lines = gz.readlines()
+                if lines_count > 0 and len(gz_lines) > lines_count * 3:
+                    raw_lines = gz_lines[-lines_count * 3:]
+                else:
+                    raw_lines = gz_lines
+        elif req_file == "latest.log":
+            raw_lines = tail_file(target_log, lines_count * 2) if lines_count > 0 else tail_file(target_log, 5000)
+        else:
+            with open(target_log, "r", encoding="utf-8", errors="replace") as f:
+                all_lines = f.readlines()
+                if lines_count > 0 and len(all_lines) > lines_count * 3:
+                    raw_lines = all_lines[-lines_count * 3:]
+                else:
+                    raw_lines = all_lines
 
         filtered = []
         for line in raw_lines:
+            line_str = line.rstrip("\r\n")
             if level != "ALL":
-                if level == "WARN" and "WARN" not in line:
+                if level == "WARN" and "WARN" not in line_str:
                     continue
-                elif level == "ERROR" and "ERROR" not in line and "Exception" not in line:
+                elif level == "ERROR" and "ERROR" not in line_str and "Exception" not in line_str:
                     continue
-                elif level == "INFO" and "INFO" not in line:
+                elif level == "INFO" and "INFO" not in line_str:
                     continue
-            if query and query not in line.lower():
+            if query and query not in line_str.lower():
                 continue
-            filtered.append(line)
+            filtered.append(line_str)
 
-        return jsonify({"logs": filtered[-lines_count:]})
+        final_lines = filtered[-lines_count:] if lines_count > 0 else filtered
+        return jsonify({
+            "logs": final_lines,
+            "file": req_file,
+            "is_latest": (req_file == "latest.log"),
+            "total_matched": len(filtered)
+        })
     except Exception as e:
-        return jsonify({"logs": [f"Error reading logs: {e}"]}), 500
+        return jsonify({"logs": [f"Error reading logs ({req_file}): {e}"], "file": req_file, "is_latest": (req_file == "latest.log")}), 500
 
 @app.route("/api/log/download")
 @login_required
 def api_download_log():
-    if os.path.exists(LOG_FILE):
-        return send_file(LOG_FILE, as_attachment=True, download_name="fiesta-latest.log")
-    return jsonify({"error": "Log file not found"}), 404
+    req_file = request.args.get("file", "latest.log").strip()
+    req_file = os.path.basename(req_file)
+    if not (req_file.endswith(".log") or req_file.endswith(".log.gz")):
+        req_file = "latest.log"
+
+    target_log = os.path.join(SERVER_DIR, "logs", req_file)
+    if os.path.exists(target_log) and os.path.isfile(target_log):
+        download_name = f"fiesta-{req_file}" if req_file == "latest.log" else req_file
+        return send_file(target_log, as_attachment=True, download_name=download_name)
+    return jsonify({"error": f"Log file '{req_file}' not found"}), 404
 
 @app.route("/api/players")
 @login_required

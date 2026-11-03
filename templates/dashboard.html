@@ -2743,24 +2743,24 @@
       <div class="model-info-block">
         <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-bottom: 2px;">
           <div class="model-title" id="disp-brand-model">{{ branding.model_number if branding else 'Model No. FS-GATEWAY-PRO' }}</div>
-          <button id="theme-mode-toggle" class="btn-theme-quick" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode">[ 🌙 Dark Mode ]</button>
+          <button id="theme-mode-toggle" class="btn-theme-quick" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode">[ Dark Mode ]</button>
           <select id="theme-selector" class="theme-select-box" onchange="changeTheme(this.value)" title="Choose Interface Theme">
-            <option value="classic">🌿 Classic Green (Light)</option>
-            <option value="dark">🌙 Obsidian Green (Dark)</option>
-            <option value="archer">🔷 Archer Blue (Light)</option>
-            <option value="archer-dark">🌌 Archer Midnight (Dark)</option>
-            <option value="amber">🔸 Retro Amber (Light)</option>
-            <option value="amber-dark">🔥 Amber Glow (Dark)</option>
-            <option value="matrix">⚡ Matrix Stealth (OLED)</option>
-            <option value="synthwave">💜 Cyber Synthwave (Neon)</option>
-            <option value="nighthawk">🔴 Nighthawk ROG (Crimson)</option>
-            <option value="nordic">❄️ Nordic Glacier (Ice)</option>
-            <option value="catppuccin">☕ Catppuccin Mocha (Pastel)</option>
-            <option value="win98">🪟 Windows 98 (Retro)</option>
-            <option value="win7">🪟 Windows 7 Aero (Glass)</option>
-            <option value="custom">🎨 Custom Palette (Studio)</option>
+            <option value="classic">Classic Green (Light)</option>
+            <option value="dark">Obsidian Green (Dark)</option>
+            <option value="archer">Archer Blue (Light)</option>
+            <option value="archer-dark">Archer Midnight (Dark)</option>
+            <option value="amber">Retro Amber (Light)</option>
+            <option value="amber-dark">Amber Glow (Dark)</option>
+            <option value="matrix">Matrix Stealth (OLED)</option>
+            <option value="synthwave">Cyber Synthwave (Neon)</option>
+            <option value="nighthawk">Nighthawk ROG (Crimson)</option>
+            <option value="nordic">Nordic Glacier (Ice)</option>
+            <option value="catppuccin">Catppuccin Mocha (Pastel)</option>
+            <option value="win98">Windows 98 (Retro)</option>
+            <option value="win7">Windows 7 Aero (Glass)</option>
+            <option value="custom">Custom Palette (Studio)</option>
           </select>
-          <button class="btn-theme-quick" onclick="openThemeStudio()" title="Open Theme Studio &amp; Customizer">[ 🎨 Studio ]</button>
+          <button class="btn-theme-quick" onclick="openThemeStudio()" title="Open Theme Studio &amp; Customizer">[ Theme Studio ]</button>
           <div class="win7-title-controls" style="display: none;">
             <button class="win7-btn-min" title="Minimize Window" type="button" onclick="windowToggleMin()"></button>
             <button class="win7-btn-max" title="Maximize Window" type="button" onclick="windowToggleMax()"></button>
@@ -2841,8 +2841,8 @@
           <div class="nav-parent" onclick="toggleNavGroup('panel-addons', this)" id="nav-parent-panel-addons">Panel Extensions / Store</div>
           <div class="nav-sub-list" id="sub-panel-addons">
             <div class="nav-sub-item" onclick="selectNavView('panel-addons-installed', this)" id="nav-sub-paddons-installed">- Installed Addons</div>
-            <div class="nav-sub-item" onclick="selectNavView('panel-addons-store', this)" id="nav-sub-paddons-store">- 🛒 Plugin Store</div>
-            <div class="nav-sub-item" onclick="selectNavView('panel-addons-create', this)">- 🛠️ Developer Guide</div>
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-store', this)" id="nav-sub-paddons-store">- Addon Store</div>
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-create', this)">- Developer Guide</div>
             <div id="dynamic-addon-nav-items"></div>
           </div>
         </div>
@@ -2887,12 +2887,12 @@
           <div class="uninstalled-server-banner" style="display: none; background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border: 2px solid #38bdf8; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; color: #ffffff;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div>
-                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">🚀 Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet</div>
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet</div>
                 <div style="font-size: 11px; color: #cbd5e1;">No server JAR found in directory. You can install Paper, Purpur, Fabric, Spigot, or Vanilla in 1-click directly from this web panel without opening SSH or terminal.</div>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button type="button" id="btn-quick-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ ⚡ Install Latest Paper ]</button>
-                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ 🛠️ Custom Software Wizard ]</button>
+                <button type="button" id="btn-quick-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ Install Latest Paper ]</button>
+                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ Custom Software Wizard ]</button>
               </div>
             </div>
           </div>
@@ -2918,9 +2918,9 @@
             <tr>
               <td class="label-col">Service Control:</td>
               <td class="val-col">
-                <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ ▶ Start ]</button>
-                <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')">[ ⟳ Restart ]</button>
-                <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')">[ ■ Stop ]</button>
+                <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ Start ]</button>
+                <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')">[ Restart ]</button>
+                <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')">[ Stop ]</button>
               </td>
             </tr>
           </table>
@@ -2932,8 +2932,8 @@
               <td class="label-col">Server Domain:</td>
               <td class="val-col">
                 <strong id="st-server-domain" style="color: #006622; font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
-                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 8px; font-size: 11px; padding: 0 8px;" onclick="copyServerDomain(this)">[ 📋 Copy Domain ]</button>
-                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 4px; font-size: 11px; padding: 0 8px;" onclick="copyServerIpPort(this)">[ 📋 Copy IP:Port ]</button>
+                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 8px; font-size: 11px; padding: 0 8px;" onclick="copyServerDomain(this)">[ Copy Domain ]</button>
+                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 4px; font-size: 11px; padding: 0 8px;" onclick="copyServerIpPort(this)">[ Copy IP:Port ]</button>
               </td>
             </tr>
             <tr>
@@ -3231,7 +3231,7 @@
               Filter Player: <input type="text" id="player-search-box" placeholder="Search by name..." oninput="filterPlayersTable()" style="width: 180px;">
             </div>
             <div style="font-size: 10px; color: #555;">
-              Tip: Click <strong>🎒 Inventory</strong> to inspect live items or give/clear equipment.
+              Tip: Click <strong>Inventory</strong> to inspect live items or give/clear equipment.
             </div>
           </div>
           <table class="data-grid-table" id="players-main-table">
@@ -3381,8 +3381,8 @@
 
           <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
             <span style="font-weight: bold; font-size: 11px; color: #333;">Package Type:</span>
-            <button id="btn-tab-addon-plugins" class="btn-classic active-tab" onclick="switchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ 🧩 Plugins (/plugins/) ]</button>
-            <button id="btn-tab-addon-mods" class="btn-classic" onclick="switchAddonMode('mods')" style="padding: 2px 10px;">[ ⚙️ Mods (/mods/) ]</button>
+            <button id="btn-tab-addon-plugins" class="btn-classic active-tab" onclick="switchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Plugins (/plugins/) ]</button>
+            <button id="btn-tab-addon-mods" class="btn-classic" onclick="switchAddonMode('mods')" style="padding: 2px 10px;">[ Mods (/mods/) ]</button>
             <span id="addon-badge-detected" style="margin-left: auto; font-size: 11px; color: #006622; font-weight: bold;"></span>
           </div>
 
@@ -3415,8 +3415,8 @@
 
           <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
             <span style="font-weight: bold; font-size: 11px; color: #333;">Repository Target:</span>
-            <button id="btn-search-target-plugins" class="btn-classic active-tab" onclick="switchSearchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ 🧩 Minecraft Plugins ]</button>
-            <button id="btn-search-target-mods" class="btn-classic" onclick="switchSearchAddonMode('mods')" style="padding: 2px 10px;">[ ⚙️ Minecraft Mods ]</button>
+            <button id="btn-search-target-plugins" class="btn-classic active-tab" onclick="switchSearchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Minecraft Plugins ]</button>
+            <button id="btn-search-target-mods" class="btn-classic" onclick="switchSearchAddonMode('mods')" style="padding: 2px 10px;">[ Minecraft Mods ]</button>
             <span id="addon-search-badge" style="margin-left: auto; font-size: 11px; color: #555;">Targeting: <strong id="search-target-label" style="color: #006622;">Purpur / Paper / Spigot</strong> (into <code>/plugins/</code>)</span>
           </div>
 
@@ -3425,7 +3425,7 @@
 
           <form onsubmit="searchCurrentAddons(event)" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
             <input type="text" id="plugin-search-input" placeholder="Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)..." style="flex: 1; height: 26px; padding: 0 8px; font-size: 12px;">
-            <button type="submit" class="btn-satin-green" id="btn-addon-search-submit" style="height: 26px; font-size: 11px;">[ 🔍 Search Plugins ]</button>
+            <button type="submit" class="btn-satin-green" id="btn-addon-search-submit" style="height: 26px; font-size: 11px;">[ Search Plugins ]</button>
           </form>
 
           <div id="quick-searches-container" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
@@ -3459,8 +3459,8 @@
             <tr>
               <td class="label-col">Package Type:</td>
               <td class="val-col">
-                <label style="margin-right: 15px; cursor: pointer;"><input type="radio" name="upload-addon-type" value="plugins" id="upload-type-plugin" onchange="updateUploadTargetDisplay()" checked> 🧩 Plugin (Paper / Purpur / Spigot)</label>
-                <label style="cursor: pointer;"><input type="radio" name="upload-addon-type" value="mods" id="upload-type-mod" onchange="updateUploadTargetDisplay()"> ⚙️ Mod (Fabric / Forge / NeoForge)</label>
+                <label style="margin-right: 15px; cursor: pointer;"><input type="radio" name="upload-addon-type" value="plugins" id="upload-type-plugin" onchange="updateUploadTargetDisplay()" checked> Plugin (Paper / Purpur / Spigot)</label>
+                <label style="cursor: pointer;"><input type="radio" name="upload-addon-type" value="mods" id="upload-type-mod" onchange="updateUploadTargetDisplay()"> Mod (Fabric / Forge / NeoForge)</label>
               </td>
             </tr>
             <tr>
@@ -3488,8 +3488,8 @@
           </div>
           <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
             <span style="font-weight: bold; font-size: 11px; color: #333;">Archive Category:</span>
-            <button id="btn-tab-disabled-plugins" class="btn-classic active-tab" onclick="switchDisabledAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ 🧩 Disabled Plugins (/plugins/disabled/) ]</button>
-            <button id="btn-tab-disabled-mods" class="btn-classic" onclick="switchDisabledAddonMode('mods')" style="padding: 2px 10px;">[ ⚙️ Disabled Mods (/mods/disabled/) ]</button>
+            <button id="btn-tab-disabled-plugins" class="btn-classic active-tab" onclick="switchDisabledAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Disabled Plugins (/plugins/disabled/) ]</button>
+            <button id="btn-tab-disabled-mods" class="btn-classic" onclick="switchDisabledAddonMode('mods')" style="padding: 2px 10px;">[ Disabled Mods (/mods/disabled/) ]</button>
           </div>
           <p id="disabled-desc-text" style="margin-bottom: 8px; color: #555;">These JAR files reside in <code>plugins/disabled/</code>. They are not loaded by the engine. You can restore them anytime without losing configuration files.</p>
           <table class="data-grid-table">
@@ -3511,7 +3511,7 @@
           <div class="section-title-bar">
             <span>Diagnostics - System Log &amp; Terminal Console</span>
             <div>
-              <a href="/api/log/download" class="btn-classic" style="height: 20px; font-size: 10px;">[ Download Log ]</a>
+              <a href="/api/log/download" id="console-download-btn" class="btn-classic" style="height: 20px; font-size: 10px;">[ Download Log ]</a>
               <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="clearConsoleView()">[ Clear View ]</button>
             </div>
           </div>
@@ -3520,12 +3520,12 @@
           <div class="uninstalled-server-banner" style="display: none; background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border: 2px solid #38bdf8; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; color: #ffffff;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div>
-                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">⚠️ Server Software Not Installed</div>
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">Server Software Not Installed</div>
                 <div style="font-size: 11px; color: #cbd5e1;">Install Minecraft server software in 1-click to begin streaming live logs and sending commands.</div>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button type="button" id="btn-console-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ ⚡ Install Latest Paper ]</button>
-                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ 🛠️ Custom Software Wizard ]</button>
+                <button type="button" id="btn-console-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ Install Latest Paper ]</button>
+                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ Custom Software Wizard ]</button>
               </div>
             </div>
           </div>
@@ -3538,13 +3538,29 @@
               <span id="console-uptime" class="inline-hint" style="font-weight: 600; color: #004080; margin-left: 4px;"></span>
             </div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ ▶ Start Server ]</button>
-              <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')">[ ⟳ Restart Server ]</button>
-              <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')">[ ■ Stop Server ]</button>
+              <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ Start Server ]</button>
+              <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')">[ Restart Server ]</button>
+              <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')">[ Stop Server ]</button>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 11px;">
-            <span>Search: <input type="text" id="log-search-box" placeholder="Filter keyword..." oninput="pollLogs()" style="width: 140px;"></span>
+
+          <!-- Log Source & Filter Bar -->
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 11px; flex-wrap: wrap;">
+            <span>Log Source:
+              <select id="console-log-file-select" onchange="onConsoleLogFileChange()" style="font-size: 11px; font-weight: bold; max-width: 260px;">
+                <option value="latest.log">latest.log (Active Stream)</option>
+              </select>
+            </span>
+            <span>Lines:
+              <select id="console-lines-select" onchange="pollLogs()" style="font-size: 11px;">
+                <option value="100">100 lines</option>
+                <option value="250">250 lines</option>
+                <option value="500">500 lines</option>
+                <option value="1000">1000 lines</option>
+                <option value="2000">2000 lines</option>
+              </select>
+            </span>
+            <span>Search: <input type="text" id="log-search-box" placeholder="Filter keyword..." oninput="pollLogs()" style="width: 130px;"></span>
             <span>Severity:
               <select id="log-level-select" onchange="pollLogs()">
                 <option value="ALL">All Levels</option>
@@ -3553,12 +3569,19 @@
                 <option value="ERROR">ERROR Failures</option>
               </select>
             </span>
-            <label><input type="checkbox" id="chk-auto-scroll" checked> Auto-Scroll</label>
+            <label id="lbl-auto-scroll"><input type="checkbox" id="chk-auto-scroll" checked> Auto-Scroll</label>
             <div style="margin-left: auto; display: flex; gap: 4px;">
-              <button class="btn-classic" style="height: 20px; font-size: 10px; padding: 0 7px;" onclick="scrollConsoleToTop()">⬆ Scroll to Top</button>
-              <button class="btn-classic" style="height: 20px; font-size: 10px; padding: 0 7px;" onclick="scrollConsoleToBottom()">⬇ Scroll to Bottom</button>
+              <button class="btn-classic" style="height: 20px; font-size: 10px; padding: 0 7px;" onclick="pollLogs()">[ Refresh ]</button>
+              <button class="btn-classic" style="height: 20px; font-size: 10px; padding: 0 7px;" onclick="scrollConsoleToTop()">Top</button>
+              <button class="btn-classic" style="height: 20px; font-size: 10px; padding: 0 7px;" onclick="scrollConsoleToBottom()">Bottom</button>
             </div>
           </div>
+
+          <!-- Historical Log Notice Banner (only shown when an archived log is selected) -->
+          <div id="archived-log-notice" style="display: none; background: #e8f4fd; border: 1px solid #70b0ec; padding: 6px 12px; margin-bottom: 8px; font-size: 11px; color: #004080; border-radius: 2px;">
+            <span>Viewing Historical Archive: <strong id="archived-log-filename"></strong> (<span id="archived-log-meta"></span>). Live stream is paused. Switch back to <code>latest.log</code> for real-time monitoring.</span>
+          </div>
+
           <div class="terminal-console-box" id="tp-console-display">
             <div class="log-sys">Connecting to live console stream...</div>
           </div>
@@ -3573,21 +3596,21 @@
             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
               <div style="display: flex; gap: 4px; align-items: center;">
                 <strong style="color: #006622;">Daylight:</strong>
-                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('time', 'day')">☀ Day</button>
+                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('time', 'day')">Day</button>
                 <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('time', 'noon')">Noon</button>
                 <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('time', 'sunset')">Sunset</button>
-                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('time', 'night')">🌙 Night</button>
+                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('time', 'night')">Night</button>
               </div>
               <div style="display: flex; gap: 4px; align-items: center;">
                 <strong style="color: #006622;">Weather:</strong>
                 <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('weather', 'clear')">Clear Skies</button>
                 <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('weather', 'rain')">Rain</button>
-                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('weather', 'thunder')">⚡ Thunder</button>
+                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('weather', 'thunder')">Thunder</button>
               </div>
               <div style="display: flex; gap: 4px; align-items: center;">
                 <strong style="color: #006622;">Engine:</strong>
-                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('save')">💾 /save-all</button>
-                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('gc')">🧹 /gc</button>
+                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('save')">Save All (/save-all)</button>
+                <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="triggerAction('gc')">GC (/gc)</button>
               </div>
             </div>
           </div>
@@ -3637,7 +3660,7 @@
               <td class="val-col">
                 <span id="sw-cur-badge" class="badge-status online" style="font-size: 11px; padding: 2px 8px;">Purpur 1.21.11</span>
                 <span id="sw-cur-build" style="font-weight: bold; margin-left: 6px; color: #333;">Build #2568</span>
-                <button class="btn-satin-green" id="btn-sw-quick-update" style="height: 22px; font-size: 10px; margin-left: 10px;" onclick="quickUpdateLatestBuild()">[ ⚡ One-Click Update ]</button>
+                <button class="btn-satin-green" id="btn-sw-quick-update" style="height: 22px; font-size: 10px; margin-left: 10px;" onclick="quickUpdateLatestBuild()">[ One-Click Update ]</button>
               </td>
             </tr>
             <tr>
@@ -3656,7 +3679,7 @@
               <td class="label-col">Previous Backup Jar:</td>
               <td class="val-col">
                 <span id="sw-bak-status">No backup found</span>
-                <button class="btn-classic" id="btn-sw-rollback" style="height: 22px; font-size: 10px; margin-left: 8px; display: none;" onclick="executeSoftwareRollback()">[ ⏪ Rollback to server.jar.bak ]</button>
+                <button class="btn-classic" id="btn-sw-rollback" style="height: 22px; font-size: 10px; margin-left: 8px; display: none;" onclick="executeSoftwareRollback()">[ Rollback to server.jar.bak ]</button>
               </td>
             </tr>
           </table>
@@ -3769,7 +3792,7 @@
           </div>
 
           <div class="btn-row">
-            <button class="btn-satin-green" id="btn-install-software" style="height: 28px; padding: 0 24px; font-weight: bold;" onclick="confirmSoftwareInstall()">[ 🔄 Install &amp; Switch Software ]</button>
+            <button class="btn-satin-green" id="btn-install-software" style="height: 28px; padding: 0 24px; font-weight: bold;" onclick="confirmSoftwareInstall()">[ Install &amp; Switch Software ]</button>
           </div>
         </section>
 
@@ -3777,7 +3800,7 @@
         <section id="view-sys-filemanager" class="view-panel" style="display:none;">
           <div class="section-title-bar">
             <span>System Tools - Server File Manager</span>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadFileManager()">[ ⟳ Refresh ]</button>
+            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadFileManager()">[ Refresh ]</button>
           </div>
 
           <!-- Breadcrumbs and Action Toolbar -->
@@ -3788,9 +3811,9 @@
             <div style="display: flex; gap: 6px; align-items: center;">
               <input type="text" id="fm-filter-input" placeholder="Filter files..." oninput="filterFileManagerTable()" style="width: 130px; height: 22px;">
               <input type="file" id="fm-file-input" style="display: none;" onchange="handleFileManagerUpload(this)">
-              <button class="btn-satin-green" style="height: 22px; font-size: 10px;" onclick="document.getElementById('fm-file-input').click()">[ ⬆ Upload File ]</button>
-              <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="promptNewFolder()">[ 📁 New Folder ]</button>
-              <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="promptNewFile()">[ 📄 New File ]</button>
+              <button class="btn-satin-green" style="height: 22px; font-size: 10px;" onclick="document.getElementById('fm-file-input').click()">[ Upload File ]</button>
+              <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="promptNewFolder()">[ New Folder ]</button>
+              <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="promptNewFile()">[ New File ]</button>
             </div>
           </div>
 
@@ -3818,14 +3841,14 @@
           <div class="section-title-bar">
             <span>System Tools - Parameter Configuration Editor</span>
             <div style="display: flex; gap: 4px;">
-              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadServerProps()">[ ⟳ Reload ]</button>
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadServerProps()">[ Reload ]</button>
             </div>
           </div>
 
           <!-- Graphic Controls vs Raw Text Mode Switcher -->
           <div style="display: flex; gap: 6px; margin-bottom: 12px; border-bottom: 2px solid #74b21d; padding-bottom: 6px;">
-            <button class="btn-classic" id="btn-param-mode-gui" style="background: #74b21d; color: #ffffff; font-weight: bold; height: 25px; border-color: #558a12;" onclick="switchParamMode('gui')">⚙ Graphical Parameter Controls</button>
-            <button class="btn-classic" id="btn-param-mode-raw" style="height: 25px;" onclick="switchParamMode('raw')">📝 Raw Configuration Files (Text Mode)</button>
+            <button class="btn-classic" id="btn-param-mode-gui" style="background: #74b21d; color: #ffffff; font-weight: bold; height: 25px; border-color: #558a12;" onclick="switchParamMode('gui')">Graphical Parameter Controls</button>
+            <button class="btn-classic" id="btn-param-mode-raw" style="height: 25px;" onclick="switchParamMode('raw')">Raw Configuration Files (Text Mode)</button>
           </div>
 
           <!-- 16A: GRAPHICAL PARAMETER CONTROLS MODE -->
@@ -3973,8 +3996,8 @@
             </table>
 
             <div class="btn-row">
-              <button class="btn-satin-green" style="height: 28px; padding: 0 20px;" onclick="saveGuiProperties()">[ 💾 Save Parameter Settings ]</button>
-              <button class="btn-classic" style="height: 28px;" onclick="confirmServerPower('restart')">[ ⟳ Reboot Server to Apply ]</button>
+              <button class="btn-satin-green" style="height: 28px; padding: 0 20px;" onclick="saveGuiProperties()">[ Save Parameter Settings ]</button>
+              <button class="btn-classic" style="height: 28px;" onclick="confirmServerPower('restart')">[ Reboot Server to Apply ]</button>
             </div>
           </div>
 
@@ -3986,7 +4009,7 @@
               </span>
               <div>
                 <span id="config-save-status" style="color: #006622; font-weight: bold; margin-right: 8px;"></span>
-                <button class="btn-satin-green" style="height: 24px;" onclick="saveActiveConfig()">[ 💾 Save Config File ]</button>
+                <button class="btn-satin-green" style="height: 24px;" onclick="saveActiveConfig()">[ Save Config File ]</button>
               </div>
             </div>
             <textarea id="config-editor-area" style="width: 100%; height: 440px; border: 1px solid var(--input-border); padding: 8px; box-sizing: border-box; background: var(--input-bg); color: var(--input-text); font-family: 'Courier New', Courier, monospace;" spellcheck="false"></textarea>
@@ -4124,7 +4147,7 @@
                 <td class="val-col">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <input type="file" id="brand-file-upload" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon,image/gif" style="display: none;" onchange="handleBrandIconFileUpload(this)">
-                    <button type="button" class="btn-classic" style="height: 24px; font-size: 11px;" onclick="document.getElementById('brand-file-upload').click()">[ 📁 Choose Local Image / SVG ]</button>
+                    <button type="button" class="btn-classic" style="height: 24px; font-size: 11px;" onclick="document.getElementById('brand-file-upload').click()">[ Choose Local Image / SVG ]</button>
                     <span id="brand-file-status" class="inline-hint">Supports PNG, SVG, JPG, WEBP, ICO files from your device</span>
                   </div>
                 </td>
@@ -4179,8 +4202,8 @@
             </table>
 
             <div class="btn-row" style="margin-top: 16px;">
-              <button class="btn-satin-green" style="height: 28px; padding: 0 20px; font-weight: bold;" onclick="saveBrandingSettings()">[ 💾 Save &amp; Apply Branding ]</button>
-              <button class="btn-classic" style="height: 28px; padding: 0 16px;" onclick="resetBrandingSettings()">[ ↺ Restore Defaults ]</button>
+              <button class="btn-satin-green" style="height: 28px; padding: 0 20px; font-weight: bold;" onclick="saveBrandingSettings()">[ Save &amp; Apply Branding ]</button>
+              <button class="btn-classic" style="height: 28px; padding: 0 16px;" onclick="resetBrandingSettings()">[ Restore Defaults ]</button>
             </div>
           </div>
         </section>
@@ -4207,7 +4230,7 @@
                   <strong>Windows 7 Aero Glass Theme:</strong> Faithfully styled with <a href="https://github.com/khang-nd/7.css" target="_blank" rel="noopener noreferrer" style="color: #0066cc; font-weight: bold; text-decoration: underline;">7.css</a> (Created by <strong>Khang NT</strong>, MIT License). Features authentic Aero Glass specular gloss highlights, Segoe UI typography, and 3D beveled push buttons.
                 </div>
               </div>
-              <a href="https://github.com/khang-nd/7.css" target="_blank" rel="noopener noreferrer" class="btn-classic" style="text-decoration: none; padding: 3px 10px; font-size: 11px; font-weight: bold; color: #003366;">[ ↗ 7.css on GitHub ]</a>
+              <a href="https://github.com/khang-nd/7.css" target="_blank" rel="noopener noreferrer" class="btn-classic" style="text-decoration: none; padding: 3px 10px; font-size: 11px; font-weight: bold; color: #003366;">[ 7.css on GitHub ]</a>
             </div>
 
             <!-- Custom Theme Studio Section -->
@@ -4219,11 +4242,11 @@
             <!-- Quick Starters -->
             <div style="margin-bottom: 12px;">
               <span style="font-weight: bold; margin-right: 6px;">Palette Starters:</span>
-              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('vaporwave')">🌌 Neon Vaporwave</button>
-              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('emerald')">🌲 Emerald Forest</button>
-              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('crimson')">🔥 Crimson Blaze</button>
-              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('gold')">☀️ Solar Amber</button>
-              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('abyss')">🌊 Deep Oceanic</button>
+              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('vaporwave')">Neon Vaporwave</button>
+              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('emerald')">Emerald Forest</button>
+              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('crimson')">Crimson Blaze</button>
+              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('gold')">Solar Amber</button>
+              <button type="button" class="preset-pill-btn" onclick="applyCustomThemePreset('abyss')">Deep Oceanic</button>
             </div>
 
             <!-- Live Custom Theme Preview Box -->
@@ -4258,8 +4281,8 @@
                 <td class="label-col">Base Theme Foundation:</td>
                 <td class="val-col">
                   <select id="cust-base-mode" class="tp-input-text" style="width: 160px; height: 24px;" onchange="updateCustomThemeLive()">
-                    <option value="dark">🌙 Dark Mode Base</option>
-                    <option value="light">☀️ Light Mode Base</option>
+                    <option value="dark">Dark Mode Base</option>
+                    <option value="light">Light Mode Base</option>
                   </select>
                   <span class="inline-hint">Automatically tones form fields, tables, and borders</span>
                 </td>
@@ -4357,8 +4380,8 @@
             </table>
 
             <div class="btn-row" style="margin-top: 16px;">
-              <button class="btn-satin-green" style="height: 28px; padding: 0 20px; font-weight: bold;" onclick="saveAndApplyCustomTheme()">[ 💾 Save &amp; Activate Custom Theme ]</button>
-              <button class="btn-classic" style="height: 28px; padding: 0 16px;" onclick="resetCustomThemeToDefaults()">[ ↺ Reset Custom Palette ]</button>
+              <button class="btn-satin-green" style="height: 28px; padding: 0 20px; font-weight: bold;" onclick="saveAndApplyCustomTheme()">[ Save &amp; Activate Custom Theme ]</button>
+              <button class="btn-classic" style="height: 28px; padding: 0 16px;" onclick="resetCustomThemeToDefaults()">[ Reset Custom Palette ]</button>
             </div>
           </div>
         </section>
@@ -4368,10 +4391,10 @@
           <div class="section-title-bar">
             <span>Installed Web Panel Addons &amp; Extensions</span>
             <div>
-              <button class="btn-classic" onclick="loadPanelAddons(true)">[ 🔄 Reload Addons ]</button>
-              <button class="btn-classic" onclick="openAddonUploadModal()">[ 📦 Upload Addon (.zip) ]</button>
-              <button class="btn-classic" onclick="openAddonUrlModal()">[ 🌐 Install from URL ]</button>
-              <button class="btn-classic" style="font-weight: bold; color: #006622;" onclick="selectNavView('panel-addons-store')">[ 🛒 Browse Plugin Store ]</button>
+              <button class="btn-classic" onclick="loadPanelAddons(true)">[ Reload Addons ]</button>
+              <button class="btn-classic" onclick="openAddonUploadModal()">[ Upload Addon (.zip) ]</button>
+              <button class="btn-classic" onclick="openAddonUrlModal()">[ Install from URL ]</button>
+              <button class="btn-classic" style="font-weight: bold; color: #006622;" onclick="selectNavView('panel-addons-store')">[ Browse Plugin Store ]</button>
             </div>
           </div>
           <p class="inline-hint" style="margin-bottom: 12px;">
@@ -4396,8 +4419,8 @@
           <div class="section-title-bar">
             <span>FiestaPanel Plugin Store &amp; Extension Catalog</span>
             <div>
-              <button class="btn-classic" onclick="loadPanelAddonStore()">[ 🔄 Refresh Catalog ]</button>
-              <button class="btn-classic" style="font-weight: bold;" onclick="selectNavView('panel-addons-create')">[ 🛠️ Developer Guide ]</button>
+              <button class="btn-classic" onclick="loadPanelAddonStore()">[ Refresh Catalog ]</button>
+              <button class="btn-classic" style="font-weight: bold;" onclick="selectNavView('panel-addons-create')">[ Developer Guide ]</button>
             </div>
           </div>
           <p class="inline-hint" style="margin-bottom: 14px;">
@@ -4423,11 +4446,11 @@
 
           <div style="padding: 14px 18px; background: rgba(0, 102, 34, 0.08); border: 1px dashed rgba(0, 102, 34, 0.4); border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
             <div>
-              <strong style="color: #006622; font-size: 13px;">🛠️ Want to build your own FiestaPanel Addon?</strong>
+              <strong style="color: #006622; font-size: 13px;">Want to build your own FiestaPanel Addon?</strong>
               <div class="inline-hint">Create custom tabs, dashboard widgets, console bots, and live themes in Python and HTML.</div>
             </div>
             <div style="display: flex; gap: 8px;">
-              <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold;">[ 📥 Download Starter Boilerplate (.zip) ]</a>
+              <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold;">[ Download Starter Boilerplate (.zip) ]</a>
               <button class="btn-classic" style="padding: 4px 12px;" onclick="selectNavView('panel-addons-create')">[ View Developer Guide ]</button>
             </div>
           </div>
@@ -4437,7 +4460,7 @@
         <section id="view-panel-addons-create" class="view-panel">
           <div class="section-title-bar">
             <span>FiestaPanel Addon Developer Guide &amp; API Reference</span>
-            <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; font-weight: bold; color: #006622;">[ 📥 Download Starter Kit (.zip) ]</a>
+            <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; font-weight: bold; color: #006622;">[ Download Starter Kit (.zip) ]</a>
           </div>
           <p class="inline-hint" style="margin-bottom: 14px;">
             FiestaPanel provides a lightweight, powerful extension system. Build custom views, console hooks, and automated tools with Python and standard HTML.
@@ -4508,7 +4531,7 @@ def on_action(ctx, action_name, payload):
           </div>
 
           <div class="btn-row">
-            <a href="/api/panel-addons/template/download" class="btn-satin-green" style="text-decoration: none; padding: 6px 20px; font-weight: bold;">[ 📥 Download Starter Boilerplate Archive ]</a>
+            <a href="/api/panel-addons/template/download" class="btn-satin-green" style="text-decoration: none; padding: 6px 20px; font-weight: bold;">[ Download Starter Boilerplate Archive ]</a>
             <button class="btn-classic" style="padding: 6px 16px;" onclick="selectNavView('panel-addons-installed')">[ Back to Installed Addons ]</button>
           </div>
         </section>
@@ -4517,7 +4540,7 @@ def on_action(ctx, action_name, payload):
         <section id="view-panel-addon-tab" class="view-panel">
           <div class="section-title-bar">
             <span id="active-addon-tab-title">Addon View</span>
-            <button class="btn-classic" onclick="selectNavView('panel-addons-installed')">[ ⬅️ Back to Installed Addons ]</button>
+            <button class="btn-classic" onclick="selectNavView('panel-addons-installed')">[ Back to Installed Addons ]</button>
           </div>
           <div id="active-addon-tab-container" style="min-height: 400px;">
             <!-- Injected dynamically via loadActiveAddonTab(addonId) -->
@@ -4579,7 +4602,7 @@ def on_action(ctx, action_name, payload):
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <span id="fm-editor-status" style="font-weight: bold; color: var(--sec-bar-bg); font-size: 11px;"></span>
           <div style="display: flex; gap: 6px;">
-            <button class="btn-satin-green" style="height: 24px; padding: 0 14px;" onclick="saveFileManagerEditorFile()">[ 💾 Save Changes ]</button>
+            <button class="btn-satin-green" style="height: 24px; padding: 0 14px;" onclick="saveFileManagerEditorFile()">[ Save Changes ]</button>
             <button class="btn-classic" style="height: 24px; font-weight: bold;" onclick="closeFileManagerEditor()">[ Close ]</button>
           </div>
         </div>
@@ -4648,7 +4671,7 @@ def on_action(ctx, action_name, payload):
         </div>
 
         <div class="btn-row" style="margin-top: 10px;">
-          <button class="btn-satin-green" style="height: 26px; padding: 0 20px;" onclick="saveSubuserForm()">[ 💾 Save Sub-User ]</button>
+          <button class="btn-satin-green" style="height: 26px; padding: 0 20px;" onclick="saveSubuserForm()">[ Save Sub-User ]</button>
           <button class="btn-classic" style="height: 26px;" onclick="closeSubuserModal()">[ Cancel ]</button>
         </div>
       </div>
@@ -4791,8 +4814,8 @@ def on_action(ctx, action_name, payload):
       'diag-console': {
         title: 'Terminal Console Help',
         body: `
-          <div class="help-sub">System Log Stream</div>
-          <p class="help-text">Direct real-time stream from <code>logs/latest.log</code>. Enter standard Minecraft console commands into the prompt below.</p>
+          <div class="help-sub">System Log Stream &amp; Archive</div>
+          <p class="help-text">View live real-time output from <code>logs/latest.log</code> or select historical compressed archives (<code>*.log.gz</code>) from the Log File dropdown. Filter by keyword or severity (INFO, WARN, ERROR), and enter standard server commands into the console prompt.</p>
         `
       },
       'diag-ping': {
@@ -4847,7 +4870,7 @@ def on_action(ctx, action_name, payload):
           <div class="help-sub">Data Safety</div>
           <p class="help-text">Your worlds (<code>/world</code>, <code>/world_nether</code>, <code>/world_the_end</code>), player inventories, and configs are preserved. <code>server.jar</code> is backed up to <code>server.jar.bak</code> automatically before replacement.</p>
           <div class="help-sub">Rollback Protection</div>
-          <p class="help-text">If a newer build causes plugin incompatibility, use the <b>[ ⏪ Rollback ]</b> button to instantly restore the previous verified jar.</p>
+          <p class="help-text">If a newer build causes plugin incompatibility, use the <b>[ Rollback ]</b> button to instantly restore the previous verified jar.</p>
         `
       },
       'sys-branding': {
@@ -4955,6 +4978,7 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'sys-backups') loadBackups();
       if (viewId === 'sys-branding') loadBrandingForm();
       if (viewId === 'sys-themes') loadThemeStudio();
+      if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); }
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
       if (viewId === 'panel-addons-store') loadPanelAddonStore();
@@ -5156,25 +5180,106 @@ def on_action(ctx, action_name, payload):
       showBannerAlert('Status parameters refreshed.');
     }
 
-    // ── Log Console ─────────────────────────────────────────────
-    async function pollLogs() {
-      if (activeView !== 'diag-console') return;
+    // ── Log Console & Archive Viewer ─────────────────────────────
+    let cachedLogArchiveFiles = [];
+
+    async function loadConsoleLogArchiveList() {
+      const sel = document.getElementById('console-log-file-select');
+      if (!sel) return;
+      const currentVal = sel.value || 'latest.log';
       try {
-        const q = document.getElementById('log-search-box').value;
-        const lvl = document.getElementById('log-level-select').value;
-        const res = await fetch(`/api/logs?lines=100&q=${encodeURIComponent(q)}&level=${lvl}`);
+        const res = await fetch('/api/logs/archive');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.files)) return;
+
+        cachedLogArchiveFiles = data.files;
+        sel.innerHTML = '';
+        data.files.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.name;
+          if (f.is_latest) {
+            opt.textContent = `latest.log (Active Stream - ${f.size_str})`;
+          } else {
+            opt.textContent = `${f.name} (${f.size_str} - ${f.date})`;
+          }
+          sel.appendChild(opt);
+        });
+
+        if ([...sel.options].some(o => o.value === currentVal)) {
+          sel.value = currentVal;
+        } else {
+          sel.value = 'latest.log';
+        }
+        updateConsoleLogFileMeta();
+      } catch (e) {
+        console.error('Error fetching log archive list:', e);
+      }
+    }
+
+    function updateConsoleLogFileMeta() {
+      const sel = document.getElementById('console-log-file-select');
+      const dlBtn = document.getElementById('console-download-btn');
+      const notice = document.getElementById('archived-log-notice');
+      const fnameEl = document.getElementById('archived-log-filename');
+      const metaEl = document.getElementById('archived-log-meta');
+      const autoScrollChk = document.getElementById('chk-auto-scroll');
+
+      const fileName = sel ? sel.value : 'latest.log';
+      if (dlBtn) {
+        dlBtn.href = `/api/log/download?file=${encodeURIComponent(fileName)}`;
+        dlBtn.setAttribute('download', fileName === 'latest.log' ? 'fiesta-latest.log' : fileName);
+      }
+
+      if (fileName !== 'latest.log') {
+        if (notice) notice.style.display = 'block';
+        if (fnameEl) fnameEl.textContent = fileName;
+        if (metaEl && sel.selectedOptions[0]) {
+          metaEl.textContent = sel.selectedOptions[0].textContent;
+        }
+        if (autoScrollChk) autoScrollChk.checked = false;
+      } else {
+        if (notice) notice.style.display = 'none';
+        if (autoScrollChk) autoScrollChk.checked = true;
+      }
+    }
+
+    function onConsoleLogFileChange() {
+      updateConsoleLogFileMeta();
+      pollLogs(false);
+    }
+
+    async function pollLogs(isAutoInterval = false) {
+      if (activeView !== 'diag-console') return;
+      const fileSel = document.getElementById('console-log-file-select');
+      const reqFile = fileSel ? fileSel.value : 'latest.log';
+
+      if (isAutoInterval && reqFile !== 'latest.log') {
+        return; // Historical archive is static; do not auto-poll
+      }
+
+      try {
+        const q = document.getElementById('log-search-box')?.value || '';
+        const lvl = document.getElementById('log-level-select')?.value || 'ALL';
+        const lines = document.getElementById('console-lines-select')?.value || '100';
+
+        const res = await fetch(`/api/logs?file=${encodeURIComponent(reqFile)}&lines=${lines}&q=${encodeURIComponent(q)}&level=${lvl}`);
         if (!res.ok) return;
         const d = await res.json();
         const box = document.getElementById('tp-console-display');
-        const autoScroll = document.getElementById('chk-auto-scroll').checked;
+        const autoScroll = document.getElementById('chk-auto-scroll')?.checked;
 
-        box.innerHTML = d.logs.map(line => {
-          let cls = 'log-info';
-          if (line.includes('WARN')) cls = 'log-warn';
-          else if (line.includes('ERROR') || line.includes('Exception')) cls = 'log-error';
-          else if (line.includes('INFO')) cls = 'log-info';
-          return `<div class="${cls}">${escapeHtml(line)}</div>`;
-        }).join('');
+        if (d.logs && d.logs.length > 0) {
+          box.innerHTML = d.logs.map(line => {
+            let cls = 'log-info';
+            if (line.includes('WARN')) cls = 'log-warn';
+            else if (line.includes('ERROR') || line.includes('Exception')) cls = 'log-error';
+            else if (line.includes('INFO')) cls = 'log-info';
+            return `<div class="${cls}">${escapeHtml(line)}</div>`;
+          }).join('');
+        } else {
+          box.innerHTML = `<div class="log-sys">-- No logs found matching the filter criteria in ${escapeHtml(reqFile)} --</div>`;
+        }
 
         if (autoScroll) {
           box.scrollTop = box.scrollHeight;
@@ -5211,7 +5316,7 @@ def on_action(ctx, action_name, payload):
         });
         const d = await res.json();
         showBannerAlert(d.message);
-        setTimeout(pollLogs, 200);
+        setTimeout(() => pollLogs(false), 200);
       } catch (e) {
         showBannerAlert('Command delivery error.', true);
       }
@@ -5260,7 +5365,7 @@ def on_action(ctx, action_name, payload):
           </td>
           <td>
             <div style="display: flex; flex-wrap: wrap; gap: 3px; align-items: center;">
-              <button class="btn-satin-green" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="openPlayerInventory('${escapeHtml(p.name)}', '${p.uuid}')">🎒 Inventory</button>
+              <button class="btn-satin-green" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="openPlayerInventory('${escapeHtml(p.name)}', '${p.uuid}')">Inventory</button>
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="playerAction('${escapeHtml(p.name)}', '${p.is_op ? 'deop' : 'op'}')">${p.is_op ? 'De-OP' : 'Make OP'}</button>
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #b00;" onclick="instantKickPlayer('${escapeHtml(p.name)}')">Kick</button>
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; ${p.is_banned ? 'color: #008822;' : 'color: #b00;'}" onclick="instantBanPlayer('${escapeHtml(p.name)}', ${p.is_banned})">${p.is_banned ? 'Pardon' : 'Ban'}</button>
@@ -5271,7 +5376,7 @@ def on_action(ctx, action_name, payload):
                 <option value="gamemode_creative">Gamemode: Creative</option>
                 <option value="gamemode_adventure">Gamemode: Adventure</option>
                 <option value="gamemode_spectator">Gamemode: Spectator</option>
-                <option value="hardcore_spectator">☠ Hardcore Spectator</option>
+                <option value="hardcore_spectator">Hardcore Spectator</option>
                 <option value="heal">Heal Full HP</option>
                 <option value="feed">Feed Hunger</option>
                 <option value="tp_spawn">Teleport to Spawn</option>
@@ -5538,7 +5643,7 @@ def on_action(ctx, action_name, payload):
             <div style="display: flex; gap: 6px;">
               <button class="btn-classic" style="height: 24px;" onclick="playerAction(currentInvPlayer, 'heal'); setTimeout(refreshCurrentPlayerInventory, 400);">[ Heal &amp; Feed ]</button>
               <button class="btn-classic" style="height: 24px;" onclick="playerAction(currentInvPlayer, 'tp_spawn'); setTimeout(refreshCurrentPlayerInventory, 400);">[ TP to Spawn ]</button>
-              <button class="btn-danger-red" style="height: 24px;" onclick="clearAllPlayerInventory()">[ ⚠ Clear All Inventory ]</button>
+              <button class="btn-danger-red" style="height: 24px;" onclick="clearAllPlayerInventory()">[ Clear All Inventory ]</button>
             </div>
             <div style="display: flex; gap: 6px;">
               <button class="btn-classic" style="height: 24px;" onclick="refreshCurrentPlayerInventory()">[ ⟳ Refresh ]</button>
@@ -5986,7 +6091,7 @@ def on_action(ctx, action_name, payload):
 
       if (badge && detectedAddonContext) {
         const sw = detectedAddonContext.software || 'Server';
-        badge.textContent = `Server: ${sw} (${detectedAddonContext.primary_addon_type === 'mods' ? '⚙️ Mods Mode' : '🧩 Plugins Mode'})`;
+        badge.textContent = `Server: ${sw} (${detectedAddonContext.primary_addon_type === 'mods' ? 'Mods Mode' : 'Plugins Mode'})`;
       }
     }
 
@@ -6130,7 +6235,7 @@ def on_action(ctx, action_name, payload):
           'Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)...';
       }
       if (submitBtn) {
-        submitBtn.textContent = isMods ? '[ 🔍 Search Mods ]' : '[ 🔍 Search Plugins ]';
+        submitBtn.textContent = isMods ? '[ Search Mods ]' : '[ Search Plugins ]';
       }
 
       if (chipsContainer) {
@@ -7164,9 +7269,9 @@ def on_action(ctx, action_name, payload):
             actionsHtml = `<span style="color:#006622; font-weight:bold; font-size:11px;">[ Primary Owner ]</span>`;
           } else {
             actionsHtml = `
-              <button class="btn-classic" style="height:20px; font-size:10px; margin-right:3px;" onclick="openSubuserModal('${escapeHtml(u.username)}')">[ ✎ Edit ]</button>
+              <button class="btn-classic" style="height:20px; font-size:10px; margin-right:3px;" onclick="openSubuserModal('${escapeHtml(u.username)}')">[ Edit ]</button>
               <button class="btn-classic" style="height:20px; font-size:10px; margin-right:3px;" onclick="toggleSubuserStatus('${escapeHtml(u.username)}', '${u.status}')">[ ${u.status === 'active' ? 'Disable' : 'Enable'} ]</button>
-              <button class="btn-classic" style="height:20px; font-size:10px; color:#a00;" onclick="deleteSubuser('${escapeHtml(u.username)}')">[ 🗑 Delete ]</button>
+              <button class="btn-classic" style="height:20px; font-size:10px; color:#a00;" onclick="deleteSubuser('${escapeHtml(u.username)}')">[ Delete ]</button>
             `;
           }
 
@@ -7614,11 +7719,11 @@ def on_action(ctx, action_name, payload):
       latestDetectedPaperVersion = version;
       const btn1 = document.getElementById('btn-quick-install-paper');
       if (btn1) {
-        btn1.textContent = `[ ⚡ Install Paper ${version} ]`;
+        btn1.textContent = `[ Install Paper ${version} ]`;
       }
       const btn2 = document.getElementById('btn-console-install-paper');
       if (btn2) {
-        btn2.textContent = `[ ⚡ Install Paper ${version} ]`;
+        btn2.textContent = `[ Install Paper ${version} ]`;
       }
     }
 
@@ -7684,7 +7789,7 @@ def on_action(ctx, action_name, payload):
           showBannerAlert(d.message || 'Installation failed.', true);
           buttons.forEach(b => {
             b.disabled = false;
-            b.textContent = `[ ⚡ Install Paper ${version} ]`;
+            b.textContent = `[ Install Paper ${version} ]`;
             b.style.opacity = '1';
           });
         }
@@ -7692,7 +7797,7 @@ def on_action(ctx, action_name, payload):
         showBannerAlert('Network error during quick installation.', true);
         buttons.forEach(b => {
           b.disabled = false;
-          b.textContent = `[ ⚡ Install Paper ${version} ]`;
+          b.textContent = `[ Install Paper ${version} ]`;
           b.style.opacity = '1';
         });
       }
@@ -7714,20 +7819,20 @@ def on_action(ctx, action_name, payload):
     ];
 
     const THEME_METADATA = [
-      { id: 'classic', name: '🌿 Classic Green', desc: 'Legacy TP-Link emerald router console style', mode: 'light', swatches: ['#006622', '#74b21d', '#ffffff', '#333333'] },
-      { id: 'dark', name: '🌙 Obsidian Green', desc: 'Dark stealth green theme with rich OLED contrast', mode: 'dark', swatches: ['#0e2213', '#4f8014', '#181b1f', '#d0d6de'] },
-      { id: 'archer', name: '🔷 Archer Blue', desc: 'Clean corporate TP-Link Archer blue styling', mode: 'light', swatches: ['#003b63', '#0088cc', '#ffffff', '#222222'] },
-      { id: 'archer-dark', name: '🌌 Archer Midnight', desc: 'Deep sapphire and dark midnight enterprise theme', mode: 'dark', swatches: ['#00223b', '#0088cc', '#131922', '#cad5e2'] },
-      { id: 'amber', name: '🔸 Retro Amber', desc: 'Vintage warm amber industrial terminal styling', mode: 'light', swatches: ['#4a2105', '#b84c04', '#ffffff', '#333333'] },
-      { id: 'amber-dark', name: '🔥 Amber Glow', desc: 'High-contrast glowing phosphorus CRT display theme', mode: 'dark', swatches: ['#301503', '#e67e22', '#1c1815', '#dfd3ca'] },
-      { id: 'matrix', name: '⚡ Matrix Stealth', desc: 'Pure black hacker OLED terminal with glowing green', mode: 'dark', swatches: ['#001a08', '#00ff66', '#070d07', '#99eeaa'] },
-      { id: 'synthwave', name: '💜 Cyber Synthwave', desc: 'Outrun 80s neon synthwave with cyber magenta & cyan', mode: 'dark', swatches: ['#1e0936', '#ff2a85', '#190e2e', '#05d9e8'] },
-      { id: 'nighthawk', name: '🔴 Nighthawk ROG', desc: 'Aggressive gaming router aesthetic with crimson red', mode: 'dark', swatches: ['#150507', '#dc2626', '#161618', '#f4f4f5'] },
-      { id: 'nordic', name: '❄️ Nordic Glacier', desc: 'Crisp arctic ice-blue palette with high readability', mode: 'light', swatches: ['#244b6b', '#0288d1', '#ffffff', '#263238'] },
-      { id: 'catppuccin', name: '☕ Catppuccin Mocha', desc: 'Cozy pastel developer palette with lavender accents', mode: 'dark', swatches: ['#1e1e2e', '#cba6f7', '#181825', '#cdd6f4'] },
-      { id: 'win98', name: '🪟 Windows 98', desc: 'Nostalgic 1998 desktop OS teal wallpaper with 3D gray beveled dialogs', mode: 'retro', swatches: ['#000080', '#008080', '#c0c0c0', '#000000'] },
-      { id: 'win7', name: '🪟 Windows 7 Aero', desc: 'Authentic Windows 7 Aero Glass styling powered by 7.css (by Khang NT)', mode: 'glass', swatches: ['#1e78c8', '#34deff', '#ffffff', '#042549'] },
-      { id: 'custom', name: '🎨 Custom Palette', desc: 'Your personalized user-defined theme created in the studio below', mode: 'custom', swatches: ['#3a1359', '#00f0ff', '#181b1f', '#e2d4f5'] }
+      { id: 'classic', name: 'Classic Green', desc: 'Legacy TP-Link emerald router console style', mode: 'light', swatches: ['#006622', '#74b21d', '#ffffff', '#333333'] },
+      { id: 'dark', name: 'Obsidian Green', desc: 'Dark stealth green theme with rich OLED contrast', mode: 'dark', swatches: ['#0e2213', '#4f8014', '#181b1f', '#d0d6de'] },
+      { id: 'archer', name: 'Archer Blue', desc: 'Clean corporate TP-Link Archer blue styling', mode: 'light', swatches: ['#003b63', '#0088cc', '#ffffff', '#222222'] },
+      { id: 'archer-dark', name: 'Archer Midnight', desc: 'Deep sapphire and dark midnight enterprise theme', mode: 'dark', swatches: ['#00223b', '#0088cc', '#131922', '#cad5e2'] },
+      { id: 'amber', name: 'Retro Amber', desc: 'Vintage warm amber industrial terminal styling', mode: 'light', swatches: ['#4a2105', '#b84c04', '#ffffff', '#333333'] },
+      { id: 'amber-dark', name: 'Amber Glow', desc: 'High-contrast glowing phosphorus CRT display theme', mode: 'dark', swatches: ['#301503', '#e67e22', '#1c1815', '#dfd3ca'] },
+      { id: 'matrix', name: 'Matrix Stealth', desc: 'Pure black hacker OLED terminal with glowing green', mode: 'dark', swatches: ['#001a08', '#00ff66', '#070d07', '#99eeaa'] },
+      { id: 'synthwave', name: 'Cyber Synthwave', desc: 'Outrun 80s neon synthwave with cyber magenta & cyan', mode: 'dark', swatches: ['#1e0936', '#ff2a85', '#190e2e', '#05d9e8'] },
+      { id: 'nighthawk', name: 'Nighthawk ROG', desc: 'Aggressive gaming router aesthetic with crimson red', mode: 'dark', swatches: ['#150507', '#dc2626', '#161618', '#f4f4f5'] },
+      { id: 'nordic', name: 'Nordic Glacier', desc: 'Crisp arctic ice-blue palette with high readability', mode: 'light', swatches: ['#244b6b', '#0288d1', '#ffffff', '#263238'] },
+      { id: 'catppuccin', name: 'Catppuccin Mocha', desc: 'Cozy pastel developer palette with lavender accents', mode: 'dark', swatches: ['#1e1e2e', '#cba6f7', '#181825', '#cdd6f4'] },
+      { id: 'win98', name: 'Windows 98', desc: 'Nostalgic 1998 desktop OS teal wallpaper with 3D gray beveled dialogs', mode: 'retro', swatches: ['#000080', '#008080', '#c0c0c0', '#000000'] },
+      { id: 'win7', name: 'Windows 7 Aero', desc: 'Authentic Windows 7 Aero Glass styling powered by 7.css (by Khang NT)', mode: 'glass', swatches: ['#1e78c8', '#34deff', '#ffffff', '#042549'] },
+      { id: 'custom', name: 'Custom Palette', desc: 'Your personalized user-defined theme created in the studio below', mode: 'custom', swatches: ['#3a1359', '#00f0ff', '#181b1f', '#e2d4f5'] }
     ];
 
     const CUSTOM_PRESETS = {
@@ -7834,10 +7939,10 @@ def on_action(ctx, action_name, payload):
       const toggleBtn = document.getElementById('theme-mode-toggle');
       if (toggleBtn) {
         if (isDarkTheme(themeName)) {
-          toggleBtn.textContent = '[ ☀️ Light Mode ]';
+          toggleBtn.textContent = '[ Light Mode ]';
           toggleBtn.title = 'Switch to light mode';
         } else {
-          toggleBtn.textContent = '[ 🌙 Dark Mode ]';
+          toggleBtn.textContent = '[ Dark Mode ]';
           toggleBtn.title = 'Switch to dark mode';
         }
       }
@@ -8489,10 +8594,12 @@ def on_action(ctx, action_name, payload):
       if (!addons || addons.length === 0) {
         container.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 32px 16px; background: rgba(0,0,0,0.03); border: 1px dashed rgba(128,128,128,0.3); border-radius: 6px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">🧩</div>
+            <div style="margin-bottom: 8px;">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="#0284c7"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5s-1.12-2.5-2.5-2.5z"/></svg>
+            </div>
             <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">No Panel Addons Installed Yet</div>
             <div class="inline-hint" style="margin-bottom: 12px;">Browse our verified 1-click extension catalog or upload a custom addon archive.</div>
-            <button class="btn-classic" style="font-weight: bold; color: #006622; padding: 4px 16px;" onclick="selectNavView('panel-addons-store')">[ 🛒 Open Plugin Store ]</button>
+            <button class="btn-classic" style="font-weight: bold; color: #006622; padding: 4px 16px;" onclick="selectNavView('panel-addons-store')">[ Open Plugin Store ]</button>
           </div>
         `;
         return;
@@ -8502,7 +8609,7 @@ def on_action(ctx, action_name, payload):
         const isEnabled = a.enabled !== false;
         const iconHtml = a.icon && a.icon.startsWith('fa') 
           ? `<i class="${escapeHtml(a.icon)}" style="font-size: 20px; color: #0284c7;"></i>`
-          : `<span style="font-size: 20px;">🧩</span>`;
+          : `<span style="font-size: 11px; font-weight: bold; color: #0284c7;">[EXT]</span>`;
 
         const hasTab = a.ui_slots && a.ui_slots.tab;
         return `
@@ -8534,9 +8641,9 @@ def on_action(ctx, action_name, payload):
 
               <div style="display: flex; gap: 6px;">
                 ${hasTab ? `
-                  <button class="btn-classic" style="font-weight: bold; color: #0284c7;" onclick="openPanelAddonTab('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ ⚙️ Open ]</button>
+                  <button class="btn-classic" style="font-weight: bold; color: #0284c7;" onclick="openPanelAddonTab('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ Open ]</button>
                 ` : ''}
-                <button class="btn-classic" style="color: #b91c1c;" onclick="uninstallPanelAddon('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ 🗑️ ]</button>
+                <button class="btn-classic" style="color: #b91c1c;" onclick="uninstallPanelAddon('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}')">[ Uninstall ]</button>
               </div>
             </div>
           </div>
@@ -8558,7 +8665,7 @@ def on_action(ctx, action_name, payload):
         const title = a.ui_slots.tab.title || a.name || a.id;
         return `
           <div class="nav-sub-item" onclick="openPanelAddonTab('${escapeQuotes(a.id)}', '${escapeQuotes(a.name || a.id)}', this)">
-            - 🔌 ${escapeHtml(title)}
+            - ${escapeHtml(title)}
           </div>
         `;
       }).join('');
@@ -8666,7 +8773,7 @@ def on_action(ctx, action_name, payload):
         const isInstalled = item.installed === true;
         const iconHtml = item.icon && item.icon.startsWith('fa')
           ? `<i class="${escapeHtml(item.icon)}" style="font-size: 24px; color: #0284c7;"></i>`
-          : `<span style="font-size: 24px;">🧩</span>`;
+          : `<span style="font-size: 11px; font-weight: bold; color: #0284c7;">[EXT]</span>`;
 
         return `
           <div class="panel-box" style="margin: 0; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -8689,19 +8796,19 @@ def on_action(ctx, action_name, payload):
               </p>
 
               <div style="display: flex; align-items: center; gap: 12px; font-size: 11px; color: #94a3b8; margin-bottom: 12px;">
-                <span>⭐ ${item.rating || '5.0'}</span>
-                <span>📥 ${item.downloads ? item.downloads + '+' : '500+'} installs</span>
+                <span>Rating: ${item.rating || '5.0'} / 5</span>
+                <span>${item.downloads ? item.downloads + '+' : '500+'} installs</span>
               </div>
             </div>
 
             <div style="padding-top: 10px; border-top: 1px solid rgba(128,128,128,0.15); display: flex; align-items: center; justify-content: flex-end;">
               ${isInstalled ? `
                 <button class="btn-classic" style="color: #15803d; font-weight: bold; background: rgba(34, 197, 94, 0.1);" onclick="openPanelAddonTab('${escapeQuotes(item.id)}', '${escapeQuotes(item.name)}')">
-                  [ ✓ Installed • Open ]
+                  [ Installed • Open ]
                 </button>
               ` : `
                 <button class="btn-classic" style="color: #006622; font-weight: bold;" onclick="installAddonFromStore('${escapeQuotes(item.id)}', this)">
-                  [ ⚡ 1-Click Install ]
+                  [ Install Addon ]
                 </button>
               `}
             </div>
@@ -8724,7 +8831,7 @@ def on_action(ctx, action_name, payload):
     async function installAddonFromStore(addonId, btn) {
       if (btn) {
         btn.disabled = true;
-        btn.textContent = '[ ⏳ Installing... ]';
+        btn.textContent = '[ Installing... ]';
       }
 
       try {
@@ -8742,14 +8849,14 @@ def on_action(ctx, action_name, payload):
           showBannerAlert(d.error || 'Failed to install addon.', true);
           if (btn) {
             btn.disabled = false;
-            btn.textContent = '[ ⚡ 1-Click Install ]';
+            btn.textContent = '[ Install Addon ]';
           }
         }
       } catch (err) {
         showBannerAlert('Network error installing addon: ' + err.message, true);
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '[ ⚡ 1-Click Install ]';
+          btn.textContent = '[ Install Addon ]';
         }
       }
     }
@@ -8860,7 +8967,7 @@ def on_action(ctx, action_name, payload):
       }
 
       if (msg) {
-        msg.textContent = '🚀 Delivering test ping to Discord...';
+        msg.textContent = 'Delivering test ping to Discord...';
         msg.style.color = '#5865f2';
       }
 
@@ -8941,10 +9048,10 @@ def on_action(ctx, action_name, payload):
       if (el) {
         if (el.type === 'password') {
           el.type = 'text';
-          btn.textContent = '[ 🙈 Hide ]';
+          btn.textContent = '[ Hide ]';
         } else {
           el.type = 'password';
-          btn.textContent = '[ 👁️ Show ]';
+          btn.textContent = '[ Show ]';
         }
       }
     }
@@ -9150,7 +9257,7 @@ def on_action(ctx, action_name, payload):
       const badge = document.getElementById('addon-maint-status-badge');
 
       if (btn) {
-        btn.textContent = isMaintenanceActive ? '[ 🔓 Deactivate Lockdown ]' : '[ 🔒 Activate Lockdown ]';
+        btn.textContent = isMaintenanceActive ? '[ Deactivate Lockdown ]' : '[ Activate Lockdown ]';
         btn.style.color = isMaintenanceActive ? '#dc2626' : '';
       }
       if (badge) {
@@ -9233,6 +9340,7 @@ def on_action(ctx, action_name, payload):
 
     // Initialize timers
     pollStatus();
+    loadConsoleLogArchiveList();
     pollLogs();
     loadMinecraftItemsList();
     fetchAddonContext();
@@ -9240,7 +9348,7 @@ def on_action(ctx, action_name, payload):
     loadPanelAddons(false);
     setInterval(renderUptime, 1000); // High-precision local 1-second ticker (zero latency & zero lag)
     setInterval(pollStatus, 3000);
-    setInterval(pollLogs, 2000);
+    setInterval(() => pollLogs(true), 2000);
   </script>
 </body>
 </html>
