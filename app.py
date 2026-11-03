@@ -713,7 +713,18 @@ def api_status():
         except Exception:
             pass
 
-    uptime_sec = int(time.time() - START_TIME)
+    mc_uptime_sec = 0
+    mc_start_time = None
+    if mc_running and mc_pid and psutil and psutil.pid_exists(mc_pid):
+        try:
+            p = psutil.Process(mc_pid)
+            mc_start_time = p.create_time()
+            mc_uptime_sec = max(0, int(time.time() - mc_start_time))
+        except Exception:
+            mc_uptime_sec = int(time.time() - START_TIME)
+    elif mc_running:
+        mc_uptime_sec = int(time.time() - START_TIME)
+
     ping_info = ping_mc()
 
     service_active = False
@@ -735,7 +746,10 @@ def api_status():
         "disk_used_gb": round(disk.used / (1024 * 1024 * 1024), 1),
         "disk_total_gb": round(disk.total / (1024 * 1024 * 1024), 1),
         "disk_percent": disk.percent,
-        "uptime_seconds": uptime_sec,
+        "uptime_seconds": mc_uptime_sec if mc_running else 0,
+        "server_start_time": mc_start_time if mc_running else None,
+        "server_time": time.time(),
+        "portal_uptime_seconds": int(time.time() - START_TIME),
         "ops_count": len(ops),
         "bans_count": len(banned),
         "whitelist_count": whitelist_count,

@@ -2898,7 +2898,7 @@
             </tr>
             <tr>
               <td class="label-col">Service Uptime:</td>
-              <td class="val-col" id="st-uptime">Loading...</td>
+              <td class="val-col"><strong id="st-uptime" style="color: #004080; font-family: monospace, sans-serif; font-size: 11px;">Loading...</strong></td>
             </tr>
             <tr>
               <td class="label-col">Engine TPS:</td>
@@ -3524,6 +3524,7 @@
             <div style="display: flex; align-items: center; gap: 8px;">
               <strong style="color: #006622; font-size: 11px;">Server Power Controls:</strong>
               <span id="console-power-badge" class="badge-status online">● Systemd Active</span>
+              <span id="console-uptime" class="inline-hint" style="font-weight: 600; color: #004080; margin-left: 4px;"></span>
             </div>
             <div style="display: flex; gap: 6px;">
               <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ ▶ Start Server ]</button>
@@ -4800,6 +4801,45 @@
       }
     }
 
+    // ── High-Precision Zero-Lag Running Timer ───────────────────
+    let isServerRunning = false;
+    let serverUptimeBaseSeconds = 0;
+    let localSyncTimestamp = 0;
+
+    function formatUptimeString(totalSecs) {
+      if (isNaN(totalSecs) || totalSecs < 0) totalSecs = 0;
+      const days = Math.floor(totalSecs / 86400);
+      const hrs = Math.floor((totalSecs % 86400) / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = Math.floor(totalSecs % 60);
+
+      const parts = [];
+      if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+      if (hrs > 0 || days > 0) parts.push(`${hrs} hr${hrs !== 1 ? 's' : ''}`);
+      parts.push(`${mins} min${mins !== 1 ? 's' : ''}`);
+      parts.push(`${secs} sec${secs !== 1 ? 's' : ''}`);
+      return parts.join(', ');
+    }
+
+    function renderUptime() {
+      const el = document.getElementById('st-uptime');
+      const consoleUptimeEl = document.getElementById('console-uptime');
+      if (!isServerRunning) {
+        if (el) el.textContent = 'Server is stopped (Offline)';
+        if (consoleUptimeEl) consoleUptimeEl.textContent = '(Stopped)';
+        return;
+      }
+
+      const elapsedSinceSync = localSyncTimestamp > 0
+        ? Math.max(0, Math.floor((Date.now() - localSyncTimestamp) / 1000))
+        : 0;
+      const currentTotalSeconds = serverUptimeBaseSeconds + elapsedSinceSync;
+      const formatted = formatUptimeString(currentTotalSeconds);
+
+      if (el) el.textContent = formatted;
+      if (consoleUptimeEl) consoleUptimeEl.textContent = `(Running: ${formatted})`;
+    }
+
     // ── Status Polling ──────────────────────────────────────────
     async function pollStatus() {
       try {
@@ -4851,11 +4891,13 @@
         const mDisk = document.getElementById('meter-disk');
         mDisk.style.width = `${Math.min(100, d.disk_percent)}%`;
 
-        // Uptime
-        const hrs = Math.floor(d.uptime_seconds / 3600);
-        const mins = Math.floor((d.uptime_seconds % 3600) / 60);
-        const secs = d.uptime_seconds % 60;
-        document.getElementById('st-uptime').textContent = `${hrs} hours, ${mins} mins, ${secs} secs`;
+        // Uptime & Running Timer sync
+        isServerRunning = !!d.server_running;
+        if (isServerRunning) {
+          serverUptimeBaseSeconds = Number(d.uptime_seconds) || 0;
+          localSyncTimestamp = Date.now();
+        }
+        renderUptime();
 
         // Engine State & PID
         const mcStateEl = document.getElementById('st-mc-state');
@@ -8199,15 +8241,13 @@
     // Initialize Theme Controls
     applyTheme(getActiveTheme(), true);
 
-    // Initialize Theme Controls
-    applyTheme(getActiveTheme(), true);
-
     // Initialize timers
     pollStatus();
     pollLogs();
     loadMinecraftItemsList();
     fetchAddonContext();
     fetchLatestSoftwareVersion();
+    setInterval(renderUptime, 1000); // High-precision local 1-second ticker (zero latency & zero lag)
     setInterval(pollStatus, 3000);
     setInterval(pollLogs, 2000);
   </script>
