@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>The Modern & Retro Minecraft Server Management Suite</strong><br>
-  Nostalgic TP-Link & Windows 7 Aero Aesthetics • Real-Time Telemetry • Visual Inventory Inspector • Modrinth Plugin Manager • Jailed File Manager • Turnkey Deployment
+  Frutiger Aero Aesthetics • Real-Time Telemetry • Visual Inventory Inspector • Modrinth Plugin Manager • Jailed File Manager • Turnkey Deployment
 </p>
 
 <p align="center">
