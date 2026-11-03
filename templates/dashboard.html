@@ -2615,13 +2615,13 @@
           </div>
         </div>
 
-        <!-- 6. Forwarding / Plugins -->
+        <!-- 6. Forwarding / Addons (Plugins & Mods) -->
         <div class="nav-group">
-          <div class="nav-parent" onclick="toggleNavGroup('plugins', this)">Forwarding / Plugins</div>
+          <div class="nav-parent" onclick="toggleNavGroup('plugins', this)" id="nav-parent-addons">Forwarding / Addons</div>
           <div class="nav-sub-list" id="sub-plugins">
-            <div class="nav-sub-item" onclick="selectNavView('plugins-active', this)">- Installed Plugins</div>
-            <div class="nav-sub-item" onclick="selectNavView('plugins-search', this)">- Search Online Plugins</div>
-            <div class="nav-sub-item" onclick="selectNavView('plugins-upload', this)">- Upload Plugin Package</div>
+            <div class="nav-sub-item" onclick="selectNavView('plugins-active', this)" id="nav-sub-installed">- Installed Addons</div>
+            <div class="nav-sub-item" onclick="selectNavView('plugins-search', this)" id="nav-sub-search">- Search Online Repository</div>
+            <div class="nav-sub-item" onclick="selectNavView('plugins-upload', this)">- Upload Package (.jar)</div>
             <div class="nav-sub-item" onclick="selectNavView('plugins-disabled', this)">- Disabled Archive</div>
           </div>
         </div>
@@ -3151,13 +3151,21 @@
           </table>
         </section>
 
-        <!-- ════ VIEW 11: INSTALLED PLUGINS ════ -->
+        <!-- ════ VIEW 11: INSTALLED ADDONS (PLUGINS & MODS) ════ -->
         <section id="view-plugins-active" class="view-panel" style="display:none;">
           <div class="section-title-bar">
-            <span>Forwarding / Plugins - Installed Packages</span>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadPlugins()">[ Refresh ]</button>
+            <span id="title-installed-addons">Forwarding / Addons - Installed Packages</span>
+            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadCurrentAddons()">[ Refresh ]</button>
           </div>
-          <div style="margin-bottom: 8px;">
+
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
+            <span style="font-weight: bold; font-size: 11px; color: #333;">Package Type:</span>
+            <button id="btn-tab-addon-plugins" class="btn-classic active-tab" onclick="switchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ 🧩 Plugins (/plugins/) ]</button>
+            <button id="btn-tab-addon-mods" class="btn-classic" onclick="switchAddonMode('mods')" style="padding: 2px 10px;">[ ⚙️ Mods (/mods/) ]</button>
+            <span id="addon-badge-detected" style="margin-left: auto; font-size: 11px; color: #006622; font-weight: bold;"></span>
+          </div>
+
+          <div id="plugin-quick-actions" style="margin-bottom: 8px;">
             <button class="btn-classic" onclick="triggerAction('reload_plugin', 'essentials')">Reload Essentials</button>
             <button class="btn-classic" onclick="triggerAction('reload_plugin', 'tab')">Reload TAB</button>
             <button class="btn-classic" onclick="triggerAction('reload_plugin', 'deluxemenus')">Reload DeluxeMenus</button>
@@ -3166,43 +3174,42 @@
           <table class="data-grid-table">
             <thead>
               <tr>
-                <th>Plugin Name</th>
+                <th id="th-addon-name">Addon Name</th>
                 <th>JAR Filename</th>
                 <th style="width: 90px;">Size</th>
                 <th style="width: 170px;">Operations</th>
               </tr>
             </thead>
             <tbody id="active-plugins-table-body">
-              <tr><td colspan="4" style="text-align: center; color: #888;">Loading plugins...</td></tr>
+              <tr><td colspan="4" style="text-align: center; color: #888;">Loading packages...</td></tr>
             </tbody>
           </table>
         </section>
 
-        <!-- ════ VIEW 11B: ONLINE PLUGINS SEARCH & DOWNLOAD ════ -->
+        <!-- ════ VIEW 11B: ONLINE REPOSITORY SEARCH & DOWNLOAD ════ -->
         <section id="view-plugins-search" class="view-panel" style="display:none;">
           <div class="section-title-bar">
-            <span>Forwarding / Plugins - Online Repository Search &amp; Direct Download</span>
+            <span>Forwarding / Addons - Online Repository Search &amp; Direct Download</span>
           </div>
 
-          <div class="section-sub-header">Modrinth Minecraft Plugins Repository</div>
-          <p style="margin-bottom: 10px; color: #555;">Search verified Purpur/Paper/Spigot plugins from the Modrinth directory and install with 1-click directly into <code>/plugins/</code>.</p>
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
+            <span style="font-weight: bold; font-size: 11px; color: #333;">Repository Target:</span>
+            <button id="btn-search-target-plugins" class="btn-classic active-tab" onclick="switchSearchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ 🧩 Minecraft Plugins ]</button>
+            <button id="btn-search-target-mods" class="btn-classic" onclick="switchSearchAddonMode('mods')" style="padding: 2px 10px;">[ ⚙️ Minecraft Mods ]</button>
+            <span id="addon-search-badge" style="margin-left: auto; font-size: 11px; color: #555;">Targeting: <strong id="search-target-label" style="color: #006622;">Purpur / Paper / Spigot</strong> (into <code>/plugins/</code>)</span>
+          </div>
 
-          <form onsubmit="searchOnlinePlugins(event)" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+          <div class="section-sub-header" id="repo-header-text">Modrinth Minecraft Plugins Repository</div>
+          <p id="repo-desc-text" style="margin-bottom: 10px; color: #555;">Search verified Purpur/Paper/Spigot plugins from the Modrinth directory and install with 1-click directly into <code>/plugins/</code>.</p>
+
+          <form onsubmit="searchCurrentAddons(event)" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
             <input type="text" id="plugin-search-input" placeholder="Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)..." style="flex: 1; height: 26px; padding: 0 8px; font-size: 12px;">
-            <button type="submit" class="btn-satin-green" style="height: 26px; font-size: 11px;">[ 🔍 Search Plugins ]</button>
+            <button type="submit" class="btn-satin-green" id="btn-addon-search-submit" style="height: 26px; font-size: 11px;">[ 🔍 Search Plugins ]</button>
           </form>
 
-          <div style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
+          <div id="quick-searches-container" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
             <span style="font-weight: bold; color: #444;">Quick Searches:</span>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('LuckPerms')">LuckPerms</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('Chunky')">Chunky</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('Vault')">Vault</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('CoreProtect')">CoreProtect</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('ViaVersion')">ViaVersion</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('DeluxeMenus')">DeluxeMenus</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('TAB')">TAB</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('SkinsRestorer')">SkinsRestorer</button>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchPlugin('WorldEdit')">WorldEdit</button>
+            <div id="quick-searches-chips" style="display: inline-flex; flex-wrap: wrap; gap: 5px;"></div>
           </div>
 
           <div id="plugin-search-status" style="margin-bottom: 8px; font-weight: bold; font-size: 11px; color: #006622; display: none;"></div>
@@ -3211,23 +3218,30 @@
             <thead>
               <tr>
                 <th style="width: 44px; text-align: center;">Icon</th>
-                <th style="width: 170px;">Plugin Name &amp; Author</th>
+                <th style="width: 170px;" id="th-search-name">Package Name &amp; Author</th>
                 <th>Description</th>
                 <th style="width: 95px; text-align: right;">Downloads</th>
                 <th style="width: 160px; text-align: center;">Installation</th>
               </tr>
             </thead>
             <tbody id="plugins-search-table-body">
-              <tr><td colspan="5" style="text-align: center; color: #888; padding: 20px;">Use the search box above or click a quick search to discover plugins.</td></tr>
+              <tr><td colspan="5" style="text-align: center; color: #888; padding: 20px;">Use the search box above or click a quick search to discover packages.</td></tr>
             </tbody>
           </table>
         </section>
 
-        <!-- ════ VIEW 12: UPLOAD PLUGIN ════ -->
+        <!-- ════ VIEW 12: UPLOAD PACKAGE ════ -->
         <section id="view-plugins-upload" class="view-panel" style="display:none;">
-          <div class="section-title-bar">Forwarding / Plugins - Firmware &amp; Plugin Upgrade</div>
-          <div class="section-sub-header">Upload New Plugin (.jar)</div>
+          <div class="section-title-bar">Forwarding / Addons - Firmware &amp; Package Upgrade</div>
+          <div class="section-sub-header">Upload New Package (.jar)</div>
           <table class="form-layout-table">
+            <tr>
+              <td class="label-col">Package Type:</td>
+              <td class="val-col">
+                <label style="margin-right: 15px; cursor: pointer;"><input type="radio" name="upload-addon-type" value="plugins" id="upload-type-plugin" onchange="updateUploadTargetDisplay()" checked> 🧩 Plugin (Paper / Purpur / Spigot)</label>
+                <label style="cursor: pointer;"><input type="radio" name="upload-addon-type" value="mods" id="upload-type-mod" onchange="updateUploadTargetDisplay()"> ⚙️ Mod (Fabric / Forge / NeoForge)</label>
+              </td>
+            </tr>
             <tr>
               <td class="label-col">Select Package:</td>
               <td class="val-col">
@@ -3236,22 +3250,27 @@
             </tr>
             <tr>
               <td class="label-col">Deployment Target:</td>
-              <td class="val-col"><code>/home/ubuntu/fiesta/plugins/</code></td>
+              <td class="val-col"><code id="upload-dest-label">/plugins/</code></td>
             </tr>
           </table>
           <div class="btn-row">
-            <button class="btn-satin-green" onclick="uploadPluginFile()">[ Upload &amp; Install Package ]</button>
+            <button class="btn-satin-green" onclick="uploadAddonFile()">[ Upload &amp; Install Package ]</button>
           </div>
           <div id="upload-progress-text" style="text-align: center; margin-top: 8px; color: #006622; font-weight: bold;"></div>
         </section>
 
-        <!-- ════ VIEW 13: DISABLED PLUGINS ARCHIVE ════ -->
+        <!-- ════ VIEW 13: DISABLED ADDONS ARCHIVE ════ -->
         <section id="view-plugins-disabled" class="view-panel" style="display:none;">
           <div class="section-title-bar">
-            <span>Forwarding / Plugins - Disabled Packages Archive</span>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadDisabledPlugins()">[ Refresh ]</button>
+            <span>Forwarding / Addons - Disabled Packages Archive</span>
+            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadCurrentDisabledAddons()">[ Refresh ]</button>
           </div>
-          <p style="margin-bottom: 8px; color: #555;">These JAR files reside in <code>plugins/disabled/</code>. They are not loaded by the engine. You can restore them anytime without losing configuration files.</p>
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
+            <span style="font-weight: bold; font-size: 11px; color: #333;">Archive Category:</span>
+            <button id="btn-tab-disabled-plugins" class="btn-classic active-tab" onclick="switchDisabledAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ 🧩 Disabled Plugins (/plugins/disabled/) ]</button>
+            <button id="btn-tab-disabled-mods" class="btn-classic" onclick="switchDisabledAddonMode('mods')" style="padding: 2px 10px;">[ ⚙️ Disabled Mods (/mods/disabled/) ]</button>
+          </div>
+          <p id="disabled-desc-text" style="margin-bottom: 8px; color: #555;">These JAR files reside in <code>plugins/disabled/</code>. They are not loaded by the engine. You can restore them anytime without losing configuration files.</p>
           <table class="data-grid-table">
             <thead>
               <tr>
@@ -3261,7 +3280,7 @@
               </tr>
             </thead>
             <tbody id="disabled-plugins-table-body">
-              <tr><td colspan="3" style="text-align: center; color: #888;">Loading disabled plugins...</td></tr>
+              <tr><td colspan="3" style="text-align: center; color: #888;">Loading disabled packages...</td></tr>
             </tbody>
           </table>
         </section>
@@ -4503,9 +4522,10 @@
       if (viewId === 'security-bans') loadBans();
       if (viewId === 'security-ops') loadOps();
       if (viewId === 'security-access') loadSubusers();
-      if (viewId === 'plugins-active') loadPlugins();
-      if (viewId === 'plugins-search') { const inp = document.getElementById('plugin-search-input'); if (inp) inp.focus(); }
-      if (viewId === 'plugins-disabled') loadDisabledPlugins();
+      if (viewId === 'plugins-active') loadCurrentAddons();
+      if (viewId === 'plugins-search') { renderSearchTargetState(); const inp = document.getElementById('plugin-search-input'); if (inp) inp.focus(); }
+      if (viewId === 'plugins-disabled') loadCurrentDisabledAddons();
+      if (viewId === 'plugins-upload') updateUploadTargetDisplay();
       if (viewId === 'network-props') loadServerProps();
       if (viewId === 'sys-software') loadSoftwareInfo();
       if (viewId === 'sys-filemanager') loadFileManager();
@@ -5416,15 +5436,101 @@
       setTimeout(loadOps, 500);
     }
 
-    // ── Installed Plugins ───────────────────────────────────────
+    // ── Addons (Plugins & Mods) Engine ──────────────────────────
+    let currentAddonMode = 'plugins';
+    let currentSearchAddonMode = 'plugins';
+    let currentDisabledAddonMode = 'plugins';
+    let detectedAddonContext = null;
+
+    const pluginQuickSearches = ['LuckPerms', 'Chunky', 'Vault', 'CoreProtect', 'ViaVersion', 'DeluxeMenus', 'TAB', 'SkinsRestorer', 'WorldEdit'];
+    const modQuickSearches = ['Fabric API', 'Lithium', 'FerriteCore', 'Simple Voice Chat', 'Chunky', 'WorldEdit', 'Krypton', 'Cloth Config'];
+
+    async function fetchAddonContext() {
+      try {
+        const res = await fetch('/api/addons/context');
+        if (!res.ok) return;
+        const d = await res.json();
+        detectedAddonContext = d;
+
+        if (d.primary_addon_type === 'mods') {
+          currentAddonMode = 'mods';
+          currentSearchAddonMode = 'mods';
+          currentDisabledAddonMode = 'mods';
+          const modRadio = document.getElementById('upload-type-mod');
+          if (modRadio) modRadio.checked = true;
+          const navParent = document.getElementById('nav-parent-addons');
+          if (navParent) navParent.textContent = 'Forwarding / Mods';
+        } else {
+          currentAddonMode = 'plugins';
+          currentSearchAddonMode = 'plugins';
+          currentDisabledAddonMode = 'plugins';
+          const pluginRadio = document.getElementById('upload-type-plugin');
+          if (pluginRadio) pluginRadio.checked = true;
+          const navParent = document.getElementById('nav-parent-addons');
+          if (navParent) navParent.textContent = 'Forwarding / Plugins';
+        }
+
+        renderAddonTabsState();
+        renderSearchTargetState();
+        renderDisabledTabsState();
+        updateUploadTargetDisplay();
+      } catch (e) {}
+    }
+
+    function renderAddonTabsState() {
+      const pBtn = document.getElementById('btn-tab-addon-plugins');
+      const mBtn = document.getElementById('btn-tab-addon-mods');
+      const qActions = document.getElementById('plugin-quick-actions');
+      const badge = document.getElementById('addon-badge-detected');
+      const thName = document.getElementById('th-addon-name');
+
+      if (pBtn && mBtn) {
+        if (currentAddonMode === 'plugins') {
+          pBtn.classList.add('active-tab');
+          pBtn.style.fontWeight = 'bold';
+          mBtn.classList.remove('active-tab');
+          mBtn.style.fontWeight = 'normal';
+          if (qActions) qActions.style.display = 'block';
+          if (thName) thName.textContent = 'Plugin Name';
+        } else {
+          mBtn.classList.add('active-tab');
+          mBtn.style.fontWeight = 'bold';
+          pBtn.classList.remove('active-tab');
+          pBtn.style.fontWeight = 'normal';
+          if (qActions) qActions.style.display = 'none';
+          if (thName) thName.textContent = 'Mod Name';
+        }
+      }
+
+      if (badge && detectedAddonContext) {
+        const sw = detectedAddonContext.software || 'Server';
+        badge.textContent = `Server: ${sw} (${detectedAddonContext.primary_addon_type === 'mods' ? '⚙️ Mods Mode' : '🧩 Plugins Mode'})`;
+      }
+    }
+
+    function switchAddonMode(mode) {
+      currentAddonMode = mode;
+      renderAddonTabsState();
+      loadCurrentAddons();
+    }
+
+    async function loadCurrentAddons() {
+      if (currentAddonMode === 'mods') {
+        return loadMods();
+      } else {
+        return loadPlugins();
+      }
+    }
+
+    // ── Installed Plugins ──
     async function loadPlugins() {
       try {
         const res = await fetch('/api/plugins');
         if (!res.ok) return;
         const d = await res.json();
         const tbody = document.getElementById('active-plugins-table-body');
-        if (!d.plugins.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">No active plugins found.</td></tr>';
+        if (!d.plugins || !d.plugins.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">No active plugins found in /plugins/.</td></tr>';
           return;
         }
 
@@ -5458,34 +5564,149 @@
       }
     }
 
-    // ── Online Plugin Search & Direct Download ──────────────────
+    // ── Installed Mods ──
+    async function loadMods() {
+      try {
+        const res = await fetch('/api/mods');
+        if (!res.ok) return;
+        const d = await res.json();
+        const tbody = document.getElementById('active-plugins-table-body');
+        if (!d.mods || !d.mods.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">No active mods found in /mods/.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = d.mods.map(m => `
+          <tr>
+            <td><strong>${escapeHtml(m.name)}</strong></td>
+            <td style="font-family: monospace; font-size: 11px; color: #555;">${m.filename}</td>
+            <td>${m.size_kb} KB</td>
+            <td>
+              <button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px;" onclick="deleteActiveMod('${escapeHtml(m.name)}')">Disable / Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {}
+    }
+
+    async function deleteActiveMod(name) {
+      if (!confirm(`Move "${name}.jar" to mods/disabled/?\n\nMod will be unloaded on next restart.`)) return;
+      try {
+        const res = await fetch('/api/mod/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        if (d.success) loadMods();
+      } catch (e) {
+        showBannerAlert('Mod disable operation failed.', true);
+      }
+    }
+
+    // ── Online Repository Search (Plugins & Mods) ──
+    function renderSearchTargetState() {
+      const pBtn = document.getElementById('btn-search-target-plugins');
+      const mBtn = document.getElementById('btn-search-target-mods');
+      const label = document.getElementById('search-target-label');
+      const header = document.getElementById('repo-header-text');
+      const desc = document.getElementById('repo-desc-text');
+      const input = document.getElementById('plugin-search-input');
+      const submitBtn = document.getElementById('btn-addon-search-submit');
+      const chipsContainer = document.getElementById('quick-searches-chips');
+
+      const isMods = currentSearchAddonMode === 'mods';
+      if (pBtn && mBtn) {
+        if (isMods) {
+          mBtn.classList.add('active-tab');
+          mBtn.style.fontWeight = 'bold';
+          pBtn.classList.remove('active-tab');
+          pBtn.style.fontWeight = 'normal';
+        } else {
+          pBtn.classList.add('active-tab');
+          pBtn.style.fontWeight = 'bold';
+          mBtn.classList.remove('active-tab');
+          mBtn.style.fontWeight = 'normal';
+        }
+      }
+
+      if (label) {
+        label.textContent = isMods ? 'Fabric / Forge / NeoForge (into /mods/)' : 'Purpur / Paper / Spigot (into /plugins/)';
+      }
+      if (header) {
+        header.textContent = isMods ? 'Modrinth Minecraft Mods Directory' : 'Modrinth Minecraft Plugins Directory';
+      }
+      if (desc) {
+        desc.innerHTML = isMods ?
+          'Search verified <strong>Fabric / Forge / NeoForge mods</strong> from Modrinth and install with 1-click directly into <code>/mods/</code>.' :
+          'Search verified <strong>Purpur / Paper / Spigot plugins</strong> from Modrinth and install with 1-click directly into <code>/plugins/</code>.';
+      }
+      if (input) {
+        input.placeholder = isMods ?
+          'Type mod name (e.g. Fabric API, Lithium, FerriteCore, Simple Voice Chat)...' :
+          'Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)...';
+      }
+      if (submitBtn) {
+        submitBtn.textContent = isMods ? '[ 🔍 Search Mods ]' : '[ 🔍 Search Plugins ]';
+      }
+
+      if (chipsContainer) {
+        const list = isMods ? modQuickSearches : pluginQuickSearches;
+        chipsContainer.innerHTML = list.map(item => `
+          <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchAddon('${escapeHtml(item)}')">${escapeHtml(item)}</button>
+        `).join('');
+      }
+    }
+
+    function switchSearchAddonMode(mode) {
+      currentSearchAddonMode = mode;
+      renderSearchTargetState();
+      const input = document.getElementById('plugin-search-input');
+      if (input && input.value.trim()) {
+        searchCurrentAddons();
+      }
+    }
+
+    function quickSearchAddon(name) {
+      const input = document.getElementById('plugin-search-input');
+      if (input) input.value = name;
+      searchCurrentAddons();
+    }
+
     function quickSearchPlugin(name) {
-      document.getElementById('plugin-search-input').value = name;
-      searchOnlinePlugins();
+      quickSearchAddon(name);
     }
 
     async function searchOnlinePlugins(e) {
+      return searchCurrentAddons(e);
+    }
+
+    async function searchCurrentAddons(e) {
       if (e) e.preventDefault();
       const q = document.getElementById('plugin-search-input').value.trim();
       if (!q) return showBannerAlert('Enter a search keyword first.', true);
+
+      const isMods = currentSearchAddonMode === 'mods';
+      const endpoint = isMods ? `/api/mods/search?q=${encodeURIComponent(q)}` : `/api/plugins/search?q=${encodeURIComponent(q)}`;
 
       const statusEl = document.getElementById('plugin-search-status');
       const tbody = document.getElementById('plugins-search-table-body');
       statusEl.style.display = 'block';
       statusEl.style.color = '#006622';
-      statusEl.textContent = `Searching Modrinth repository for "${q}"...`;
+      statusEl.textContent = `Searching Modrinth ${isMods ? 'mods' : 'plugins'} for "${q}"...`;
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Searching remote repository...</td></tr>';
 
       try {
-        const res = await fetch(`/api/plugins/search?q=${encodeURIComponent(q)}`);
+        const res = await fetch(endpoint);
         const d = await res.json();
         if (!d.success || !d.hits || !d.hits.length) {
-          statusEl.textContent = `No plugins found matching "${q}".`;
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No compatible plugins found. Try another query.</td></tr>';
+          statusEl.textContent = `No ${isMods ? 'mods' : 'plugins'} found matching "${q}".`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No compatible ${isMods ? 'mods' : 'plugins'} found. Try another keyword.</td></tr>`;
           return;
         }
 
-        statusEl.textContent = `Found ${d.total_hits} plugin packages (showing top results):`;
+        statusEl.textContent = `Found ${d.total_hits} ${isMods ? 'mod' : 'plugin'} packages (showing top results):`;
         tbody.innerHTML = d.hits.map(p => {
           const icon = p.icon_url ? `<img src="${escapeHtml(p.icon_url)}" style="width:32px; height:32px; object-fit:contain; border-radius:3px;">` : `<div style="width:32px; height:32px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#666; font-size:10px;">JAR</div>`;
           const dlFormatted = Number(p.downloads || 0).toLocaleString();
@@ -5499,7 +5720,7 @@
               <td style="font-size: 10px; color: #444; line-height: 1.3;">${escapeHtml(p.description)}</td>
               <td style="text-align: right; font-family: monospace; font-size: 11px; font-weight: bold; color: #333;">${dlFormatted}</td>
               <td style="text-align: center;">
-                <button class="btn-satin-green" id="btn-dl-${p.project_id}" style="padding: 2px 8px; font-size: 10px; height: 24px;" onclick="installOnlinePlugin('${p.project_id}', '${escapeHtml(p.title)}')">
+                <button class="btn-satin-green" id="btn-dl-${p.project_id}" style="padding: 2px 8px; font-size: 10px; height: 24px;" onclick="installCurrentOnlineAddon('${p.project_id}', '${escapeHtml(p.title)}')">
                   [ ⬇ Download .jar ]
                 </button>
               </td>
@@ -5508,22 +5729,24 @@
         }).join('');
       } catch (err) {
         statusEl.style.color = '#cc0000';
-        statusEl.textContent = 'Error searching online plugin repository.';
+        statusEl.textContent = 'Error searching online repository.';
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#c00; padding:15px;">Search query failed. Check internet connection.</td></tr>';
       }
     }
 
-    async function installOnlinePlugin(projectId, title) {
+    async function installCurrentOnlineAddon(projectId, title) {
+      const isMods = currentSearchAddonMode === 'mods';
+      const endpoint = isMods ? '/api/mod/install_online' : '/api/plugin/install_online';
       const btn = document.getElementById(`btn-dl-${projectId}`);
       if (btn) {
         btn.disabled = true;
         btn.textContent = 'Downloading...';
         btn.style.opacity = '0.7';
       }
-      showBannerAlert(`Downloading latest release for "${title}"...`);
+      showBannerAlert(`Downloading release for "${title}" into /${isMods ? 'mods' : 'plugins'}/...`);
 
       try {
-        const res = await fetch('/api/plugin/install_online', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ project_id: projectId, name: title })
@@ -5545,13 +5768,17 @@
           }
         }
       } catch (err) {
-        showBannerAlert('Network error during plugin download.', true);
+        showBannerAlert(`Network error during ${isMods ? 'mod' : 'plugin'} download.`, true);
         if (btn) {
           btn.disabled = false;
           btn.textContent = '[ Retry ]';
           btn.style.opacity = '1';
         }
       }
+    }
+
+    async function installOnlinePlugin(projectId, title) {
+      return installCurrentOnlineAddon(projectId, title);
     }
 
     // ── Server Power Controls ───────────────────────────────────
@@ -5577,24 +5804,37 @@
       }
     }
 
-    // ── Upload Plugin ───────────────────────────────────────────
-    async function uploadPluginFile() {
+    // ── Upload Packages (Plugins & Mods) ──
+    function updateUploadTargetDisplay() {
+      const modRadio = document.getElementById('upload-type-mod');
+      const destLabel = document.getElementById('upload-dest-label');
+      if (destLabel) {
+        destLabel.textContent = (modRadio && modRadio.checked) ? '/mods/' : '/plugins/';
+      }
+    }
+
+    async function uploadAddonFile() {
       const fileInput = document.getElementById('plugin-file-input');
       const progressText = document.getElementById('upload-progress-text');
+      const modRadio = document.getElementById('upload-type-mod');
+      const isMod = modRadio && modRadio.checked;
+      const endpoint = isMod ? '/api/mod/upload' : '/api/plugin/upload';
+
       if (!fileInput.files.length) {
-        return showBannerAlert('Please select a .jar plugin file first.', true);
-      }
-      const file = fileInput.files[0];
-      if (!file.name.toLowerCase().endsWith('.jar')) {
-        return showBannerAlert('Invalid file format: Only .jar files are accepted.', true);
+        return showBannerAlert('Please select a .jar file to upload.', true);
       }
 
-      progressText.textContent = `Uploading ${file.name}...`;
+      const file = fileInput.files[0];
+      if (!file.name.toLowerCase().endsWith('.jar')) {
+        return showBannerAlert('Only .jar files are accepted.', true);
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
+      progressText.textContent = `Uploading ${file.name} to /${isMod ? 'mods' : 'plugins'}/...`;
       try {
-        const res = await fetch('/api/plugin/upload', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           body: formData
         });
@@ -5603,25 +5843,78 @@
           progressText.textContent = d.message;
           fileInput.value = '';
           showBannerAlert(d.message);
-          loadPlugins();
+          if (isMod) {
+            currentAddonMode = 'mods';
+            renderAddonTabsState();
+            loadMods();
+          } else {
+            currentAddonMode = 'plugins';
+            renderAddonTabsState();
+            loadPlugins();
+          }
         } else {
           progressText.textContent = 'Upload failed: ' + d.message;
           showBannerAlert(d.message, true);
         }
       } catch (e) {
         progressText.textContent = 'Upload error.';
-        showBannerAlert('Network error while uploading plugin.', true);
+        showBannerAlert('Network error while uploading package.', true);
       }
     }
 
-    // ── Disabled Plugins Archive ────────────────────────────────
+    async function uploadPluginFile() {
+      return uploadAddonFile();
+    }
+
+    // ── Disabled Archive (Plugins & Mods) ──
+    function renderDisabledTabsState() {
+      const pBtn = document.getElementById('btn-tab-disabled-plugins');
+      const mBtn = document.getElementById('btn-tab-disabled-mods');
+      const desc = document.getElementById('disabled-desc-text');
+      const isMods = currentDisabledAddonMode === 'mods';
+
+      if (pBtn && mBtn) {
+        if (isMods) {
+          mBtn.classList.add('active-tab');
+          mBtn.style.fontWeight = 'bold';
+          pBtn.classList.remove('active-tab');
+          pBtn.style.fontWeight = 'normal';
+        } else {
+          pBtn.classList.add('active-tab');
+          pBtn.style.fontWeight = 'bold';
+          mBtn.classList.remove('active-tab');
+          mBtn.style.fontWeight = 'normal';
+        }
+      }
+
+      if (desc) {
+        desc.innerHTML = isMods ?
+          'These JAR files reside in <code>mods/disabled/</code>. They are not loaded by the engine. You can restore them anytime.' :
+          'These JAR files reside in <code>plugins/disabled/</code>. They are not loaded by the engine. You can restore them anytime without losing configuration files.';
+      }
+    }
+
+    function switchDisabledAddonMode(mode) {
+      currentDisabledAddonMode = mode;
+      renderDisabledTabsState();
+      loadCurrentDisabledAddons();
+    }
+
+    async function loadCurrentDisabledAddons() {
+      if (currentDisabledAddonMode === 'mods') {
+        return loadDisabledMods();
+      } else {
+        return loadDisabledPlugins();
+      }
+    }
+
     async function loadDisabledPlugins() {
       try {
         const res = await fetch('/api/plugins/disabled');
         if (!res.ok) return;
         const d = await res.json();
         const tbody = document.getElementById('disabled-plugins-table-body');
-        if (!d.disabled.length) {
+        if (!d.disabled || !d.disabled.length) {
           tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #888;">No archived plugins found in plugins/disabled/.</td></tr>';
           return;
         }
@@ -5669,6 +5962,65 @@
         const d = await res.json();
         showBannerAlert(d.message, !d.success);
         if (d.success) loadDisabledPlugins();
+      } catch (e) {
+        showBannerAlert('Permanent delete error.', true);
+      }
+    }
+
+    async function loadDisabledMods() {
+      try {
+        const res = await fetch('/api/mods/disabled');
+        if (!res.ok) return;
+        const d = await res.json();
+        const tbody = document.getElementById('disabled-plugins-table-body');
+        if (!d.disabled || !d.disabled.length) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #888;">No archived mods found in mods/disabled/.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = d.disabled.map(p => `
+          <tr>
+            <td style="font-family: monospace; font-size: 11px;"><strong>${escapeHtml(p.filename)}</strong></td>
+            <td>${p.size_kb} KB</td>
+            <td>
+              <button class="btn-satin-green" style="padding: 1px 6px; font-size: 10px;" onclick="restoreDisabledMod('${escapeHtml(p.filename)}')">[ Restore / Enable ]</button>
+              <button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px;" onclick="permDeleteMod('${escapeHtml(p.filename)}')">Delete Perm</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {}
+    }
+
+    async function restoreDisabledMod(filename) {
+      if (!confirm(`Restore ${filename} back into active mods/?`)) return;
+      try {
+        const res = await fetch('/api/mod/enable', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        if (d.success) {
+          loadDisabledMods();
+          loadMods();
+        }
+      } catch (e) {
+        showBannerAlert('Failed to restore mod.', true);
+      }
+    }
+
+    async function permDeleteMod(filename) {
+      if (!confirm(`Permanently delete ${filename} from disk? This cannot be undone.`)) return;
+      try {
+        const res = await fetch('/api/mod/perm_delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        if (d.success) loadDisabledMods();
       } catch (e) {
         showBannerAlert('Permanent delete error.', true);
       }
@@ -7486,6 +7838,7 @@
     pollStatus();
     pollLogs();
     loadMinecraftItemsList();
+    fetchAddonContext();
     setInterval(pollStatus, 3000);
     setInterval(pollLogs, 2000);
   </script>

@@ -1604,6 +1604,14 @@ def api_software_install():
                 "label": label
             }, f_meta, indent=2)
 
+        # Ensure appropriate addon directory exists for software engine
+        if software == "fabric":
+            os.makedirs(os.path.join(SERVER_DIR, "mods"), exist_ok=True)
+            os.makedirs(os.path.join(SERVER_DIR, "mods", "disabled"), exist_ok=True)
+        elif software in ["purpur", "paper", "spigot"]:
+            os.makedirs(os.path.join(SERVER_DIR, "plugins"), exist_ok=True)
+            os.makedirs(os.path.join(SERVER_DIR, "plugins", "disabled"), exist_ok=True)
+
         if data.get("autostart", True):
             server_runner.start()
 
@@ -2080,6 +2088,291 @@ def api_plugin_install_online():
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
 
+# ── Addons & Mods Management (Cross-Platform Fabric / Forge / Bukkit Support) ──
+def detect_addon_context():
+    meta_path = os.path.join(SERVER_DIR, "installed_software.json")
+    software = "Unknown"
+    if os.path.isfile(meta_path):
+        try:
+            with open(meta_path) as f:
+                software = json.load(f).get("software", "Unknown")
+        except Exception:
+            pass
+
+    plugins_dir = os.path.join(SERVER_DIR, "plugins")
+    mods_dir = os.path.join(SERVER_DIR, "mods")
+
+    has_plugins_dir = os.path.isdir(plugins_dir)
+    has_mods_dir = os.path.isdir(mods_dir)
+
+    plugins_count = 0
+    if has_plugins_dir:
+        try:
+            plugins_count = len([f for f in os.listdir(plugins_dir) if f.endswith(".jar") and os.path.isfile(os.path.join(plugins_dir, f))])
+        except Exception:
+            pass
+
+    mods_count = 0
+    if has_mods_dir:
+        try:
+            mods_count = len([f for f in os.listdir(mods_dir) if f.endswith(".jar") and os.path.isfile(os.path.join(mods_dir, f))])
+        except Exception:
+            pass
+
+    sw_lower = software.lower()
+    if any(m in sw_lower for m in ["fabric", "forge", "neoforge", "quilt"]):
+        primary = "mods"
+    elif any(p in sw_lower for p in ["purpur", "paper", "spigot", "bukkit", "folia"]):
+        primary = "plugins"
+    elif mods_count > 0 and plugins_count == 0:
+        primary = "mods"
+    else:
+        primary = "plugins"
+
+    return {
+        "primary_addon_type": primary,
+        "software": software,
+        "plugins_count": plugins_count,
+        "mods_count": mods_count,
+        "has_plugins_dir": has_plugins_dir,
+        "has_mods_dir": has_mods_dir
+    }
+
+@app.route("/api/addons/context")
+@login_required
+def api_addons_context():
+    return jsonify(detect_addon_context())
+
+@app.route("/api/mods")
+@login_required
+def api_mods():
+    mods_dir = os.path.join(SERVER_DIR, "mods")
+    mods_list = []
+    if os.path.exists(mods_dir):
+        for f in sorted(os.listdir(mods_dir)):
+            if f.endswith(".jar"):
+                p = os.path.join(mods_dir, f)
+                if os.path.isfile(p):
+                    size_kb = round(os.path.getsize(p) / 1024, 1)
+                    mods_list.append({
+                        "name": f.replace(".jar", ""),
+                        "filename": f,
+                        "size_kb": size_kb
+                    })
+    return jsonify({"mods": mods_list, "total": len(mods_list)})
+
+@app.route("/api/mods/disabled")
+@login_required
+def api_mods_disabled():
+    disabled_dir = os.path.join(SERVER_DIR, "mods", "disabled")
+    disabled_list = []
+    if os.path.exists(disabled_dir):
+        for f in sorted(os.listdir(disabled_dir)):
+            p = os.path.join(disabled_dir, f)
+            if os.path.isfile(p) and (f.endswith(".jar") or f.endswith(".bak")):
+                size_kb = round(os.path.getsize(p) / 1024, 1)
+                disabled_list.append({
+                    "name": f.replace(".jar", "").replace(".bak", ""),
+                    "filename": f,
+                    "size_kb": size_kb
+                })
+    return jsonify({"disabled": disabled_list, "total": len(disabled_list)})
+
+@app.route("/api/mod/delete", methods=["POST"])
+@login_required
+def api_mod_delete():
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"success": False, "message": "Mod name required"}), 400
+
+    mods_dir = os.path.join(SERVER_DIR, "mods")
+    disabled_dir = os.path.join(mods_dir, "disabled")
+    src = os.path.join(mods_dir, f"{name}.jar")
+
+    if not os.path.isfile(src):
+        return jsonify({"success": False, "message": f"Mod file not found: {name}.jar"}), 404
+
+    os.makedirs(disabled_dir, exist_ok=True)
+    dst = os.path.join(disabled_dir, f"{name}.jar")
+    try:
+        shutil.move(src, dst)
+        return jsonify({"success": True, "message": f"{name} moved to mods/disabled/ — restart server to unload."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/mod/enable", methods=["POST"])
+@login_required
+def api_mod_enable():
+    data = request.get_json() or {}
+    filename = data.get("filename", "").strip()
+    if not filename:
+        return jsonify({"success": False, "message": "Filename required"}), 400
+
+    mods_dir = os.path.join(SERVER_DIR, "mods")
+    disabled_dir = os.path.join(mods_dir, "disabled")
+    src = os.path.join(disabled_dir, filename)
+
+    if not os.path.isfile(src):
+        return jsonify({"success": False, "message": f"Disabled mod not found: {filename}"}), 404
+
+    target_name = filename[:-4] if filename.endswith(".bak") and filename.endswith(".jar.bak") else filename
+    if not target_name.endswith(".jar"):
+        target_name += ".jar"
+    dst = os.path.join(mods_dir, target_name)
+
+    try:
+        shutil.move(src, dst)
+        return jsonify({"success": True, "message": f"{target_name} restored to active mods/ — restart server to load."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/mod/perm_delete", methods=["POST"])
+@login_required
+def api_mod_perm_delete():
+    data = request.get_json() or {}
+    filename = data.get("filename", "").strip()
+    if not filename:
+        return jsonify({"success": False, "message": "Filename required"}), 400
+
+    disabled_dir = os.path.join(SERVER_DIR, "mods", "disabled")
+    target = os.path.join(disabled_dir, filename)
+
+    if not os.path.isfile(target):
+        return jsonify({"success": False, "message": f"File not found in disabled/: {filename}"}), 404
+
+    try:
+        os.remove(target)
+        return jsonify({"success": True, "message": f"Permanently deleted {filename}"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/mod/upload", methods=["POST"])
+@login_required
+def api_mod_upload():
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": "No file part in request"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "message": "No file selected"}), 400
+    if not file.filename.lower().endswith(".jar"):
+        return jsonify({"success": False, "message": "Only .jar files are allowed"}), 400
+
+    mods_dir = os.path.join(SERVER_DIR, "mods")
+    os.makedirs(mods_dir, exist_ok=True)
+    safe_name = os.path.basename(file.filename)
+    dst = os.path.join(mods_dir, safe_name)
+    try:
+        file.save(dst)
+        return jsonify({"success": True, "message": f"{safe_name} uploaded successfully! Restart server to load."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/mods/search")
+@login_required
+def api_mods_search():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify({"hits": [], "total_hits": 0})
+
+    try:
+        params = {
+            "query": query,
+            "facets": '[["project_type:mod"]]',
+            "limit": 15
+        }
+        url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+
+        hits = []
+        for h in data.get("hits", []):
+            hits.append({
+                "project_id": h.get("project_id"),
+                "slug": h.get("slug"),
+                "title": h.get("title"),
+                "description": h.get("description", ""),
+                "author": h.get("author", "Unknown"),
+                "downloads": h.get("downloads", 0),
+                "icon_url": h.get("icon_url") or "",
+                "categories": h.get("categories", [])
+            })
+        return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits))})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "hits": []}), 500
+
+@app.route("/api/mod/install_online", methods=["POST"])
+@login_required
+def api_mod_install_online():
+    data = request.get_json() or {}
+    project_id = data.get("project_id", "").strip()
+
+    if not project_id:
+        return jsonify({"success": False, "message": "Project ID required"}), 400
+
+    try:
+        loaders = '["fabric","quilt","forge","neoforge"]'
+        url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+
+        versions = []
+        try:
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                versions = json.loads(resp.read().decode())
+        except Exception:
+            pass
+
+        if not versions:
+            url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
+            req_all = urllib.request.Request(url_all, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            with urllib.request.urlopen(req_all, timeout=8) as resp:
+                versions = json.loads(resp.read().decode())
+
+        if not versions:
+            return jsonify({"success": False, "message": "No release versions found for this mod."}), 404
+
+        target_file = None
+        for v in versions:
+            files = v.get("files", [])
+            for f in files:
+                if f.get("primary", False) and f.get("filename", "").endswith(".jar"):
+                    target_file = f
+                    break
+            if target_file:
+                break
+            for f in files:
+                if f.get("filename", "").endswith(".jar"):
+                    target_file = f
+                    break
+            if target_file:
+                break
+
+        if not target_file:
+            return jsonify({"success": False, "message": "No valid .jar file found in project releases."}), 404
+
+        download_url = target_file.get("url")
+        filename = target_file.get("filename")
+
+        mods_dir = os.path.join(SERVER_DIR, "mods")
+        os.makedirs(mods_dir, exist_ok=True)
+        dest_path = os.path.join(mods_dir, filename)
+
+        dl_req = urllib.request.Request(download_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
+            shutil.copyfileobj(resp, out_f)
+
+        file_size_kb = round(os.path.getsize(dest_path) / 1024, 1)
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "size_kb": file_size_kb,
+            "message": f"Successfully downloaded mod {filename} ({file_size_kb} KB)! Restart server to load."
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
+
 # ── Backups ──────────────────────────────────────────────────────────────────
 @app.route("/api/backups")
 @login_required
@@ -2492,6 +2785,13 @@ def route_install_script():
     if os.path.exists(install_path):
         return send_file(install_path, mimetype="text/x-shellscript")
     return "echo 'FiestaPanel: install.sh not found'; exit 1", 404, {"Content-Type": "text/plain"}
+
+@app.route("/install.ps1")
+def route_install_ps1():
+    install_path = os.path.join(BASE_DIR, "install.ps1")
+    if os.path.exists(install_path):
+        return send_file(install_path, mimetype="text/plain")
+    return "Write-Error 'FiestaPanel: install.ps1 not found'; exit 1", 404, {"Content-Type": "text/plain"}
 
 if __name__ == "__main__":
     h = SERVER_CONFIG.get("host", "127.0.0.1")

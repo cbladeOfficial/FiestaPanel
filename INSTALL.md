@@ -54,7 +54,35 @@ PORT=9000 MC_PATH=/opt/minecraft curl -sSL https://fiesta.debarkak.xyz/install.s
 
 FiestaPanel natively supports Windows without requiring WSL or Docker!
 
-### Quick Windows Setup:
+### Method A: 1-Line Automated Install (Recommended)
+
+Open **PowerShell** (no Administrator rights strictly required, but recommended) and run:
+
+```powershell
+irm https://fiesta.debarkak.xyz/install.ps1 | iex
+```
+
+*(Or via GitHub Raw)*:
+```powershell
+irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex
+```
+
+*(From Windows Command Prompt / CMD)*:
+```cmd
+powershell -ExecutionPolicy Bypass -Command "irm https://fiesta.debarkak.xyz/install.ps1 | iex"
+```
+
+#### What the Windows 1-Line Installer Does:
+1. Detects Python 3 runtime; if missing, automatically installs Python 3.12 via Windows Package Manager (`winget`).
+2. Downloads and extracts the latest FiestaPanel application package into `C:\FiestaPanel` (or `$env:FIESTA_DIR`).
+3. Creates a dedicated Python virtual environment (`venv`).
+4. Installs required Python dependencies (`flask`, `requests`, `psutil`, `Pillow`, `nbtlib`).
+5. Generates initial `config.json` and default Minecraft server storage folder.
+6. Creates a convenient desktop shortcut to launch anytime with 1-click.
+
+---
+
+### Method B: Manual Clone / ZIP Setup
 
 1. **Prerequisites**:
    - Install **Python 3.10+** from [python.org](https://www.python.org/downloads/) *(check "Add Python to PATH" during install)*.
@@ -68,7 +96,7 @@ FiestaPanel natively supports Windows without requiring WSL or Docker!
    ```
 
 3. **Install & Launch**:
-   Run the interactive installer:
+   Run the interactive batch installer:
    ```cmd
    install.bat
    ```
