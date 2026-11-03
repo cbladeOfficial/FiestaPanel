@@ -223,7 +223,8 @@ def cmd_reset_admin():
         except Exception:
             pass
 
-    p_hash = hashlib.sha256(new_pass.encode("utf-8")).hexdigest()
+    from werkzeug.security import generate_password_hash
+    p_hash = generate_password_hash(new_pass, method="scrypt")
     users["admin"] = {
         "username": "admin",
         "password_hash": p_hash,
@@ -235,9 +236,6 @@ def cmd_reset_admin():
     with open(USERS_FILE, "w") as f:
         json.dump(users, f, indent=2)
 
-    cfg = load_config()
-    cfg["admin_pass"] = new_pass
-    save_config(cfg)
 
     print("==================================================")
     print("  Administrator Password Reset Successfully!      ")

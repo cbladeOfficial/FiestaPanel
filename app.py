@@ -17,6 +17,11 @@ import nbtlib
 import io
 import re
 import hashlib
+import hmac
+import secrets
+from collections import defaultdict, deque
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 import zipfile
 import gzip
 from PIL import Image
@@ -26,6 +31,8 @@ from addon_manager import AddonManager
 
 app = Flask(__name__)
 app.secret_key = os.urandom(32)
+app.config.update(SESSION_COOKIE_SECURE=True, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", MAX_CONTENT_LENGTH=100 * 1024 * 1024)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("FIESTA_DATA_DIR") or os.environ.get("GATEWAY_DATA_DIR") or BASE_DIR
@@ -36,7 +43,7 @@ def load_server_config():
     is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
     cfg = {
         "admin_user": "admin",
-        "admin_pass": "FiestaSMP@Not-222",
+        "admin_pass": None,
         "server_dir": "/server" if is_docker else "/home/ubuntu/fiesta",
         "service_name": "fiesta",
         "screen_session": "fiesta",
@@ -390,7 +397,18 @@ server_runner = ServerRunner(SERVER_DIR, SERVICE_NAME, SCREEN_SESSION)
 
 
 def hash_password(pwd):
-    return hashlib.sha256(pwd.encode('utf-8')).hexdigest()
+    return generate_password_hash(pwd, method='scrypt')
+
+def session_password_version(stored):
+    return hmac.new(app.secret_key, (stored or "").encode("utf-8"), hashlib.sha256).hexdigest()
+
+def verify_password(stored, pwd):
+    if re.fullmatch(r'[0-9a-f]{64}', stored or ''):
+        return hmac.compare_digest(stored, hashlib.sha256(pwd.encode('utf-8')).hexdigest())
+    try:
+        return check_password_hash(stored, pwd)
+    except (ValueError, TypeError):
+        return False
 
 def load_users():
     target = USERS_FILE
@@ -400,6 +418,8 @@ def load_users():
         except Exception:
             target = os.path.join(BASE_DIR, "users.json")
     if not os.path.exists(target):
+        if not ADMIN_PASS:
+            return {}
         default_users = {
             ADMIN_USER: {
                 "username": ADMIN_USER,
@@ -577,6 +597,71 @@ def ping_mc():
         }
 
 # Initialize FiestaPanel Addons & Extension Engine
+# All browser mutations require a per-session CSRF token. Permissions are
+# reloaded for every request so disabling or changing an account takes effect.
+_login_attempts = defaultdict(deque)
+_login_lock = threading.Lock()
+
+@app.context_processor
+def inject_csrf():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_urlsafe(32)
+    return {"csrf_token": session["csrf_token"]}
+
+@app.before_request
+def enforce_security():
+    if request.method == "POST" and (request.path == "/login" or (request.path.startswith("/api/access/users/") and request.path.endswith("/password"))):
+        now = time.monotonic()
+        key = request.remote_addr or "unknown"
+        with _login_lock:
+            for old in list(_login_attempts):
+                while _login_attempts[old] and _login_attempts[old][0] < now - 300:
+                    _login_attempts[old].popleft()
+                if not _login_attempts[old]:
+                    del _login_attempts[old]
+            attempts = _login_attempts[key]
+            if len(attempts) >= 10:
+                return jsonify(error="Too many login attempts; try again later."), 429
+            attempts.append(now)
+    if session.get("logged_in"):
+        user = load_users().get(session.get("user"))
+        if not user or user.get("status") != "active" or not hmac.compare_digest(session.get("password_version", ""), session_password_version(user.get("password_hash"))):
+            session.clear()
+            return jsonify(error="Session expired"), 401
+        session["role"] = user.get("role", "moderator")
+        session["permissions"] = user.get("permissions", [])
+    if request.method == "GET" and session.get("logged_in"):
+        sensitive = ("/api/files/", "/api/config", "/api/log", "/api/backup", "/api/server/properties", "/api/access/users")
+        if request.path.startswith(sensitive) and session.get("role") != "owner" and "all" not in session.get("permissions", []):
+            return jsonify(error="Owner permission required"), 403
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        if request.path.startswith("/api/player/") and request.is_json:
+            data = request.get_json(silent=True) or {}
+            player = data.get("player", "")
+            item = data.get("item", "")
+            param = data.get("param", "")
+            if not isinstance(player, str) or (player and not re.fullmatch(r"[A-Za-z0-9_.-]{1,32}", player)):
+                return jsonify(error="Invalid player name"), 400
+            if not isinstance(item, str) or (item and not re.fullmatch(r"[a-z0-9_:.\-/]{1,128}", item)):
+                return jsonify(error="Invalid item identifier"), 400
+            if not isinstance(param, str) or any(ord(c) < 32 or ord(c) == 127 or c == "\\" for c in param):
+                return jsonify(error="Invalid action parameter"), 400
+        expected = session.get("csrf_token", "")
+        supplied = request.headers.get("X-CSRF-Token", "") or request.form.get("csrf_token", "")
+        if not expected or not hmac.compare_digest(expected, supplied):
+            return jsonify(error="Invalid CSRF token"), 403
+        if request.path.startswith("/api/") and session.get("logged_in"):
+            # High-risk operations default to owner-only; narrow exceptions
+            # are explicitly mapped to existing sub-user permissions.
+            path = request.path
+            permission = None
+            if path == "/api/command": permission = "console"
+            elif path == "/api/server/power": permission = "power"
+            elif path.startswith("/api/player/"): permission = "players"
+            perms = session.get("permissions", [])
+            if session.get("role") != "owner" and "all" not in perms and (not permission or permission not in perms):
+                return jsonify(error="Owner permission required"), 403
+
 addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc, SERVER_DIR)
 try:
     addon_manager.initialize()
@@ -592,7 +677,6 @@ def login_page():
 
         users = load_users()
         user_entry = users.get(username)
-        pwd_hash = hash_password(password)
 
         is_valid = False
         role = "moderator"
@@ -604,17 +688,17 @@ def login_page():
                 if request.is_json:
                     return jsonify({"success": False, "message": msg}), 403
                 return render_template("login.html", error=msg, branding=load_branding())
-            if user_entry.get("password_hash") == pwd_hash:
+            if verify_password(user_entry.get("password_hash"), password):
+                if re.fullmatch(r"[0-9a-f]{64}", user_entry.get("password_hash", "")):
+                    user_entry["password_hash"] = hash_password(password)
+                    save_users(users)
                 is_valid = True
                 role = user_entry.get("role", "moderator")
                 permissions = user_entry.get("permissions", ["console", "players"])
-        elif username == ADMIN_USER and password == ADMIN_PASS:
-            is_valid = True
-            role = "owner"
-            permissions = ["all"]
 
         if is_valid:
             session["logged_in"] = True
+            session["password_version"] = session_password_version(user_entry.get("password_hash"))
             session["user"] = username
             session["role"] = role
             session["permissions"] = permissions
@@ -1443,8 +1527,8 @@ def api_create_subuser():
 
     if not username or not re.match(r"^[a-zA-Z0-9_\-]{3,24}$", username):
         return jsonify({"success": False, "message": "Username must be 3-24 alphanumeric characters."}), 400
-    if not password or len(password) < 6:
-        return jsonify({"success": False, "message": "Password must be at least 6 characters long."}), 400
+    if not password or len(password) < 12:
+        return jsonify({"success": False, "message": "Password must be at least 12 characters long."}), 400
 
     users = load_users()
     if username.lower() in [u.lower() for u in users.keys()] or username.lower() == ADMIN_USER.lower():
@@ -1491,16 +1575,42 @@ def api_update_subuser(username):
         user_entry["permissions"] = list(data["permissions"])
     if "status" in data and user_entry.get("role") != "owner":
         user_entry["status"] = "active" if data["status"] == "active" else "disabled"
-    if "password" in data and data["password"]:
-        pwd = str(data["password"]).strip()
-        if len(pwd) >= 6:
-            user_entry["password_hash"] = hash_password(pwd)
-        else:
-            return jsonify({"success": False, "message": "Password must be at least 6 characters long."}), 400
+    if "password" in data:
+        return jsonify({"success": False, "message": "Use the Change Password control to update passwords."}), 400
 
     users[target_key] = user_entry
     save_users(users)
+    if target_key == session.get("user"):
+        session["password_version"] = session_password_version(user_entry.get("password_hash"))
     return jsonify({"success": True, "message": f"Sub-user '{target_key}' updated successfully."})
+
+@app.route("/api/access/users/<username>/password", methods=["POST"])
+@login_required
+def api_change_user_password(username):
+    if session.get("role") != "owner":
+        return jsonify(success=False, message="Only the owner can manage passwords."), 403
+    data = request.get_json(silent=True) or {}
+    current = data.get("current_password", "")
+    password = data.get("new_password", "")
+    if not isinstance(current, str) or not isinstance(password, str):
+        return jsonify(success=False, message="Invalid password."), 400
+    password = password.strip()
+    if len(password) < 12:
+        return jsonify(success=False, message="Password must be at least 12 characters long."), 400
+    users = load_users()
+    owner = users.get(session.get("user"))
+    if not owner or not verify_password(owner.get("password_hash"), current.strip()):
+        return jsonify(success=False, message="Your current password is incorrect."), 403
+    target_key = next((key for key in users if key.lower() == username.lower()), None)
+    if target_key is None:
+        return jsonify(success=False, message="User not found."), 404
+    if users[target_key].get("role") == "owner" and target_key != session.get("user"):
+        return jsonify(success=False, message="Cannot change another owner's password."), 403
+    users[target_key]["password_hash"] = hash_password(password)
+    save_users(users)
+    if target_key == session.get("user"):
+        session["password_version"] = session_password_version(users[target_key]["password_hash"])
+    return jsonify(success=True, message="Password updated. Other sessions for this account have been signed out.")
 
 @app.route("/api/access/users/<username>", methods=["DELETE"])
 @login_required

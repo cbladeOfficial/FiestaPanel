@@ -905,7 +905,6 @@ class AddonManager:
     def initialize(self):
         """Scans and initializes all installed addons, seeding defaults if clean."""
         self.load_repository()
-        self._seed_default_addons()
         self.scan_addons()
         self.load_active_addons()
         logger.info(f"AddonManager initialized. {len(self.installed_addons)} addons discovered.")
@@ -1130,8 +1129,8 @@ class AddonManager:
 
             manifest_data = json.loads(z.read(manifest_file).decode("utf-8"))
             addon_id = manifest_data.get("id")
-            if not addon_id:
-                raise ValueError("Manifest missing required 'id' attribute.")
+            if not addon_id or not isinstance(addon_id, str) or not __import__("re").fullmatch(r"[A-Za-z0-9_-]{1,64}", addon_id):
+                raise ValueError("Invalid addon id.")
 
             target_dir = os.path.join(self.addons_dir, addon_id)
             os.makedirs(target_dir, exist_ok=True)
@@ -1143,7 +1142,9 @@ class AddonManager:
                 rel_path = os.path.relpath(member.filename, prefix) if prefix else member.filename
                 if rel_path in ("", "."):
                     continue
-                dest_path = os.path.join(target_dir, rel_path)
+                dest_path = os.path.realpath(os.path.join(target_dir, rel_path))
+                if os.path.commonpath([os.path.realpath(target_dir), dest_path]) != os.path.realpath(target_dir):
+                    raise ValueError("Invalid archive path.")
                 if member.is_dir():
                     os.makedirs(dest_path, exist_ok=True)
                 else:
