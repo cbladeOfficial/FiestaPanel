@@ -1244,6 +1244,7 @@
       --nav-parent-hover: #d5e9f8;
       --nav-parent-active-bg: #a8d5f8;
       --nav-parent-active-text: #022549;
+      --nav-parent-color: #0a2947;
       --nav-sub-bg: #f4f9fd;
       --nav-sub-item-color: #103356;
       --nav-sub-item-hover-bg: #dbeefa;
@@ -1466,21 +1467,33 @@
       font-weight: 700;
     }
 
-    [data-theme="win7"] .nav-frame {
+    [data-theme="win7"] .left-nav {
       background: linear-gradient(180deg, #f2f7fd 0%, #e1effa 100%) !important;
       border-right: 1px solid #a8cde8 !important;
     }
 
+    [data-theme="win7"] .nav-group {
+      border-top: 1px solid #d8e8f6 !important;
+      border-bottom: 1px solid #b7d7f0 !important;
+    }
+
     [data-theme="win7"] .nav-parent {
+      color: #0a2947 !important;
+      font-family: "Segoe UI", "SegoeUI", sans-serif;
+      font-weight: 600;
       border-radius: 3px;
       margin: 3px 6px;
+      padding: 6px 12px;
       transition: all 0.15s ease;
+      background: transparent;
+      border: 1px solid transparent;
     }
 
     [data-theme="win7"] .nav-parent:hover {
-      background: linear-gradient(to bottom, #eef6fd 0%, #d8ecfc 100%) !important;
-      color: #042549 !important;
-      box-shadow: 0 0 4px rgba(60, 160, 240, 0.4);
+      background: linear-gradient(180deg, #eef6fd 0%, #d8ecfc 100%) !important;
+      color: #004b91 !important;
+      border-color: #7ec4ed !important;
+      box-shadow: 0 0 6px rgba(60, 160, 240, 0.45);
     }
 
     [data-theme="win7"] .nav-parent.active {
@@ -1489,6 +1502,17 @@
       border: 1px solid #3c88c7 !important;
       box-shadow: inset 0 1px 0 #ffffff, 0 0 6px rgba(40, 150, 245, 0.6) !important;
       font-weight: 700;
+    }
+
+    [data-theme="win7"] .nav-sub-list {
+      background: #f5fafe !important;
+    }
+
+    [data-theme="win7"] .nav-sub-item {
+      color: #123d66 !important;
+      font-family: "Segoe UI", "SegoeUI", sans-serif;
+      font-weight: 500;
+      transition: all 0.12s ease;
     }
 
     [data-theme="win7"] .nav-sub-item:hover {
@@ -1759,7 +1783,7 @@
     .nav-parent {
       display: block;
       padding: 6px 12px;
-      color: #ffffff;
+      color: var(--nav-parent-color, #ffffff);
       font-weight: bold;
       font-size: 11px;
       text-decoration: none;
@@ -7841,6 +7865,7 @@
         '--nav-parent-hover': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
         '--nav-parent-active-bg': inputs.accent,
         '--nav-parent-active-text': isDark ? '#000000' : '#ffffff',
+        '--nav-parent-color': isDark ? '#ffffff' : '#0f172a',
         '--nav-sub-bg': inputs.bgNav,
         '--nav-sub-item-color': inputs.textMain,
         '--nav-sub-item-hover-bg': isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
@@ -7953,7 +7978,7 @@
         '--bg-page', '--bg-frame', '--border-frame', '--header-grad-1', '--header-grad-2', '--header-grad-3',
         '--header-top-border', '--header-bot-border', '--header-sub-color', '--header-link-color',
         '--nav-bg', '--nav-border-top', '--nav-border-bot', '--nav-parent-hover', '--nav-parent-active-bg',
-        '--nav-parent-active-text', '--nav-sub-bg', '--nav-sub-item-color', '--nav-sub-item-hover-bg',
+        '--nav-parent-active-text', '--nav-parent-color', '--nav-sub-bg', '--nav-sub-item-color', '--nav-sub-item-hover-bg',
         '--nav-sub-item-active-color', '--nav-sub-item-active-bg', '--workspace-bg', '--text-main',
         '--text-bold', '--text-sub', '--sec-bar-bg', '--sec-bar-text', '--sec-bar-border', '--sec-sub-bg',
         '--sec-sub-border', '--sec-sub-text', '--table-border', '--table-th-bg', '--table-th-border',
