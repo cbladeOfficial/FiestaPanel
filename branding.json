@@ -6,5 +6,6 @@
   "footer_text": "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
   "server_desc": "Server Gateway Console",
   "header_icon": "tplink",
-  "header_icon_custom": ""
+  "header_icon_custom": "",
+  "server_domain": "fiesta.debarkak.xyz"
 }

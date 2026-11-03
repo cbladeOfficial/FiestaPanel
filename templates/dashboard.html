@@ -1972,6 +1972,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      white-space: nowrap;
       transition: all 0.1s;
     }
 
@@ -2000,6 +2001,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      white-space: nowrap;
       transition: all 0.1s;
     }
 
@@ -3177,10 +3179,10 @@
                       {% endif %}
                     </span>
                     {% if role in ['owner', 'administrator'] or 'all' in permissions %}
-                    <span id="st-server-domain-editor" style="display: none; align-items: center; gap: 4px; margin-bottom: 2px;">
-                      <input type="text" id="input-server-domain" class="ctrl-input" style="width: 170px; font-size: 11.5px; height: 20px; padding: 1px 6px;" value="{{ branding.server_domain or '' }}" placeholder="e.g. mc.yourdomain.com">
-                      <button type="button" class="btn-satin-green" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; font-weight: bold;" onclick="saveServerDomain()">[ Save ]</button>
-                      <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 5px;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
+                    <span id="st-server-domain-editor" style="display: none; align-items: center; gap: 5px; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
+                      <input type="text" id="input-server-domain" class="ctrl-input" style="width: 155px; font-size: 11px; height: 22px; padding: 0 6px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="e.g. mc.yourdomain.com">
+                      <button type="button" class="btn-satin-green" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="saveServerDomain()">[ Save ]</button>
+                      <button type="button" class="btn-classic" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
                     </span>
                     {% endif %}
                     <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center;">
@@ -4649,7 +4651,7 @@
         </section>
 
         <!-- ════ VIEW 17: PANEL ADDONS & EXTENSIONS (INSTALLED) ════ -->
-        <section id="view-panel-addons-installed" class="view-panel">
+        <section id="view-panel-addons-installed" class="view-panel" style="display:none;">
           <div class="section-title-bar">
             <span>Installed Web Panel Addons &amp; Extensions</span>
             <div>
@@ -4676,7 +4678,7 @@
         </section>
 
         <!-- ════ VIEW 18: DYNAMIC ACTIVE ADDON TAB ════ -->
-        <section id="view-panel-addon-tab" class="view-panel">
+        <section id="view-panel-addon-tab" class="view-panel" style="display:none;">
           <div class="section-title-bar">
             <span id="active-addon-tab-title">Addon View</span>
             <button class="btn-classic" onclick="selectNavView('panel-addons-installed')">[ Back to Installed Addons ]</button>
@@ -5219,6 +5221,8 @@
       if (disp && edit) {
         disp.style.display = 'none';
         edit.style.display = 'inline-flex';
+        edit.style.flexWrap = 'nowrap';
+        edit.style.whiteSpace = 'nowrap';
         if (input) input.focus();
       }
     }
