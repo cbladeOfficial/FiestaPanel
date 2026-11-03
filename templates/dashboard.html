@@ -7170,11 +7170,11 @@
           });
           hint.textContent = `(${d.versions.length} versions available online)`;
         } else {
-          select.innerHTML = '<option value="1.21.11">Minecraft 1.21.11 (Latest)</option><option value="1.21.4">Minecraft 1.21.4</option><option value="1.20.4">Minecraft 1.20.4</option>';
+          select.innerHTML = '<option value="26.3">Minecraft 26.3 (Latest)</option><option value="26.2">Minecraft 26.2</option><option value="1.21.11">Minecraft 1.21.11</option><option value="1.21.4">Minecraft 1.21.4</option><option value="1.20.4">Minecraft 1.20.4</option>';
           hint.textContent = '(Default releases available)';
         }
       } catch (e) {
-        select.innerHTML = '<option value="1.21.11">Minecraft 1.21.11</option><option value="1.21.4">Minecraft 1.21.4</option>';
+        select.innerHTML = '<option value="26.3">Minecraft 26.3</option><option value="26.2">Minecraft 26.2</option><option value="1.21.11">Minecraft 1.21.11</option>';
         hint.textContent = '(Offline fallback versions)';
       }
     }
@@ -7328,7 +7328,7 @@
     }
 
     // ── Quick Install & Dynamic Version Resolution ──────────────
-    let latestDetectedPaperVersion = '1.21.11';
+    let latestDetectedPaperVersion = '26.3';
 
     function updateUninstalledBannerVersion(version) {
       if (!version) return;
@@ -7355,7 +7355,7 @@
     }
 
     async function quickInstallLatestPaper() {
-      const version = latestDetectedPaperVersion || '1.21.11';
+      const version = latestDetectedPaperVersion || '26.3';
       const conf = confirm(
         `Install & Launch Minecraft Server?\n\n` +
         `• Target Engine: Paper ${version} (Latest Stable Release)\n` +

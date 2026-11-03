@@ -610,7 +610,7 @@ def dashboard():
         branding=load_branding()
     )
 
-LATEST_PAPER_VERSION_CACHE = {"version": "1.21.11", "ts": 0}
+LATEST_PAPER_VERSION_CACHE = {"version": "26.3", "ts": 0}
 
 def get_latest_paper_version():
     global LATEST_PAPER_VERSION_CACHE
@@ -627,12 +627,11 @@ def get_latest_paper_version():
             d = json.loads(r.read())
             v_dict = d.get("versions", {})
             for group, vers in v_dict.items():
-                if group.startswith("1."):
-                    for v in vers:
-                        if "-" not in v:
-                            LATEST_PAPER_VERSION_CACHE["version"] = v
-                            LATEST_PAPER_VERSION_CACHE["ts"] = now
-                            return v
+                for v in vers:
+                    if "-" not in v:
+                        LATEST_PAPER_VERSION_CACHE["version"] = v
+                        LATEST_PAPER_VERSION_CACHE["ts"] = now
+                        return v
     except Exception:
         pass
 
@@ -1417,7 +1416,7 @@ def resolve_software_download(software, version, build="latest"):
             builds = d.get("builds", [])
             if not builds:
                 raise ValueError(f"No builds found for Paper {version}")
-            target_build = builds[-1] if build == "latest" else build
+            target_build = max(builds, key=lambda b: int(b) if str(b).isdigit() else 0) if build == "latest" else build
 
         url_build = f"https://fill.papermc.io/v3/projects/paper/versions/{version}/builds/{target_build}"
         req_b = urllib.request.Request(url_build, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
@@ -1535,7 +1534,7 @@ def api_software_versions():
                 for major in ["26.3", "26.2", "26.1", "1.21", "1.20", "1.19", "1.18", "1.17", "1.16"]:
                     if major in v_dict:
                         all_v.extend(v_dict[major])
-                versions = all_v if all_v else ["1.21.11", "1.21.10", "1.21.4", "1.21.1", "1.20.4", "1.20.2", "1.19.4"]
+                versions = all_v if all_v else ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.4", "1.20.4"]
         elif sw == "vanilla":
             req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=4) as r:
@@ -1547,9 +1546,9 @@ def api_software_versions():
                 d = json.loads(r.read())
                 versions = [v["version"] for v in d if v.get("stable")][:40]
         elif sw == "spigot":
-            versions = ["1.21.11", "1.21.4", "1.21.1", "1.20.4", "1.20.2", "1.19.4", "1.18.2", "1.16.5"]
+            versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
     except Exception as e:
-        versions = ["1.21.11", "1.21.10", "1.21.4", "1.21.1", "1.20.4", "1.20.2", "1.19.4", "1.18.2", "1.16.5"]
+        versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
 
     return jsonify({"success": True, "software": sw, "versions": versions})
 

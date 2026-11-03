@@ -163,8 +163,24 @@ c1_x0, c1_y0, c1_x1, c1_y1 = hx + 4, hy + 175, hx + 480, wy1 - 32
 draw.rounded_rectangle([c1_x0, c1_y0, c1_x1, c1_y1], radius=10, fill=(15, 23, 42, 220), outline=(51, 65, 85, 200), width=1)
 
 # Card 1 Header: Server Status pill
+def get_banner_version():
+    try:
+        import urllib.request, json
+        req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": "FiestaPanel/2.1"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            d = json.loads(r.read())
+            v_dict = d.get("versions", {})
+            for group, vers in v_dict.items():
+                for v in vers:
+                    if "-" not in v:
+                        return f"Paper {v}"
+    except Exception:
+        pass
+    return "Paper 26.3"
+
+banner_version = get_banner_version()
 draw.ellipse([c1_x0 + 16, c1_y0 + 16, c1_x0 + 26, c1_y0 + 26], fill=(34, 197, 94, 255))
-draw.text((c1_x0 + 34, c1_y0 + 14), "SERVER ONLINE  •  Purpur 1.21.11  •  TPS: 20.0", font=f_chip, fill=(241, 245, 249, 255))
+draw.text((c1_x0 + 34, c1_y0 + 14), f"SERVER ONLINE  •  {banner_version}  •  TPS: 20.0", font=f_chip, fill=(241, 245, 249, 255))
 
 # Resource stats row
 draw.text((c1_x0 + 16, c1_y0 + 44), "CPU Usage", font=f_small, fill=(148, 163, 184, 255))
@@ -232,3 +248,9 @@ os.makedirs(out_dir, exist_ok=True)
 out_path = os.path.join(out_dir, "banner.png")
 img.save(out_path, "PNG", optimize=True)
 print(f"Generated banner at {out_path} ({os.path.getsize(out_path)} bytes)")
+
+static_dir = "/home/ubuntu/fiesta-portal/static"
+os.makedirs(static_dir, exist_ok=True)
+static_path = os.path.join(static_dir, "banner.png")
+img.save(static_path, "PNG", optimize=True)
+print(f"Synced banner to {static_path} ({os.path.getsize(static_path)} bytes)")
