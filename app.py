@@ -1354,6 +1354,7 @@ def api_save_branding():
     server_desc = data.get("server_desc", cur.get("server_desc", "Server Gateway Console")).strip()
     header_icon = data.get("header_icon", cur.get("header_icon", "tplink")).strip()
     header_icon_custom = data.get("header_icon_custom", cur.get("header_icon_custom", "")).strip()
+    server_domain = data.get("server_domain", cur.get("server_domain", "")).strip()
 
     if not brand_name:
         return jsonify({"success": False, "message": "Brand name cannot be blank."}), 400
@@ -1366,10 +1367,34 @@ def api_save_branding():
         "footer_text": footer_text,
         "server_desc": server_desc,
         "header_icon": header_icon,
-        "header_icon_custom": header_icon_custom
+        "header_icon_custom": header_icon_custom,
+        "server_domain": server_domain
     }
     save_branding(new_branding)
     return jsonify({"success": True, "message": "Portal branding updated successfully!", "branding": new_branding})
+
+@app.route("/api/settings/domain", methods=["POST"])
+@login_required
+def api_update_server_domain():
+    curr_role = session.get("role", "")
+    curr_perms = session.get("permissions", [])
+    is_admin = (curr_role in ["owner", "administrator"]) or ("all" in curr_perms)
+    if not is_admin:
+        return jsonify({"success": False, "message": "Permission denied: Only administrators can edit the server domain."}), 403
+
+    data = request.get_json() or {}
+    domain = (data.get("server_domain") or "").strip()
+    if not domain:
+        return jsonify({"success": False, "message": "Server domain cannot be empty."}), 400
+
+    cur = load_branding()
+    cur["server_domain"] = domain
+    save_branding(cur)
+    return jsonify({
+        "success": True,
+        "message": f"Server domain updated to '{domain}' successfully!",
+        "server_domain": domain
+    })
 
 @app.route("/api/branding/reset", methods=["POST"])
 @login_required

@@ -711,76 +711,14 @@ class AddonManager:
         self.hooks: Dict[str, List[tuple]] = {}
 
     def _load_reviews(self) -> Dict[str, List[Dict[str, Any]]]:
-        """Loads persistent user reviews or seeds defaults if file is clean."""
+        """Loads persistent user reviews from disk without fake or seeded reviews."""
         if os.path.isfile(self.reviews_file):
             try:
                 with open(self.reviews_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to read addon_reviews.json: {e}")
-
-        default_reviews = {
-            "discord_notifier": [
-                {
-                    "id": "rev_disc_01",
-                    "reviewer": "admin",
-                    "rating": 5,
-                    "comment": "Connected to our community Discord channel. Alerts trigger instantly on startup and player join events with zero latency.",
-                    "created_at": "2026-11-02 18:30:00"
-                }
-            ],
-            "web_map_viewer": [
-                {
-                    "id": "rev_map_01",
-                    "reviewer": "admin",
-                    "rating": 5,
-                    "comment": "Live world renders smoothly inside the panel. The port autodetector worked immediately with our local Dynmap server.",
-                    "created_at": "2026-11-02 19:15:00"
-                }
-            ],
-            "motd_gradient_styler": [
-                {
-                    "id": "rev_motd_01",
-                    "reviewer": "admin",
-                    "rating": 5,
-                    "comment": "Pixel-accurate multiplayer server list preview. Writes formatted RGB and legacy color codes straight into server.properties.",
-                    "created_at": "2026-11-02 20:00:00"
-                }
-            ],
-            "server_scheduler": [
-                {
-                    "id": "rev_sched_01",
-                    "reviewer": "admin",
-                    "rating": 5,
-                    "comment": "Automated save-all flush and maintenance reboots execute reliably without manual cron configuration.",
-                    "created_at": "2026-11-03 09:30:00"
-                }
-            ],
-            "maintenance_gate": [
-                {
-                    "id": "rev_maint_01",
-                    "reviewer": "admin",
-                    "rating": 4,
-                    "comment": "Emergency lockdown whitelist switch works as expected. Kick screen message displays correctly for non-operators.",
-                    "created_at": "2026-11-03 10:45:00"
-                }
-            ],
-            "custom_css_themer": [
-                {
-                    "id": "rev_css_01",
-                    "reviewer": "admin",
-                    "rating": 5,
-                    "comment": "Great for fine-tuning Windows 7 Aero glass blur intensity and border styling on the fly.",
-                    "created_at": "2026-11-03 11:20:00"
-                }
-            ]
-        }
-        try:
-            with open(self.reviews_file, "w", encoding="utf-8") as f:
-                json.dump(default_reviews, f, indent=2)
-        except Exception as e:
-            logger.warning(f"Failed to seed initial reviews: {e}")
-        return default_reviews
+        return {}
 
     def _save_reviews(self):
         """Persists user reviews to disk."""

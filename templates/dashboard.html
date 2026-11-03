@@ -3085,13 +3085,11 @@
           </div>
         </div>
 
-        <!-- 7. Panel Addons & Extensions (Web Panel Customization & Store) -->
+        <!-- 7. Panel Addons & Extensions -->
         <div class="nav-group">
-          <div class="nav-parent" onclick="toggleNavGroup('panel-addons', this)" id="nav-parent-panel-addons">Panel Extensions / Store</div>
+          <div class="nav-parent" onclick="toggleNavGroup('panel-addons', this)" id="nav-parent-panel-addons">Panel Extensions</div>
           <div class="nav-sub-list" id="sub-panel-addons">
             <div class="nav-sub-item" onclick="selectNavView('panel-addons-installed', this)" id="nav-sub-paddons-installed">- Installed Addons</div>
-            <div class="nav-sub-item" onclick="selectNavView('panel-addons-store', this)" id="nav-sub-paddons-store">- Addon Store</div>
-            <div class="nav-sub-item" onclick="selectNavView('panel-addons-create', this)">- Developer Guide</div>
             <div id="dynamic-addon-nav-items"></div>
           </div>
         </div>
@@ -3128,134 +3126,149 @@
         <!-- ════ VIEW 1: STATUS OVERVIEW ════ -->
         <section id="view-status-overview" class="view-panel">
           <div class="section-title-bar">
-            <span>Status</span>
-            <span style="font-size: 10px; font-weight: normal;">Auto-refreshing every 3s</span>
+            <span>Status Overview</span>
+            <span style="font-size: 10px; font-weight: normal; color: #64748b;">Auto-refreshing every 3s</span>
           </div>
 
-          <!-- Uninstalled Server Onboarding Alert -->
-          <div class="uninstalled-server-banner" style="display: none; background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border: 2px solid #38bdf8; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; color: #ffffff;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet</div>
-                <div style="font-size: 11px; color: #cbd5e1;">No server JAR found in directory. You can install Paper, Purpur, Fabric, Spigot, or Vanilla in 1-click directly from this web panel without opening SSH or terminal.</div>
-              </div>
-              <div style="display: flex; gap: 8px;">
-                <button type="button" id="btn-quick-install-paper" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallLatestPaper()">[ Install Latest Paper ]</button>
-                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="selectNavView('sys-software')">[ Custom Software Wizard ]</button>
-              </div>
+          <!-- Clean 2x2 Layout Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px; margin-bottom: 14px;">
+
+            <!-- Card 1: LAN / Gateway Status -->
+            <div class="panel-box" style="margin: 0; padding: 12px 14px;">
+              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">LAN / Gateway Status</div>
+              <table class="form-layout-table" style="margin-bottom: 0;">
+                <tr>
+                  <td class="label-col" style="width: 120px;">Runtime State:</td>
+                  <td class="val-col">
+                    <span id="st-mc-state" class="badge-status online">● Active / Running</span>
+                    <span id="st-mc-pid" class="inline-hint">(PID: --)</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="label-col">Service Uptime:</td>
+                  <td class="val-col"><strong id="st-uptime" style="color: #004080; font-family: monospace, sans-serif; font-size: 11px;">Loading...</strong></td>
+                </tr>
+                <tr>
+                  <td class="label-col">Engine TPS:</td>
+                  <td class="val-col"><strong id="st-tps" style="color: #006622;">20.0 TPS</strong> <span class="inline-hint">(Target: 20.0 TPS)</span></td>
+                </tr>
+                <tr>
+                  <td class="label-col">Service Control:</td>
+                  <td class="val-col">
+                    <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625; padding: 2px 10px;" onclick="confirmServerPower('start')">[ Start ]</button>
+                    <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b; padding: 2px 10px;" onclick="confirmServerPower('restart')">[ Restart ]</button>
+                    <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442; padding: 2px 10px;" onclick="confirmServerPower('stop')">[ Stop ]</button>
+                  </td>
+                </tr>
+              </table>
             </div>
+
+            <!-- Card 2: WAN / Public Gateway (With Admin-Only Domain Editing) -->
+            <div class="panel-box" style="margin: 0; padding: 12px 14px;">
+              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">WAN / Public Gateway</div>
+              <table class="form-layout-table" style="margin-bottom: 0;">
+                <tr>
+                  <td class="label-col" style="width: 120px;">Server Domain:</td>
+                  <td class="val-col">
+                    <span id="st-server-domain-display" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                      <strong id="st-server-domain" style="color: #006622; font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
+                      {% if role in ['owner', 'administrator'] or 'all' in permissions %}
+                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; font-weight: bold; color: #0284c7;" onclick="openEditServerDomain()" title="Edit Domain (Admins Only)">[ Edit Domain ]</button>
+                      {% endif %}
+                    </span>
+                    {% if role in ['owner', 'administrator'] or 'all' in permissions %}
+                    <span id="st-server-domain-editor" style="display: none; align-items: center; gap: 4px; margin-bottom: 2px;">
+                      <input type="text" id="input-server-domain" class="ctrl-input" style="width: 170px; font-size: 11.5px; height: 20px; padding: 1px 6px;" value="{{ branding.server_domain or '' }}" placeholder="e.g. mc.yourdomain.com">
+                      <button type="button" class="btn-satin-green" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; font-weight: bold;" onclick="saveServerDomain()">[ Save ]</button>
+                      <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 5px;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
+                    </span>
+                    {% endif %}
+                    <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center;">
+                      <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerDomain(this)">[ Copy Domain ]</button>
+                      <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerIpPort(this)">[ Copy IP:Port ]</button>
+                      <span id="domain-update-msg" style="margin-left: 6px; font-size: 10.5px; font-weight: bold;"></span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="label-col">Java Port:</td>
+                  <td class="val-col">25565 <span class="inline-hint">(TCP / UDP)</span></td>
+                </tr>
+                <tr>
+                  <td class="label-col">Bedrock Port:</td>
+                  <td class="val-col">19132 <span class="inline-hint">(UDP via Geyser)</span></td>
+                </tr>
+                <tr>
+                  <td class="label-col">Web Console Port:</td>
+                  <td class="val-col">8080 <span class="inline-hint">(Reverse-proxied)</span></td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Card 3: Hardware Resource Utilization -->
+            <div class="panel-box" style="margin: 0; padding: 12px 14px;">
+              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">Hardware Resource Utilization</div>
+              <table class="form-layout-table" style="margin-bottom: 0;">
+                <tr>
+                  <td class="label-col" style="width: 120px;">CPU Load:</td>
+                  <td class="val-col">
+                    <div class="meter-container"><div id="meter-cpu" class="meter-bar"></div></div>
+                    <span id="val-cpu" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0%</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="label-col">System Memory:</td>
+                  <td class="val-col">
+                    <div class="meter-container"><div id="meter-ram" class="meter-bar"></div></div>
+                    <span id="val-ram" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0.0 / 24.0 GB (0%)</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="label-col">JVM Process RSS:</td>
+                  <td class="val-col">
+                    <strong id="val-jvm">0 MB</strong> <span class="inline-hint">(Max Heap: 12.0 GB)</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="label-col">Disk Storage:</td>
+                  <td class="val-col">
+                    <div class="meter-container"><div id="meter-disk" class="meter-bar"></div></div>
+                    <span id="val-disk" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0% Used</span>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Card 4: Traffic & Security Statistics -->
+            <div class="panel-box" style="margin: 0; padding: 12px 14px;">
+              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">Traffic &amp; Player Statistics</div>
+              <table class="form-layout-table" style="margin-bottom: 0;">
+                <tr>
+                  <td class="label-col" style="width: 120px;">Online Players:</td>
+                  <td class="val-col">
+                    <strong id="val-online-players" style="color: #006622; font-size: 13px;">0</strong> / <span id="val-max-players">69</span>
+                    <span id="val-player-sample" class="inline-hint"></span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="label-col">Whitelist:</td>
+                  <td class="val-col" id="val-whitelist-status">Disabled</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Active Operators:</td>
+                  <td class="val-col" id="val-ops-count">0</td>
+                </tr>
+                <tr>
+                  <td class="label-col">Blacklisted Players:</td>
+                  <td class="val-col" id="val-bans-count">0</td>
+                </tr>
+              </table>
+            </div>
+
           </div>
 
-          <!-- LAN Section -->
-          <div class="section-sub-header">LAN / Gateway Status</div>
-          <table class="form-layout-table">
-            <tr>
-              <td class="label-col">Runtime State:</td>
-              <td class="val-col">
-                <span id="st-mc-state" class="badge-status online">● Active / Running</span>
-                <span id="st-mc-pid" class="inline-hint">(PID: --)</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="label-col">Service Uptime:</td>
-              <td class="val-col"><strong id="st-uptime" style="color: #004080; font-family: monospace, sans-serif; font-size: 11px;">Loading...</strong></td>
-            </tr>
-            <tr>
-              <td class="label-col">Engine TPS:</td>
-              <td class="val-col"><strong id="st-tps" style="color: #006622;">20.0 TPS</strong> <span class="inline-hint">(Target: 20.0 TPS)</span></td>
-            </tr>
-            <tr>
-              <td class="label-col">Service Control:</td>
-              <td class="val-col">
-                <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ Start ]</button>
-                <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')">[ Restart ]</button>
-                <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')">[ Stop ]</button>
-              </td>
-            </tr>
-          </table>
-
-          <!-- WAN Section -->
-          <div class="section-sub-header">WAN / Public Gateway</div>
-          <table class="form-layout-table">
-            <tr>
-              <td class="label-col">Server Domain:</td>
-              <td class="val-col">
-                <strong id="st-server-domain" style="color: #006622; font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
-                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 8px; font-size: 11px; padding: 0 8px;" onclick="copyServerDomain(this)">[ Copy Domain ]</button>
-                <button class="btn-classic" style="height: 22px; line-height: 14px; margin-left: 4px; font-size: 11px; padding: 0 8px;" onclick="copyServerIpPort(this)">[ Copy IP:Port ]</button>
-              </td>
-            </tr>
-            <tr>
-              <td class="label-col">Java Edition Port:</td>
-              <td class="val-col">25565 <span class="inline-hint">(TCP / UDP)</span></td>
-            </tr>
-            <tr>
-              <td class="label-col">Bedrock Edition Port:</td>
-              <td class="val-col">19132 <span class="inline-hint">(UDP via Geyser-Spigot)</span></td>
-            </tr>
-            <tr>
-              <td class="label-col">Console Port:</td>
-              <td class="val-col">8080 <span class="inline-hint">(Reverse-proxied via HTTPS)</span></td>
-            </tr>
-          </table>
-
-          <!-- Hardware Resource Utilization -->
-          <div class="section-sub-header">Hardware Resource Utilization</div>
-          <table class="form-layout-table">
-            <tr>
-              <td class="label-col">CPU Utilization:</td>
-              <td class="val-col">
-                <div class="meter-container"><div id="meter-cpu" class="meter-bar"></div></div>
-                <span id="val-cpu" style="font-weight: bold; margin-left: 6px;">0%</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="label-col">System Memory:</td>
-              <td class="val-col">
-                <div class="meter-container"><div id="meter-ram" class="meter-bar"></div></div>
-                <span id="val-ram" style="font-weight: bold; margin-left: 6px;">0.0 / 24.0 GB (0%)</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="label-col">JVM Process RSS:</td>
-              <td class="val-col">
-                <strong id="val-jvm">0 MB</strong> <span class="inline-hint">(Allocated Heap Max: 12.0 GB)</span>
-              </td>
-            </tr>
-            <tr>
-              <td class="label-col">Disk Storage:</td>
-              <td class="val-col">
-                <div class="meter-container"><div id="meter-disk" class="meter-bar"></div></div>
-                <span id="val-disk" style="font-weight: bold; margin-left: 6px;">0% Used</span>
-              </td>
-            </tr>
-          </table>
-
-          <!-- Traffic Statistics -->
-          <div class="section-sub-header">Traffic &amp; Player Statistics</div>
-          <table class="form-layout-table">
-            <tr>
-              <td class="label-col">Online Players:</td>
-              <td class="val-col">
-                <strong id="val-online-players" style="color: #006622; font-size: 13px;">0</strong> / <span id="val-max-players">69</span>
-                <span id="val-player-sample" class="inline-hint"></span>
-              </td>
-            </tr>
-            <tr>
-              <td class="label-col">White-List Status:</td>
-              <td class="val-col" id="val-whitelist-status">Disabled</td>
-            </tr>
-            <tr>
-              <td class="label-col">Active Operators:</td>
-              <td class="val-col" id="val-ops-count">0</td>
-            </tr>
-            <tr>
-              <td class="label-col">Blacklisted (Banned):</td>
-              <td class="val-col" id="val-bans-count">0</td>
-            </tr>
-          </table>
-
-          <div class="btn-row">
+          <!-- Bottom Action Buttons Row -->
+          <div class="btn-row" style="margin-top: 0;">
             <button class="btn-classic" onclick="refreshStatus()">[ Refresh ]</button>
             <button class="btn-classic" onclick="triggerAction('gc')">[ Release Heap (/gc) ]</button>
             <button class="btn-classic" onclick="triggerAction('save')">[ Flush &amp; Save World (/save-all) ]</button>
@@ -4643,7 +4656,6 @@
               <button class="btn-classic" onclick="loadPanelAddons(true)">[ Reload Addons ]</button>
               <button class="btn-classic" onclick="openAddonUploadModal()">[ Upload Addon (.zip) ]</button>
               <button class="btn-classic" onclick="openAddonUrlModal()">[ Install from URL ]</button>
-              <button class="btn-classic" style="font-weight: bold; color: #006622;" onclick="selectNavView('panel-addons-store')">[ Browse Plugin Store ]</button>
             </div>
           </div>
           <p class="inline-hint" style="margin-bottom: 12px;">
@@ -4663,129 +4675,7 @@
           </div>
         </section>
 
-        <!-- ════ VIEW 18: PLUGIN STORE & EXTENSION MARKETPLACE ════ -->
-        <section id="view-panel-addons-store" class="view-panel">
-          <div class="section-title-bar">
-            <span>FiestaPanel Plugin Store &amp; Extension Catalog</span>
-            <div>
-              <button class="btn-classic" onclick="loadPanelAddonStore()">[ Refresh Catalog ]</button>
-              <button class="btn-classic" style="font-weight: bold;" onclick="selectNavView('panel-addons-create')">[ Developer Guide ]</button>
-            </div>
-          </div>
-          <p class="inline-hint" style="margin-bottom: 14px;">
-            One-click install official and verified extensions to customize and automate your FiestaPanel gateway.
-          </p>
-
-          <!-- Store Category Filters -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center;">
-            <span style="font-weight: bold; font-size: 11px;">Category:</span>
-            <button class="btn-classic store-cat-btn active-tab" data-cat="all" onclick="filterStoreCategory('all', this)">All Extensions</button>
-            <button class="btn-classic store-cat-btn" data-cat="Integration" onclick="filterStoreCategory('Integration', this)">Integrations</button>
-            <button class="btn-classic store-cat-btn" data-cat="Automation" onclick="filterStoreCategory('Automation', this)">Automation</button>
-            <button class="btn-classic store-cat-btn" data-cat="Tools" onclick="filterStoreCategory('Tools', this)">Tools</button>
-            <button class="btn-classic store-cat-btn" data-cat="Visuals" onclick="filterStoreCategory('Visuals', this)">Visuals</button>
-            <button class="btn-classic store-cat-btn" data-cat="Administration" onclick="filterStoreCategory('Administration', this)">Administration</button>
-            <button class="btn-classic store-cat-btn" data-cat="Customization" onclick="filterStoreCategory('Customization', this)">Customization</button>
-            <input type="text" id="store-search-input" class="ctrl-input" style="margin-left: auto; width: 220px;" placeholder="Search store..." oninput="filterStoreCatalogSearch()">
-          </div>
-
-          <div id="store-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; margin-bottom: 20px;">
-            <!-- Dynamically populated by loadPanelAddonStore() -->
-          </div>
-
-          <div style="padding: 14px 18px; background: rgba(0, 102, 34, 0.08); border: 1px dashed rgba(0, 102, 34, 0.4); border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <strong style="color: #006622; font-size: 13px;">Want to build your own FiestaPanel Addon?</strong>
-              <div class="inline-hint">Create custom tabs, dashboard widgets, console bots, and live themes in Python and HTML.</div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold;">[ Download Starter Boilerplate (.zip) ]</a>
-              <button class="btn-classic" style="padding: 4px 12px;" onclick="selectNavView('panel-addons-create')">[ View Developer Guide ]</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- ════ VIEW 19: ADDON DEVELOPER GUIDE & TEMPLATE CREATOR ════ -->
-        <section id="view-panel-addons-create" class="view-panel">
-          <div class="section-title-bar">
-            <span>FiestaPanel Addon Developer Guide &amp; API Reference</span>
-            <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; font-weight: bold; color: #006622;">[ Download Starter Kit (.zip) ]</a>
-          </div>
-          <p class="inline-hint" style="margin-bottom: 14px;">
-            FiestaPanel provides a lightweight, powerful extension system. Build custom views, console hooks, and automated tools with Python and standard HTML.
-          </p>
-
-          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
-            <div class="section-sub-header" style="margin-top:0;">1. Addon Directory Structure</div>
-            <p class="help-text">Addons live in <code>addons/&lt;addon_id&gt;/</code>. A minimal working addon requires only <code>addon.json</code> and optional <code>main.py</code> / <code>tab.html</code>:</p>
-            <pre style="background: #111; color: #00ff66; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">addons/
-└── my_custom_addon/
-    ├── addon.json       # Required: Manifest with name, version, and schema
-    ├── main.py          # Optional: Python backend logic &amp; on_action hooks
-    ├── tab.html         # Optional: Custom UI rendered in panel tab
-    └── custom.css       # Optional: Custom DOM styles injected automatically</pre>
-          </div>
-
-          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
-            <div class="section-sub-header" style="margin-top:0;">2. Manifest Specification (<code>addon.json</code>)</div>
-            <pre style="background: #111; color: #38bdf8; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">{
-  "id": "my_announcer",
-  "name": "Server Auto-Announcer",
-  "version": "1.0.0",
-  "author": "YourName",
-  "description": "Periodically broadcasts custom announcement messages to all players in-game.",
-  "icon": "fas fa-bullhorn",
-  "category": "Automation",
-  "enabled": true,
-  "entrypoint": "main.py",
-  "settings_schema": [
-    { "key": "msg", "label": "Announcement Text", "type": "text", "default": "Welcome!" }
-  ],
-  "default_settings": {
-    "msg": "Welcome to our server!"
-  },
-  "ui_slots": {
-    "tab": {
-      "title": "Announcer",
-      "icon": "fas fa-bullhorn",
-      "description": "Configure automated announcements and test live chat broadcasts."
-    }
-  }
-}</pre>
-          </div>
-
-          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
-            <div class="section-sub-header" style="margin-top:0;">3. Backend Python Hooks (<code>main.py</code>)</div>
-            <pre style="background: #111; color: #facc15; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">def init_addon(ctx):
-    ctx.logger.info("Addon initialized!")
-
-def on_action(ctx, action_name, payload):
-    if action_name == "broadcast":
-        msg = payload.get("message") or ctx.get_settings().get("msg", "Hello")
-        success, response = ctx.send_command(f"say {msg}")
-        return {"success": success, "message": "Broadcast sent!" if success else response}
-    return {"success": False, "error": f"Unknown action: {action_name}"}</pre>
-          </div>
-
-          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
-            <div class="section-sub-header" style="margin-top:0;">4. Frontend AJAX Communication</div>
-            <p class="help-text">Inside your <code>tab.html</code>, trigger backend actions effortlessly with standard <code>fetch()</code>:</p>
-            <pre style="background: #111; color: #e2e8f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">fetch('/api/panel-addons/my_announcer/action', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ action: 'broadcast', payload: { message: 'Hello from web!' } })
-})
-.then(res => res.json())
-.then(data => alert(data.message || data.error));</pre>
-          </div>
-
-          <div class="btn-row">
-            <a href="/api/panel-addons/template/download" class="btn-satin-green" style="text-decoration: none; padding: 6px 20px; font-weight: bold;">[ Download Starter Boilerplate Archive ]</a>
-            <button class="btn-classic" style="padding: 6px 16px;" onclick="selectNavView('panel-addons-installed')">[ Back to Installed Addons ]</button>
-          </div>
-        </section>
-
-        <!-- ════ VIEW 20: DYNAMIC ACTIVE ADDON TAB ════ -->
+        <!-- ════ VIEW 18: DYNAMIC ACTIVE ADDON TAB ════ -->
         <section id="view-panel-addon-tab" class="view-panel">
           <div class="section-title-bar">
             <span id="active-addon-tab-title">Addon View</span>
@@ -5253,22 +5143,6 @@ def on_action(ctx, action_name, payload):
           <div class="help-sub">Enabling / Disabling</div>
           <p class="help-text">Toggle any addon off to disable its background tasks and hide its UI tab without deleting its files.</p>
         `
-      },
-      'panel-addons-store': {
-        title: 'Plugin Store Help',
-        body: `
-          <div class="help-sub">1-Click Addon Store</div>
-          <p class="help-text">Browse official and verified FiestaPanel extensions. Click Install to deploy an addon immediately into your panel without restarting.</p>
-          <div class="help-sub">Custom Addons</div>
-          <p class="help-text">You can also upload community-created ZIP packages or install directly from a Git URL.</p>
-        `
-      },
-      'panel-addons-create': {
-        title: 'Developer Guide Help',
-        body: `
-          <div class="help-sub">Building Plugins</div>
-          <p class="help-text">Anyone can write a FiestaPanel extension using Python and HTML. Download the starter kit to get a pre-configured template with full documentation.</p>
-        `
       }
     };
 
@@ -5335,7 +5209,78 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); }
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
-      if (viewId === 'panel-addons-store') loadPanelAddonStore();
+    }
+
+    // ── Server Domain Admin Editor & Clipboard Helpers ────────────
+    function openEditServerDomain() {
+      const disp = document.getElementById('st-server-domain-display');
+      const edit = document.getElementById('st-server-domain-editor');
+      const input = document.getElementById('input-server-domain');
+      if (disp && edit) {
+        disp.style.display = 'none';
+        edit.style.display = 'inline-flex';
+        if (input) input.focus();
+      }
+    }
+
+    function cancelEditServerDomain() {
+      const disp = document.getElementById('st-server-domain-display');
+      const edit = document.getElementById('st-server-domain-editor');
+      const msg = document.getElementById('domain-update-msg');
+      if (disp && edit) {
+        edit.style.display = 'none';
+        disp.style.display = 'inline-flex';
+      }
+      if (msg) msg.textContent = '';
+    }
+
+    async function saveServerDomain() {
+      const input = document.getElementById('input-server-domain');
+      const msg = document.getElementById('domain-update-msg');
+      if (!input) return;
+
+      const domain = input.value.trim();
+      if (!domain) {
+        if (msg) {
+          msg.style.color = '#dc2626';
+          msg.textContent = 'Domain cannot be blank';
+        }
+        return;
+      }
+
+      if (msg) {
+        msg.style.color = '#0284c7';
+        msg.textContent = 'Saving...';
+      }
+
+      try {
+        const res = await fetch('/api/settings/domain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ server_domain: domain })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const stEl = document.getElementById('st-server-domain');
+          if (stEl) stEl.textContent = domain;
+          if (msg) {
+            msg.style.color = '#16a34a';
+            msg.textContent = 'Saved!';
+            setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
+          }
+          cancelEditServerDomain();
+        } else {
+          if (msg) {
+            msg.style.color = '#dc2626';
+            msg.textContent = data.message || 'Failed to save';
+          }
+        }
+      } catch (err) {
+        if (msg) {
+          msg.style.color = '#dc2626';
+          msg.textContent = 'Network error: ' + err.message;
+        }
+      }
     }
 
     // ── Clipboard Copy Helper ───────────────────────────────────
