@@ -1,6 +1,10 @@
 # 🚀 FiestaPanel Installation & Setup Guide
 
-This guide walks you through deploying **FiestaPanel** on any Linux server (Ubuntu, Debian, Raspberry Pi OS, CentOS, AlmaLinux, Rocky Linux, Arch Linux).
+This guide walks you through deploying **FiestaPanel** across **Linux, macOS, and Windows**.
+
+> [!TIP]
+> **No Pre-installed Minecraft Server Required!**  
+> You do NOT need to set up or download Minecraft prior to installing FiestaPanel. Once FiestaPanel is installed, you can choose and install **Purpur, Paper, Fabric, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal.
 
 ---
 
@@ -8,164 +12,139 @@ This guide walks you through deploying **FiestaPanel** on any Linux server (Ubun
 
 | Requirement | Minimum | Recommended |
 |---|---|---|
-| **Operating System** | Ubuntu 20.04+, Debian 11+, any Linux with systemd | Ubuntu 22.04 LTS / 24.04 LTS |
+| **Operating System** | Linux (Ubuntu, Debian, Fedora, Arch), macOS 11+, or Windows 10/11 | Ubuntu 22.04 / 24.04 LTS or Windows 11 |
 | **Python** | Python 3.9+ | Python 3.11+ |
-| **RAM** | 128 MB (for panel alone) | 512 MB+ |
-| **Disk Space** | 100 MB free space | 1 GB+ |
-| **Network** | Port 8080 (or custom port) | Standard HTTPS port 443 with Nginx reverse proxy |
-| **Minecraft Server** | Any Java edition (Paper, Purpur, Spigot, Vanilla, Fabric) with `systemd` service or folder path |
+| **Java** | Java 17 or Java 21+ | OpenJDK / Temurin Java 21 (Required for MC 1.20.5+) |
+| **RAM** | 128 MB (for panel alone) | 512 MB+ (plus RAM for your Minecraft server) |
+| **Disk Space** | 100 MB free space | 2 GB+ |
+| **Network** | Port 8080 (customizable) | Standard HTTPS port 443 with Nginx reverse proxy |
+| **Minecraft Server** | Any Java edition (Auto-installable from web panel) | Purpur or Paper 1.21.x |
 
 ---
 
-## ⚡ Option 1: One-Line Automated Quick Install (Recommended)
+## 🐧 Option 1: Linux & macOS (1-Line Quick Install)
 
-Run the automated installer as `root` or with `sudo`:
+Run the automated installer in your terminal:
 
 ```bash
 curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
 ```
 
 ### Unattended / Custom Flags
-You can pass environment variables to configure installation without prompts:
+Pass environment variables to customize your setup:
 
 ```bash
 # Custom HTTP Port & Minecraft Server Directory
-PORT=9000 MC_PATH=/opt/minecraft MC_SERVICE=minecraft curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
+PORT=9000 MC_PATH=/opt/minecraft curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
 ```
 
 ### What the Automated Installer Does:
-1. Detects OS package manager (`apt-get`, `dnf`, `pacman`, `zypper`).
+1. Detects OS package manager (`apt-get`, `dnf`, `pacman`, `brew`).
 2. Installs required system packages: `python3`, `python3-pip`, `python3-venv`, `curl`, `tar`.
 3. Creates dedicated directory `/opt/fiestapanel` (or updates existing installation).
 4. Sets up an isolated Python virtual environment (`venv`) and installs dependencies.
-5. Installs the `panelctl` CLI tool directly into `/usr/local/bin/panelctl`.
-6. Configures and registers a `systemd` service (`fiestapanel.service`).
+5. Installs the `panelctl` CLI tool into `/usr/local/bin/panelctl` (or `~/.local/bin/panelctl`).
+6. Configures and registers a `systemd` service (`fiestapanel.service`) on Linux.
 7. Auto-generates a secure administrator credential if none exists and prints login details.
-8. Starts the service immediately and verifies HTTP health.
+8. Starts the service immediately.
 
 ---
 
-## 🛠️ Option 2: Manual Installation (Step-by-Step)
+## 🪟 Option 2: Windows Installation (10 / 11 / Server)
 
-If you prefer full control or don't want to use the automated script, follow these steps:
+FiestaPanel natively supports Windows without requiring WSL or Docker!
 
-### 1. Install System Dependencies
+### Quick Windows Setup:
 
-On Ubuntu / Debian:
-```bash
-sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-venv git curl
-```
+1. **Prerequisites**:
+   - Install **Python 3.10+** from [python.org](https://www.python.org/downloads/) *(check "Add Python to PATH" during install)*.
+   - Install **Java 21** from [adoptium.net](https://adoptium.net/).
 
-On Fedora / RHEL / AlmaLinux:
-```bash
-sudo dnf install -y python3 python3-pip git curl
-```
+2. **Download & Extract**:
+   Download the repository ZIP or clone with Git:
+   ```cmd
+   git clone https://github.com/open-fiestasmp/FiestaPanel.git C:\FiestaPanel
+   cd C:\FiestaPanel
+   ```
 
----
+3. **Install & Launch**:
+   Run the interactive installer:
+   ```cmd
+   install.bat
+   ```
+   Or using PowerShell:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File install.ps1
+   ```
 
-### 2. Clone the Repository
-
-```bash
-sudo mkdir -p /opt/fiestapanel
-sudo git clone https://github.com/open-fiestasmp/FiestaPanel.git /opt/fiestapanel
-cd /opt/fiestapanel
-```
-
----
-
-### 3. Create Python Virtual Environment & Install Dependencies
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+4. **Start Anytime**:
+   Double-click `start.bat` to start FiestaPanel and open your browser automatically to `http://localhost:8080`.
+   Use `panelctl.bat status` or `panelctl.bat restart` to manage it from CMD or PowerShell.
 
 ---
 
-### 4. Create Configuration File
+## 🍎 Option 3: macOS Installation
 
-Copy the example configuration:
-```bash
-cp config.example.json config.json
-```
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/open-fiestasmp/FiestaPanel.git ~/fiestapanel
+   cd ~/fiestapanel
+   ```
 
-Edit `config.json` to suit your server:
-```json
-{
-  "host": "0.0.0.0",
-  "port": 8080,
-  "mc_path": "/home/ubuntu/fiesta",
-  "mc_service": "fiesta",
-  "debug": false
-}
-```
+2. **Run Installer**:
+   ```bash
+   bash install.sh
+   ```
+   Or run directly in standalone mode:
+   ```bash
+   ./start.sh
+   ```
 
-- `port`: Port FiestaPanel listens on.
-- `mc_path`: Absolute path to your Minecraft server root directory (where `server.properties`, `plugins/`, `world/` are stored).
-- `mc_service`: (Optional) Systemd service name running your Minecraft server.
+3. Open your browser to `http://localhost:8080`.
 
 ---
 
-### 5. Link `panelctl` CLI Tool
+## 🎮 Installing Minecraft Server Software from Web Panel
 
-```bash
-sudo ln -sf /opt/fiestapanel/panelctl /usr/local/bin/panelctl
-sudo chmod +x /usr/local/bin/panelctl
-```
+Once logged into FiestaPanel:
+
+1. If no Minecraft server is installed yet, you will see a prominent banner:
+   **"🚀 Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet"**
+2. Click **[ ⚡ Install Paper 1.21.4 ]** or navigate to **System Tools ➔ Software**.
+3. Select your engine:
+   - 🦅 **Purpur** (High-performance Paper fork with extensive customization)
+   - 📄 **Paper** (Industry standard high-performance engine)
+   - 🧵 **Fabric** (Modular modern modding loader)
+   - 🧊 **Vanilla** (Official Mojang server)
+   - ⚡ **Spigot** (Classic plugin platform)
+4. Choose your Minecraft game version (e.g. 1.21.4, 1.21.1, 1.20.4, 1.19.4).
+5. Select allocated RAM (e.g. 4 GB).
+6. Check **Accept Mojang EULA automatically** and **Auto-Start**.
+7. Click **[ 🔄 Install & Switch Software ]**.
+
+FiestaPanel will download the JAR, create `eula.txt=true`, generate default `server.properties`, and start the server process. **Zero SSH commands required!**
 
 ---
 
-### 6. Create Systemd Service
+## 🎨 Uploading Local Branding Icons & Logos
 
-Create `/etc/systemd/system/fiestapanel.service`:
+You can customize the logo in the header and login screen using local image files:
 
-```ini
-[Unit]
-Description=FiestaPanel Minecraft Management Suite
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/fiestapanel
-ExecStart=/opt/fiestapanel/venv/bin/python3 /opt/fiestapanel/app.py
-Restart=always
-RestartSec=5
-Environment=PYTHONUNBUFFERED=1
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Enable and start the service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable fiestapanel
-sudo systemctl start fiestapanel
-```
-
-Check service status:
-```bash
-panelctl status
-```
+1. Go to **System Tools ➔ Portal Branding**.
+2. Under **Header Brand Icon & Logo**, find **Upload Local Logo**.
+3. Click **[ 📁 Choose Local Image / SVG ]**.
+4. Select any `.png`, `.svg`, `.jpg`, `.webp`, or `.ico` file from your device.
+5. FiestaPanel will upload the logo to `static/uploads/`, immediately update the live preview, and apply it server-wide.
+6. Click **[ 💾 Save & Apply Branding ]**.
 
 ---
 
 ## 🌐 Setting Up a Reverse Proxy (Production & HTTPS)
 
-To access FiestaPanel over domain name with SSL encryption (e.g., `https://panel.yourdomain.com`), configure a reverse proxy.
+To access FiestaPanel securely via domain name with SSL encryption (e.g., `https://panel.yourdomain.com`):
 
 ### Nginx Configuration
 
-1. Install Nginx and Certbot:
-```bash
-sudo apt install -y nginx certbot python3-certbot-nginx
-```
-
-2. Create `/etc/nginx/sites-available/fiestapanel`:
 ```nginx
 server {
     listen 80;
@@ -191,74 +170,37 @@ server {
 }
 ```
 
-3. Enable the site and obtain SSL certificate:
+Enable SSL certificate with Certbot:
 ```bash
-sudo ln -s /etc/nginx/sites-available/fiestapanel /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
 sudo certbot --nginx -d panel.yourdomain.com
-```
-
-### Caddyfile (Alternative)
-
-If using Caddy:
-```caddy
-panel.yourdomain.com {
-    reverse_proxy 127.0.0.1:8080 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-    }
-}
 ```
 
 ---
 
-## 🎮 CLI Management (`panelctl`)
-
-FiestaPanel includes a convenient command line interface:
+## 🧰 CLI Management (`panelctl`)
 
 | Command | Description |
 |---|---|
-| `panelctl status` | Display panel daemon status and live memory consumption |
+| `panelctl status` | Display panel daemon status and memory consumption |
 | `panelctl start` | Start the panel service |
 | `panelctl stop` | Stop the panel service |
 | `panelctl restart` | Gracefully restart the panel service |
-| `panelctl logs` | Stream live application logs via `journalctl` |
+| `panelctl logs` | Stream live application logs |
 | `panelctl reset-admin` | Reset or generate new admin credentials |
 | `panelctl set-port <port>` | Change panel listening port |
 | `panelctl set-mc-path <path>` | Change target Minecraft server directory |
-| `panelctl info` | Display current directory, user count, and settings |
+| `panelctl info` | Display current directory, Java runtime, and settings |
 | `panelctl version` | Print panel version |
+
+*(On Windows, use `panelctl.bat <command>` or `python panelctl.py <command>`)*
 
 ---
 
 ## 🔄 Updating FiestaPanel
 
-To upgrade an existing installation to the latest version:
-
 ```bash
-cd /opt/fiestapanel
-sudo git pull origin main
-sudo ./venv/bin/pip install -r requirements.txt
+cd /opt/fiestapanel  # or C:\FiestaPanel on Windows
+git pull origin main
+./venv/bin/pip install -r requirements.txt
 panelctl restart
 ```
-
----
-
-## ❓ Troubleshooting & FAQs
-
-### 1. Panel says "Server Stopped" when Minecraft is running
-- Ensure `mc_service` in `config.json` matches your Minecraft service name in systemd (e.g. `fiesta.service` or `minecraft.service`).
-- Alternatively, check that `mc_path` points to the exact folder containing `server.properties`.
-
-### 2. Console commands not executing
-- Check that RCON is enabled in `server.properties`:
-  ```properties
-  enable-rcon=true
-  rcon.port=25575
-  rcon.password=YourRconPassword
-  ```
-- Or if using tmux/screen/systemd, ensure panel user has permissions to write to Minecraft process input.
-
-### 3. File upload fails with HTTP 413
-- When using Nginx, increase `client_max_body_size 500M;` in your Nginx configuration.

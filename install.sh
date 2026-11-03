@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # FiestaPanel - Turnkey Minecraft Server Management Suite Installer
-# Version: 2.0.0
+# Version: 2.1.0
 # License: MIT
-# Description: Automated one-line installer for Ubuntu / Debian / Linux servers
+# Description: Automated one-line installer for Linux & macOS servers
 # ==============================================================================
 
 set -e
@@ -21,12 +21,12 @@ echo -e "${COLOR_CYAN}"
 cat << "EOF"
   ╔═══════════════════════════════════════════════════════════════════════╗
   ║                                                                       ║
-  ║     ██████╗  █████╗ ████████╗███████╗██╗    ██╗ █████╗ ██╗   ██╗     ║
-  ║    ██╔════╝ ██╔══██╗╚══██╔══╝██╔════╝██║    ██║██╔══██╗╚██╗ ██╔╝     ║
-  ║    ██║  ███╗███████║   ██║   █████╗  ██║ █╗ ██║███████║ ╚████╔╝      ║
-  ║    ██║   ██║██╔══██║   ██║   ██╔══╝  ██║███╗██║██╔══██║  ╚██╔╝       ║
-  ║    ╚██████╔╝██║  ██║   ██║   ███████╗╚███╔███╔╝██║  ██║   ██║        ║
-  ║     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝ ╚══╝╚══╝ ╚═╝  ╚═╝   ╚═╝        ║
+  ║     ███████╗██╗███████╗███████╗████████╗ █████╗                       ║
+  ║     ██╔════╝██║██╔════╝██╔════╝╚══██╔══╝██╔══██╗                      ║
+  ║     █████╗  ██║█████╗  ███████╗   ██║   ███████║                      ║
+  ║     ██╔══╝  ██║██╔══╝  ╚════██║   ██║   ██╔══██║                      ║
+  ║     ██║     ██║███████╗███████║   ██║   ██║  ██║                      ║
+  ║     ╚═╝     ╚═╝╚══════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝                      ║
   ║                 P A N E L   S O F T W A R E                           ║
   ║                                                                       ║
   ║        Turnkey Retro & Modern Minecraft Management Suite              ║
@@ -34,9 +34,14 @@ cat << "EOF"
 EOF
 echo -e "${COLOR_RESET}"
 
-# 1. Require Root
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${COLOR_RED}Error: The installer must be executed as root or with sudo.${COLOR_RESET}"
+IS_DARWIN=false
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    IS_DARWIN=true
+fi
+
+# 1. Require Root on Linux
+if [ "$IS_DARWIN" = false ] && [ "$EUID" -ne 0 ]; then
+    echo -e "${COLOR_RED}Error: On Linux, the installer must be executed as root or with sudo.${COLOR_RESET}"
     echo "Please re-run: sudo bash $0"
     exit 1
 fi
@@ -47,7 +52,14 @@ PORT_ARG=""
 ADMIN_PASS_ARG=""
 UNATTENDED=false
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
-TARGET_INSTALL_DIR="/opt/gateway-panel"
+
+if [ "$IS_DARWIN" = true ]; then
+    TARGET_INSTALL_DIR="$HOME/fiestapanel"
+    DEFAULT_MC="$HOME/minecraft_server"
+else
+    TARGET_INSTALL_DIR="/opt/fiestapanel"
+    DEFAULT_MC="/opt/minecraft"
+fi
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -78,13 +90,12 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${COLOR_BOLD}Initializing FiestaPanel Installation...${COLOR_RESET}"
-echo "Target Platform: Linux ($(uname -m))"
+echo "Target Platform: $(uname -s) ($(uname -m))"
 echo ""
 
 # 2. Configure Minecraft Server Path
-DEFAULT_MC="/home/ubuntu/fiesta"
-if [ ! -d "$DEFAULT_MC" ]; then
-    DEFAULT_MC="/opt/minecraft"
+if [ -d "/home/ubuntu/fiesta" ]; then
+    DEFAULT_MC="/home/ubuntu/fiesta"
 fi
 
 if [ -n "$MC_DIR_ARG" ]; then
@@ -97,11 +108,7 @@ else
     FINAL_MC_DIR="${USER_MC_DIR:-$DEFAULT_MC}"
 fi
 
-# Ensure MC dir exists or warn
-if [ ! -d "$FINAL_MC_DIR" ]; then
-    echo -e "${COLOR_YELLOW}Directory $FINAL_MC_DIR does not exist yet. Creating it...${COLOR_RESET}"
-    mkdir -p "$FINAL_MC_DIR"
-fi
+mkdir -p "$FINAL_MC_DIR"
 
 # 3. Configure Port
 DEFAULT_PORT=8080
@@ -119,13 +126,13 @@ fi
 if [ -n "$ADMIN_PASS_ARG" ]; then
     FINAL_PASS="$ADMIN_PASS_ARG"
 elif [ "$UNATTENDED" = true ]; then
-    FINAL_PASS="GatewayAdmin@$(openssl rand -hex 4 2>/dev/null || echo '2026')"
+    FINAL_PASS="FiestaAdmin@$(openssl rand -hex 4 2>/dev/null || echo '2026')"
 else
     echo -e "${COLOR_YELLOW}Enter administrator password (leave blank to auto-generate secure password):${COLOR_RESET}"
     read -rsp "Password: " USER_PASS
     echo ""
     if [ -z "$USER_PASS" ]; then
-        FINAL_PASS="GatewayAdmin@$(openssl rand -hex 4 2>/dev/null || echo '2026')"
+        FINAL_PASS="FiestaAdmin@$(openssl rand -hex 4 2>/dev/null || echo '2026')"
         echo -e "${COLOR_CYAN}Auto-generated secure admin password: $FINAL_PASS${COLOR_RESET}"
     else
         FINAL_PASS="$USER_PASS"
@@ -134,24 +141,26 @@ fi
 
 # 5. Install System Dependencies
 echo ""
-echo -e "${COLOR_CYAN}[1/6] Installing system prerequisites (python3, pip, venv, screen)...${COLOR_RESET}"
-if command -v apt-get >/dev/null 2>&1; then
+echo -e "${COLOR_CYAN}[1/6] Installing system prerequisites (python3, pip, venv)...${COLOR_RESET}"
+if [ "$IS_DARWIN" = true ]; then
+    if command -v brew >/dev/null 2>&1; then
+        brew install python3 curl tar 2>/dev/null || true
+    fi
+elif command -v apt-get >/dev/null 2>&1; then
     apt-get update -qq || true
-    apt-get install -y -qq python3 python3-pip python3-venv screen curl tar >/dev/null 2>&1 || {
-        echo -e "${COLOR_YELLOW}Standard apt-get install notice; ensuring packages are present...${COLOR_RESET}"
-        apt-get install -y python3 python3-pip python3-venv screen curl tar
+    apt-get install -y -qq python3 python3-pip python3-venv curl tar screen >/dev/null 2>&1 || {
+        apt-get install -y python3 python3-pip python3-venv curl tar
     }
 elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y python3 python3-pip screen curl tar
+    dnf install -y python3 python3-pip curl tar screen 2>/dev/null || true
 elif command -v yum >/dev/null 2>&1; then
-    yum install -y python3 python3-pip screen curl tar
+    yum install -y python3 python3-pip curl tar screen 2>/dev/null || true
 fi
 
 # 6. Deploy FiestaPanel Codebase
 echo -e "${COLOR_CYAN}[2/6] Deploying application files into $TARGET_INSTALL_DIR...${COLOR_RESET}"
 mkdir -p "$TARGET_INSTALL_DIR"
 
-# If running directly from cloned directory, copy files
 if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/app.py" "$TARGET_INSTALL_DIR/"
     cp -r "$SOURCE_DIR/templates" "$TARGET_INSTALL_DIR/"
@@ -160,11 +169,11 @@ if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/branding.json" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/requirements.txt" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/panelctl.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/start.sh" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
 else
-    # Remote one-line installer fetch mode
     echo "Downloading FiestaPanel application package..."
     curl -sSL "https://fiesta.debarkak.xyz/static/fiestapanel-latest.tar.gz" | tar -xz -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
-        # Fallback to direct file download
         curl -sSL "https://fiesta.debarkak.xyz/app.py" -o "$TARGET_INSTALL_DIR/app.py"
     }
 fi
@@ -182,14 +191,13 @@ cat > "$TARGET_INSTALL_DIR/config.json" << EOF
   "admin_user": "admin",
   "admin_pass": "$FINAL_PASS",
   "server_dir": "$FINAL_MC_DIR",
-  "service_name": "fiesta",
+  "service_name": "fiestapanel",
   "screen_session": "fiesta",
   "host": "0.0.0.0",
   "port": $FINAL_PORT
 }
 EOF
 
-# Calculate SHA256 password hash for users.json
 PASS_HASH=$(python3 -c "import hashlib; print(hashlib.sha256('$FINAL_PASS'.encode('utf-8')).hexdigest())")
 cat > "$TARGET_INSTALL_DIR/users.json" << EOF
 {
@@ -204,15 +212,15 @@ cat > "$TARGET_INSTALL_DIR/users.json" << EOF
 }
 EOF
 
-# Ensure default branding if not existing
+# Ensure default branding
 if [ ! -f "$TARGET_INSTALL_DIR/branding.json" ]; then
 cat > "$TARGET_INSTALL_DIR/branding.json" << 'EOF'
 {
-  "brand_name": "GATEWAY-PRO",
-  "tagline": "The Modern & Retro Minecraft Management Suite",
-  "model_number": "Model No. GP-SERVER-X1",
+  "brand_name": "FIESTA-LINK",
+  "tagline": "The Reliable Choice",
+  "model_number": "Model No. FS-GATEWAY-PRO",
   "browser_title": "FiestaPanel | Console",
-  "footer_text": "FiestaPanel Software Suite • Open Source Minecraft Server Platform",
+  "footer_text": "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
   "server_desc": "Gateway Console",
   "header_icon": "tplink",
   "header_icon_custom": ""
@@ -221,15 +229,21 @@ EOF
 fi
 
 # 9. Install panelctl CLI Tool
-echo -e "${COLOR_CYAN}[5/6] Installing panelctl CLI utility to /usr/local/bin/panelctl...${COLOR_RESET}"
+echo -e "${COLOR_CYAN}[5/6] Installing panelctl CLI utility...${COLOR_RESET}"
 if [ -f "$TARGET_INSTALL_DIR/panelctl" ]; then
-    chmod +x "$TARGET_INSTALL_DIR/panelctl"
-    ln -sf "$TARGET_INSTALL_DIR/panelctl" /usr/local/bin/panelctl
+    chmod +x "$TARGET_INSTALL_DIR/panelctl" "$TARGET_INSTALL_DIR/panelctl.py" 2>/dev/null || true
+    if [ "$IS_DARWIN" = true ]; then
+        mkdir -p "$HOME/.local/bin"
+        ln -sf "$TARGET_INSTALL_DIR/panelctl" "$HOME/.local/bin/panelctl" 2>/dev/null || true
+    else
+        ln -sf "$TARGET_INSTALL_DIR/panelctl" /usr/local/bin/panelctl 2>/dev/null || true
+    fi
 fi
 
-# 10. Install & Enable Systemd Service
-echo -e "${COLOR_CYAN}[6/6] Configuring systemd daemon (gateway-panel.service)...${COLOR_RESET}"
-cat > /etc/systemd/system/gateway-panel.service << EOF
+# 10. Install & Enable Systemd Service (Linux only)
+if [ "$IS_DARWIN" = false ] && command -v systemctl >/dev/null 2>&1; then
+    echo -e "${COLOR_CYAN}[6/6] Configuring systemd daemon (fiestapanel.service)...${COLOR_RESET}"
+    cat > /etc/systemd/system/fiestapanel.service << EOF
 [Unit]
 Description=FiestaPanel Minecraft Management Suite Daemon
 After=network.target
@@ -248,18 +262,21 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable gateway-panel.service >/dev/null 2>&1 || true
+    systemctl daemon-reload
+    systemctl enable fiestapanel.service >/dev/null 2>&1 || true
 
-# If installed on existing server where fiesta-portal was running, keep both or transition
-if [ "$TARGET_INSTALL_DIR" != "/home/ubuntu/fiesta-portal" ]; then
-    systemctl restart gateway-panel.service || true
+    if [ "$TARGET_INSTALL_DIR" != "/home/ubuntu/fiesta-portal" ]; then
+        systemctl restart fiestapanel.service || true
+    else
+        systemctl restart fiesta-portal.service || true
+    fi
 else
-    systemctl restart fiesta-portal.service || true
+    echo -e "${COLOR_CYAN}[6/6] Created start.sh launcher in $TARGET_INSTALL_DIR/start.sh...${COLOR_RESET}"
+    chmod +x "$TARGET_INSTALL_DIR/start.sh" 2>/dev/null || true
 fi
 
 # Detect Public IP
-PUBLIC_IP=$(curl -s -m 3 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+PUBLIC_IP=$(curl -s -m 3 https://api.ipify.org 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")
 
 echo ""
 echo -e "${COLOR_GREEN}╔═══════════════════════════════════════════════════════════════════════╗${COLOR_RESET}"
@@ -277,8 +294,8 @@ echo -e "${COLOR_BOLD}CLI Management Commands (panelctl):${COLOR_RESET}"
 echo -e "  • Check status:      ${COLOR_CYAN}panelctl status${COLOR_RESET}"
 echo -e "  • View live logs:    ${COLOR_CYAN}panelctl logs${COLOR_RESET}"
 echo -e "  • Restart panel:     ${COLOR_CYAN}panelctl restart${COLOR_RESET}"
-echo -e "  • Reset password:    ${COLOR_CYAN}panelctl reset-admin [new-password]${COLOR_RESET}"
-echo -e "  • Change web port:   ${COLOR_CYAN}panelctl set-port [new-port]${COLOR_RESET}"
+echo -e "  • Reset password:    ${COLOR_CYAN}panelctl reset-admin${COLOR_RESET}"
+echo -e "  • Change web port:   ${COLOR_CYAN}panelctl set-port [port]${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_GREEN}Thank you for installing FiestaPanel! Enjoy managing your server.${COLOR_RESET}"
 echo ""

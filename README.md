@@ -12,7 +12,7 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-brightgreen.svg" alt="Python 3.9+"></a>
-  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20systemd-orange.svg" alt="Platform">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-blue.svg" alt="Platform: Cross-Platform">
   <img src="https://img.shields.io/badge/Minecraft-Java%20Edition-success.svg" alt="Minecraft">
 </p>
 
@@ -21,20 +21,23 @@
 <img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/d291e8bd-0571-44f4-b81b-5b013db7c885" />
 <img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/f5d5116c-5ef6-4491-b8c3-4e6de4af9bb1" />
 
-## ⚡ Quick Start (1-Line Install)
+## ⚡ Quick Start
 
-Run the automated installer on any Ubuntu, Debian, or Linux server:
-
+### 🐧 Linux & 🍎 macOS (1-Line Install)
 ```bash
 curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash
 ```
 
-Or clone and run locally:
-```bash
-git clone https://github.com/open-fiestasmp/FiestaPanel.git /opt/fiestapanel
-cd /opt/fiestapanel
-sudo bash install.sh
+### 🪟 Windows (10 / 11 / Server)
+```cmd
+git clone https://github.com/open-fiestasmp/FiestaPanel.git C:\FiestaPanel
+cd C:\FiestaPanel
+install.bat
 ```
+*(Or double-click `start.bat` to launch immediately!)*
+
+> [!NOTE]
+> **No Pre-installed Server Required**: You do not need to install Minecraft beforehand. You can install and launch **Paper, Purpur, Fabric, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal!
 
 ---
 

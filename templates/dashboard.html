@@ -2662,6 +2662,20 @@
             <span style="font-size: 10px; font-weight: normal;">Auto-refreshing every 3s</span>
           </div>
 
+          <!-- Uninstalled Server Onboarding Alert -->
+          <div class="uninstalled-server-banner" style="display: none; background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border: 2px solid #38bdf8; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; color: #ffffff;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">🚀 Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet</div>
+                <div style="font-size: 11px; color: #cbd5e1;">No server JAR found in directory. You can install Paper, Purpur, Fabric, Spigot, or Vanilla in 1-click directly from this web panel without opening SSH or terminal.</div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="quickInstallPreset('paper', '1.21.4')">[ ⚡ Install Paper 1.21.4 ]</button>
+                <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-size: 11px;" onclick="showView('sys-software')">[ 🛠️ Custom Software Wizard ]</button>
+              </div>
+            </div>
+          </div>
+
           <!-- LAN Section -->
           <div class="section-sub-header">LAN / Gateway Status</div>
           <table class="form-layout-table">
@@ -3262,6 +3276,17 @@
             </div>
           </div>
 
+          <!-- Uninstalled Server Alert in Console -->
+          <div class="uninstalled-server-banner" style="display: none; background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border: 2px solid #38bdf8; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; color: #ffffff;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 3px;">⚠️ Server Software Not Installed</div>
+                <div style="font-size: 11px; color: #cbd5e1;">Install Minecraft server software in 1-click to begin streaming live logs and sending commands.</div>
+              </div>
+              <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 14px; font-weight: bold; font-size: 11px;" onclick="showView('sys-software')">[ ⚡ Install Server Software ]</button>
+            </div>
+          </div>
+
           <!-- Server Power Controls in Console -->
           <div style="background: #f4f7f4; border: 1px solid #74b21d; padding: 6px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -3445,6 +3470,40 @@
                   <option value="latest">Latest Stable Build</option>
                 </select>
                 <span class="inline-hint">(Always grabs newest verified build)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Allocated RAM (Heap):</td>
+              <td class="val-col">
+                <select id="sw-ram-select" style="width: 160px; font-weight: bold;">
+                  <option value="1">1 GB</option>
+                  <option value="2">2 GB</option>
+                  <option value="3">3 GB</option>
+                  <option value="4" selected>4 GB (Recommended)</option>
+                  <option value="6">6 GB</option>
+                  <option value="8">8 GB</option>
+                  <option value="12">12 GB</option>
+                  <option value="16">16 GB</option>
+                </select>
+                <span class="inline-hint">(Server max Java heap memory -Xmx)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Auto EULA Agreement:</td>
+              <td class="val-col">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                  <input type="checkbox" id="sw-opt-eula" checked>
+                  <span>Accept Mojang EULA automatically (configures <code>eula.txt=true</code>)</span>
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Auto-Start:</td>
+              <td class="val-col">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                  <input type="checkbox" id="sw-opt-autostart" checked>
+                  <span>Start Minecraft server process immediately after installation</span>
+                </label>
               </td>
             </tr>
             <tr>
@@ -3814,6 +3873,16 @@
                 <td class="val-col">
                   <input type="text" id="brand-input-custom-icon" class="tp-input-text" style="width: 380px;" value="{{ branding.header_icon_custom if branding else '' }}" oninput="onCustomIconInput(this.value)" placeholder="Image URL (https://...) or raw <svg>...</svg>">
                   <span class="inline-hint">Optional: paste image link or raw SVG code for custom logo</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Upload Local Logo:</td>
+                <td class="val-col">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="file" id="brand-file-upload" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/x-icon,image/gif" style="display: none;" onchange="handleBrandIconFileUpload(this)">
+                    <button type="button" class="btn-classic" style="height: 24px; font-size: 11px;" onclick="document.getElementById('brand-file-upload').click()">[ 📁 Choose Local Image / SVG ]</button>
+                    <span id="brand-file-status" class="inline-hint">Supports PNG, SVG, JPG, WEBP, ICO files from your device</span>
+                  </div>
                 </td>
               </tr>
             </table>
@@ -4495,6 +4564,19 @@
         const d = await res.json();
 
         // Top Status Badge
+        // Server Installed Banner Check
+        const uninstalledBanners = document.querySelectorAll('.uninstalled-server-banner');
+        if (d.server_installed === false) {
+          uninstalledBanners.forEach(b => b.style.display = 'block');
+          const stState = document.getElementById('st-mc-state');
+          if (stState) {
+            stState.className = 'badge-status offline';
+            stState.textContent = '○ Software Not Installed';
+          }
+        } else {
+          uninstalledBanners.forEach(b => b.style.display = 'none');
+        }
+
         const topBadge = document.getElementById('top-online-state');
         if (d.mc_ping && d.mc_ping.online) {
           topBadge.className = 'badge-status online';
@@ -6630,7 +6712,14 @@
         const res = await fetch('/api/software/install', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ software, version, build })
+          body: JSON.stringify({
+            software,
+            version,
+            build,
+            ram_gb: parseInt(document.getElementById('sw-ram-select') ? document.getElementById('sw-ram-select').value : 4),
+            auto_eula: document.getElementById('sw-opt-eula') ? document.getElementById('sw-opt-eula').checked : true,
+            autostart: document.getElementById('sw-opt-autostart') ? document.getElementById('sw-opt-autostart').checked : true
+          })
         });
         clearInterval(animTimer);
         const d = await res.json();

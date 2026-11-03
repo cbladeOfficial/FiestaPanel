@@ -1,4 +1,6 @@
 import os
+import platform
+import tarfile
 import subprocess
 import time
 import json
@@ -71,6 +73,305 @@ MCASSETS_DIR = os.path.join(STATIC_DIR, "mcassets")
 USERS_FILE = os.path.join(BASE_DIR, "users.json")
 LOG_FILE = os.path.join(SERVER_DIR, "logs", "latest.log")
 START_TIME = time.time()
+
+IS_WINDOWS = platform.system() == "Windows"
+IS_MACOS = platform.system() == "Darwin"
+IS_LINUX = platform.system() == "Linux"
+UPLOAD_DIR = os.path.join(STATIC_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+def tail_file(filepath, n_lines=100, block_size=4096):
+    """Cross-platform efficient log tail reader (backward seek without tail command)."""
+    if not os.path.exists(filepath):
+        return []
+    try:
+        with open(filepath, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            filesize = f.tell()
+            buffer = bytearray()
+            pointer = filesize
+            lines = []
+            while pointer > 0 and len(lines) <= n_lines:
+                read_size = min(block_size, pointer)
+                pointer -= read_size
+                f.seek(pointer)
+                chunk = f.read(read_size)
+                buffer = chunk + buffer
+                lines = buffer.split(b"\n")
+            return [l.decode("utf-8", errors="replace").rstrip("\r") for l in lines[-n_lines:] if l]
+    except Exception:
+        try:
+            with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                return [l.rstrip("\r\n") for l in f.readlines()[-n_lines:]]
+        except Exception:
+            return []
+
+def detect_java_bin():
+    """Locate java binary across Windows, macOS, and Linux."""
+    j = shutil.which("java") or shutil.which("java.exe")
+    if j:
+        return j
+    jh = os.environ.get("JAVA_HOME")
+    if jh:
+        bin_j = os.path.join(jh, "bin", "java.exe" if IS_WINDOWS else "java")
+        if os.path.exists(bin_j):
+            return bin_j
+    if IS_WINDOWS:
+        for wr in [r"C:\Program Files\Eclipse Adoptium", r"C:\Program Files\Java", r"C:\Program Files\Microsoft", r"C:\Program Files\Amazon Corretto"]:
+            if os.path.exists(wr):
+                for root, dirs, files in os.walk(wr):
+                    if "java.exe" in files:
+                        return os.path.join(root, "java.exe")
+    elif IS_MACOS:
+        try:
+            out = subprocess.check_output(["/usr/libexec/java_home"], text=True).strip()
+            if out and os.path.exists(os.path.join(out, "bin", "java")):
+                return os.path.join(out, "bin", "java")
+        except Exception:
+            pass
+    return "java"
+
+def detect_java_version_str():
+    j_bin = detect_java_bin()
+    try:
+        res = subprocess.run([j_bin, "-version"], capture_output=True, text=True, timeout=2)
+        out = res.stderr or res.stdout
+        if out:
+            return out.splitlines()[0].strip()
+    except Exception:
+        pass
+    return "OpenJDK / Java Runtime"
+
+class ServerRunner:
+    """
+    Cross-platform Minecraft server manager for Linux, macOS, and Windows.
+    Supports systemd when present, direct process execution with stdin, and screen.
+    """
+    def __init__(self, server_dir, service_name=None, screen_session=None):
+        self.server_dir = os.path.abspath(server_dir)
+        self.service_name = service_name
+        self.screen_session = screen_session
+        self.proc = None
+        self.pid_file = os.path.join(self.server_dir, ".fiesta_server.pid")
+        self.runtime_config_file = os.path.join(self.server_dir, "runtime_config.json")
+        self.lock = threading.Lock()
+
+    def _detect_systemd(self):
+        if not IS_LINUX or not shutil.which("systemctl") or not self.service_name:
+            return False
+        try:
+            res = subprocess.run(["systemctl", "status", self.service_name], capture_output=True, timeout=2)
+            return res.returncode in (0, 3)
+        except Exception:
+            return False
+
+    def load_runtime_config(self):
+        cfg = {
+            "min_ram": "1G",
+            "max_ram": "4G",
+            "jvm_flags": ["-XX:+UseG1GC", "-XX:+ParallelRefProcEnabled", "-XX:MaxGCPauseMillis=200", "-XX:+UnlockExperimentalVMOptions", "-XX:+DisableExplicitGC", "-XX:+AlwaysPreTouch"],
+            "jar_name": "server.jar"
+        }
+        if os.path.exists(self.runtime_config_file):
+            try:
+                with open(self.runtime_config_file, "r") as f:
+                    cfg.update(json.load(f))
+            except Exception:
+                pass
+        return cfg
+
+    def save_runtime_config(self, cfg):
+        os.makedirs(self.server_dir, exist_ok=True)
+        try:
+            with open(self.runtime_config_file, "w") as f:
+                json.dump(cfg, f, indent=2)
+        except Exception:
+            pass
+
+    def is_running(self):
+        if self._detect_systemd():
+            try:
+                res = subprocess.run(["sudo", "systemctl", "is-active", self.service_name], capture_output=True, text=True, timeout=2)
+                if res.stdout.strip() == "active":
+                    return True
+            except Exception:
+                pass
+
+        if self.proc and self.proc.poll() is None:
+            return True
+
+        if os.path.exists(self.pid_file):
+            try:
+                with open(self.pid_file, "r") as f:
+                    pid = int(f.read().strip())
+                if psutil and psutil.pid_exists(pid):
+                    p = psutil.Process(pid)
+                    if any("server.jar" in str(arg) for arg in (p.cmdline() or [])):
+                        return True
+            except Exception:
+                pass
+
+        if psutil:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = proc.info.get('cmdline') or []
+                    if any('server.jar' in str(arg) for arg in cmdline):
+                        return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+        return False
+
+    def get_process_info(self):
+        if psutil:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'memory_info', 'cpu_percent']):
+                try:
+                    cmdline = proc.info.get('cmdline') or []
+                    if any('server.jar' in str(arg) for arg in cmdline):
+                        mem_mb = round(proc.info['memory_info'].rss / (1024 * 1024), 1)
+                        return proc.info['pid'], mem_mb, proc.info.get('cpu_percent', 0.0)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+        return None, 0, 0.0
+
+    def start(self):
+        with self.lock:
+            if self.is_running():
+                return True, "Server is already running."
+
+            jar_path = os.path.join(self.server_dir, "server.jar")
+            if not os.path.exists(jar_path):
+                return False, "server.jar not found in server directory. Please install server software first."
+
+            # Ensure eula.txt is true
+            eula_file = os.path.join(self.server_dir, "eula.txt")
+            if not os.path.exists(eula_file):
+                try:
+                    with open(eula_file, "w") as f:
+                        f.write("# By changing the setting below to TRUE you are indicating your agreement to the Mojang EULA (https://aka.ms/MinecraftEULA).\neula=true\n")
+                except Exception:
+                    pass
+            else:
+                try:
+                    with open(eula_file, "r") as f:
+                        content = f.read()
+                    if "eula=false" in content:
+                        with open(eula_file, "w") as f:
+                            f.write(content.replace("eula=false", "eula=true"))
+                except Exception:
+                    pass
+
+            if self._detect_systemd():
+                try:
+                    res = subprocess.run(["sudo", "systemctl", "start", self.service_name], capture_output=True, text=True, timeout=10)
+                    if res.returncode == 0:
+                        return True, f"Started {self.service_name} via systemd."
+                except Exception:
+                    pass
+
+            java_bin = detect_java_bin()
+            cfg = self.load_runtime_config()
+            min_ram = cfg.get("min_ram", "1G")
+            max_ram = cfg.get("max_ram", "4G")
+            jvm_flags = cfg.get("jvm_flags", ["-XX:+UseG1GC"])
+
+            logs_dir = os.path.join(self.server_dir, "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            log_file = os.path.join(logs_dir, "latest.log")
+
+            cmd = [java_bin, f"-Xms{min_ram}", f"-Xmx{max_ram}"] + jvm_flags + ["-jar", "server.jar", "nogui"]
+            log_out = open(log_file, "a", encoding="utf-8", errors="replace")
+
+            creationflags = 0
+            if IS_WINDOWS:
+                creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+
+            self.proc = subprocess.Popen(
+                cmd,
+                cwd=self.server_dir,
+                stdin=subprocess.PIPE,
+                stdout=log_out,
+                stderr=subprocess.STDOUT,
+                creationflags=creationflags
+            )
+
+            try:
+                with open(self.pid_file, "w") as f:
+                    f.write(str(self.proc.pid))
+            except Exception:
+                pass
+
+            return True, f"Server process launched directly (PID: {self.proc.pid})."
+
+    def stop(self):
+        with self.lock:
+            self.send_command("save-all")
+            time.sleep(1)
+            self.send_command("stop")
+
+            if self._detect_systemd():
+                try:
+                    subprocess.run(["sudo", "systemctl", "stop", self.service_name], timeout=15)
+                except Exception:
+                    pass
+
+            if self.proc and self.proc.poll() is None:
+                try:
+                    self.proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.proc.terminate()
+                    try:
+                        self.proc.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        self.proc.kill()
+                self.proc = None
+
+            if os.path.exists(self.pid_file):
+                try:
+                    with open(self.pid_file, "r") as f:
+                        pid = int(f.read().strip())
+                    if psutil and psutil.pid_exists(pid):
+                        p = psutil.Process(pid)
+                        p.terminate()
+                    os.remove(self.pid_file)
+                except Exception:
+                    pass
+
+            return True, "Server shutdown initiated."
+
+    def restart(self):
+        self.stop()
+        time.sleep(2)
+        return self.start()
+
+    def send_command(self, cmd):
+        clean_cmd = cmd.strip()
+        executed = False
+
+        if self.proc and self.proc.stdin and self.proc.poll() is None:
+            try:
+                self.proc.stdin.write(f"{clean_cmd}\n".encode("utf-8"))
+                self.proc.stdin.flush()
+                executed = True
+            except Exception:
+                pass
+
+        if not executed and IS_LINUX and shutil.which("screen"):
+            screen_name = self.screen_session or "fiesta"
+            try:
+                cmd_esc = clean_cmd.replace('"', '\"').replace("'", "\'")
+                res = subprocess.run(
+                    ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{cmd_esc}\\015"'],
+                    capture_output=True, timeout=2
+                )
+                if res.returncode == 0:
+                    executed = True
+            except Exception:
+                pass
+
+        return executed, f"Executed: {clean_cmd}" if executed else "Could not dispatch command."
+
+server_runner = ServerRunner(SERVER_DIR, SERVICE_NAME, SCREEN_SESSION)
+
 
 def hash_password(pwd):
     return hashlib.sha256(pwd.encode('utf-8')).hexdigest()
@@ -316,20 +617,9 @@ def api_status():
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
 
-    mc_running = False
-    mc_mem_mb = 0
-    mc_pid = None
-
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'memory_info']):
-        try:
-            cmdline = proc.info.get('cmdline') or []
-            if any('server.jar' in str(arg) for arg in cmdline):
-                mc_running = True
-                mc_pid = proc.info['pid']
-                mc_mem_mb = round(proc.info['memory_info'].rss / (1024 * 1024), 1)
-                break
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+    jar_exists = os.path.exists(os.path.join(SERVER_DIR, "server.jar"))
+    mc_running = server_runner.is_running()
+    mc_pid, mc_mem_mb, _ = server_runner.get_process_info()
 
     # Read active OPs
     ops = []
@@ -388,7 +678,12 @@ def api_status():
         "bans_count": len(banned),
         "whitelist_count": whitelist_count,
         "version": "Active",
-        "platform": "Server Gateway",
+        "platform": f"{platform.system()} ({platform.machine()})",
+        "os_platform": platform.system(),
+        "server_installed": jar_exists,
+        "server_dir": SERVER_DIR,
+        "java_version": detect_java_version_str(),
+        "runtime_config": server_runner.load_runtime_config(),
         "mc_ping": ping_info
     })
 
@@ -404,25 +699,21 @@ def api_server_power():
 
     if action == "start":
         def start_worker():
-            subprocess.run(["sudo", "systemctl", "start", "fiesta"])
+            server_runner.start()
         threading.Thread(target=start_worker, daemon=True).start()
-        return jsonify({"success": True, "message": "Server startup sequence dispatched via systemd."})
+        return jsonify({"success": True, "message": "Server startup sequence dispatched."})
 
     elif action == "stop":
         def stop_worker():
-            send_mc_command("save-all")
-            time.sleep(1)
-            subprocess.run(["sudo", "systemctl", "stop", "fiesta"])
+            server_runner.stop()
         threading.Thread(target=stop_worker, daemon=True).start()
-        return jsonify({"success": True, "message": "World data saved; server shutdown dispatched via systemd."})
+        return jsonify({"success": True, "message": "World data saved; server shutdown dispatched."})
 
     elif action == "restart":
         def restart_worker():
-            send_mc_command("save-all")
-            time.sleep(1)
-            subprocess.run(["sudo", "systemctl", "restart", "fiesta"])
+            server_runner.restart()
         threading.Thread(target=restart_worker, daemon=True).start()
-        return jsonify({"success": True, "message": "World data saved; server restart sequence dispatched via systemd."})
+        return jsonify({"success": True, "message": "World data saved; server restart sequence dispatched."})
 
     return jsonify({"success": False, "message": "Unknown power action"}), 400
 
@@ -436,8 +727,7 @@ def api_logs():
     if not os.path.exists(LOG_FILE):
         return jsonify({"logs": ["Log file not found."]})
     try:
-        output = subprocess.check_output(["tail", "-n", str(lines_count * 2), LOG_FILE], text=True)
-        raw_lines = output.splitlines()
+        raw_lines = tail_file(LOG_FILE, lines_count * 2)
 
         filtered = []
         for line in raw_lines:
@@ -827,6 +1117,69 @@ def api_mc_items_list():
     return jsonify([])
 
 # ── Portal Branding & Customization APIs ──────────────────────
+
+@app.route("/api/system/java", methods=["GET"])
+@login_required
+def api_system_java():
+    j_bin = detect_java_bin()
+    ver_str = detect_java_version_str()
+    major_ver = None
+    m = re.search(r'version\s+"(\d+)', ver_str)
+    if m:
+        major_ver = int(m.group(1))
+    elif "1.8." in ver_str:
+        major_ver = 8
+
+    info = {
+        "installed": bool(j_bin),
+        "path": j_bin,
+        "version_str": ver_str,
+        "major_version": major_ver,
+        "platform": platform.system(),
+        "arch": platform.machine(),
+        "is_compatible_1_21": bool(major_ver and major_ver >= 21),
+        "recommendation": "Java 21 (Temurin / OpenJDK) recommended for Minecraft 1.20.5 - 1.21.x"
+    }
+    return jsonify({"success": True, "java": info})
+
+@app.route("/api/branding/icon/upload", methods=["POST"])
+@login_required
+def api_upload_branding_icon():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Parameter or Access management required."}), 403
+
+    if "icon" not in request.files and "file" not in request.files:
+        return jsonify({"success": False, "message": "No image file uploaded."}), 400
+
+    file = request.files.get("icon") or request.files.get("file")
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "No file selected."}), 400
+
+    allowed_exts = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".ico", ".gif"}
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in allowed_exts:
+        return jsonify({"success": False, "message": f"Unsupported file format ({ext}). Allowed: PNG, SVG, JPG, WEBP, ICO."}), 400
+
+    upload_dir = os.path.join(STATIC_DIR, "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f"branding_logo_{int(time.time())}{ext}"
+    target_path = os.path.join(upload_dir, filename)
+    file.save(target_path)
+
+    icon_url = f"/static/uploads/{filename}"
+    branding = load_branding()
+    branding["header_icon"] = "custom"
+    branding["header_icon_custom"] = icon_url
+    save_branding(branding)
+
+    return jsonify({
+        "success": True,
+        "message": "Brand logo uploaded and applied successfully!",
+        "icon_url": icon_url,
+        "branding": branding
+    })
+
 @app.route("/api/branding", methods=["GET"])
 def api_get_branding():
     return jsonify({"success": True, "branding": load_branding()})
@@ -1006,7 +1359,7 @@ def resolve_software_download(software, version, build="latest"):
     if software == "purpur":
         if build == "latest":
             url_meta = f"https://api.purpurmc.org/v2/purpur/{version}"
-            req = urllib.request.Request(url_meta, headers={"User-Agent": "fiesta-portal/1.0"})
+            req = urllib.request.Request(url_meta, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=5) as r:
                 d = json.loads(r.read())
                 build = d.get("builds", {}).get("latest")
@@ -1017,7 +1370,7 @@ def resolve_software_download(software, version, build="latest"):
 
     elif software == "paper":
         url_meta = f"https://fill.papermc.io/v3/projects/paper/versions/{version}"
-        req = urllib.request.Request(url_meta, headers={"User-Agent": "fiesta-portal/1.0 (admin@fiesta.debarkak.xyz)"})
+        req = urllib.request.Request(url_meta, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
         with urllib.request.urlopen(req, timeout=5) as r:
             d = json.loads(r.read())
             builds = d.get("builds", [])
@@ -1026,7 +1379,7 @@ def resolve_software_download(software, version, build="latest"):
             target_build = builds[-1] if build == "latest" else build
 
         url_build = f"https://fill.papermc.io/v3/projects/paper/versions/{version}/builds/{target_build}"
-        req_b = urllib.request.Request(url_build, headers={"User-Agent": "fiesta-portal/1.0 (admin@fiesta.debarkak.xyz)"})
+        req_b = urllib.request.Request(url_build, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
         with urllib.request.urlopen(req_b, timeout=5) as r_b:
             d_b = json.loads(r_b.read())
             dl_info = d_b.get("downloads", {}).get("server:default", {})
@@ -1037,7 +1390,7 @@ def resolve_software_download(software, version, build="latest"):
             return download_url, filename, f"Paper {version} (Build #{target_build})"
 
     elif software == "vanilla":
-        req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "fiesta-portal/1.0"})
+        req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
         with urllib.request.urlopen(req, timeout=5) as r:
             manifest = json.loads(r.read())
             matched = [v for v in manifest.get("versions", []) if v.get("id") == version]
@@ -1045,7 +1398,7 @@ def resolve_software_download(software, version, build="latest"):
                 raise ValueError(f"Version {version} not found in Mojang release manifest")
             pkg_url = matched[0]["url"]
 
-        req_pkg = urllib.request.Request(pkg_url, headers={"User-Agent": "fiesta-portal/1.0"})
+        req_pkg = urllib.request.Request(pkg_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
         with urllib.request.urlopen(req_pkg, timeout=5) as r_pkg:
             pkg_data = json.loads(r_pkg.read())
             download_url = pkg_data.get("downloads", {}).get("server", {}).get("url")
@@ -1055,7 +1408,7 @@ def resolve_software_download(software, version, build="latest"):
 
     elif software == "fabric":
         loaders_url = "https://meta.fabricmc.net/v2/versions/loader"
-        req = urllib.request.Request(loaders_url, headers={"User-Agent": "fiesta-portal/1.0"})
+        req = urllib.request.Request(loaders_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
         with urllib.request.urlopen(req, timeout=5) as r:
             loaders = json.loads(r.read())
             loader_ver = loaders[0]["version"]
@@ -1077,15 +1430,18 @@ def api_software_info():
     bak_path = os.path.join(SERVER_DIR, "server.jar.bak")
     meta_path = os.path.join(SERVER_DIR, "installed_software.json")
 
+    has_jar = os.path.exists(jar_path)
     info = {
-        "software": "Purpur",
-        "version": "1.21.11",
-        "build": "Build #2568",
+        "installed": has_jar,
+        "software": "Purpur" if has_jar else "None",
+        "version": "1.21.11" if has_jar else "Not installed",
+        "build": "Build #2568" if has_jar else "N/A",
         "jar_size_mb": 0,
         "has_backup": os.path.exists(bak_path),
         "backup_size_mb": round(os.path.getsize(bak_path) / (1024*1024), 1) if os.path.exists(bak_path) else 0,
         "installed_at": "N/A",
-        "java_version": "OpenJDK 21"
+        "java_version": detect_java_version_str(),
+        "runtime_config": server_runner.load_runtime_config()
     }
 
     if os.path.exists(jar_path):
@@ -1124,13 +1480,13 @@ def api_software_versions():
 
     try:
         if sw == "purpur":
-            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": "fiesta-portal/1.0"})
+            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 raw_vers = d.get("versions", [])
                 versions = list(reversed(raw_vers))
         elif sw == "paper":
-            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": "fiesta-portal/1.0 (admin@fiesta.debarkak.xyz)"})
+            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 v_dict = d.get("versions", {})
@@ -1140,12 +1496,12 @@ def api_software_versions():
                         all_v.extend(v_dict[major])
                 versions = all_v if all_v else ["1.21.11", "1.21.10", "1.21.4", "1.21.1", "1.20.4", "1.20.2", "1.19.4"]
         elif sw == "vanilla":
-            req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "fiesta-portal/1.0"})
+            req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 versions = [v["id"] for v in d.get("versions", []) if v.get("type") == "release"][:40]
         elif sw == "fabric":
-            req = urllib.request.Request("https://meta.fabricmc.net/v2/versions/game", headers={"User-Agent": "fiesta-portal/1.0"})
+            req = urllib.request.Request("https://meta.fabricmc.net/v2/versions/game", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 versions = [v["version"] for v in d if v.get("stable")][:40]
@@ -1179,7 +1535,7 @@ def api_software_install():
     meta_path = os.path.join(SERVER_DIR, "installed_software.json")
 
     try:
-        req = urllib.request.Request(download_url, headers={"User-Agent": "fiesta-portal/1.0 (admin@fiesta.debarkak.xyz)"})
+        req = urllib.request.Request(download_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
         with urllib.request.urlopen(req, timeout=120) as resp, open(tmp_path, "wb") as f_out:
             shutil.copyfileobj(resp, f_out)
 
@@ -1188,16 +1544,54 @@ def api_software_install():
             if os.path.exists(tmp_path): os.remove(tmp_path)
             return jsonify({"success": False, "message": f"Downloaded jar too small ({dl_size} bytes), download aborted."}), 500
 
-        send_mc_command("save-all")
-        send_mc_command(f"say [Server] Installing {label}, server restarting in a moment...")
-        time.sleep(1.5)
-        subprocess.run(["sudo", "systemctl", "stop", "fiesta"])
-        time.sleep(1)
-
-        if os.path.exists(jar_path):
+        had_server = os.path.exists(jar_path)
+        if had_server:
+            send_mc_command("save-all")
+            send_mc_command(f"say [Server] Installing {label}, server restarting in a moment...")
+            time.sleep(1.5)
+            server_runner.stop()
+            time.sleep(1)
             shutil.copy2(jar_path, bak_path)
 
         shutil.move(tmp_path, jar_path)
+
+        # Auto-accept EULA
+        eula_file = os.path.join(SERVER_DIR, "eula.txt")
+        if not os.path.exists(eula_file) or data.get("auto_eula", True):
+            try:
+                with open(eula_file, "w") as f_eula:
+                    f_eula.write("# By changing the setting below to TRUE you are indicating your agreement to the Mojang EULA (https://aka.ms/MinecraftEULA).\neula=true\n")
+            except Exception:
+                pass
+
+        # Ensure default server.properties if missing
+        props_file = os.path.join(SERVER_DIR, "server.properties")
+        if not os.path.exists(props_file):
+            try:
+                with open(props_file, "w") as f_props:
+                    f_props.write(
+                        "#Minecraft server properties - Configured by FiestaPanel\n"
+                        "server-port=25565\n"
+                        "gamemode=survival\n"
+                        "difficulty=easy\n"
+                        "pvp=true\n"
+                        "max-players=20\n"
+                        "online-mode=true\n"
+                        "enable-rcon=false\n"
+                        "motd=A Minecraft Server Powered by FiestaPanel\n"
+                    )
+            except Exception:
+                pass
+
+        # Memory configuration
+        if "ram_gb" in data:
+            try:
+                ram_val = int(data["ram_gb"])
+                rt_cfg = server_runner.load_runtime_config()
+                rt_cfg["max_ram"] = f"{ram_val}G"
+                server_runner.save_runtime_config(rt_cfg)
+            except Exception:
+                pass
 
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(meta_path, "w") as f_meta:
@@ -1210,7 +1604,8 @@ def api_software_install():
                 "label": label
             }, f_meta, indent=2)
 
-        subprocess.run(["sudo", "systemctl", "start", "fiesta"])
+        if data.get("autostart", True):
+            server_runner.start()
 
         return jsonify({
             "success": True,
@@ -1714,10 +2109,16 @@ def api_create_backup():
 
     def backup_task():
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        target_tar = f"/home/ubuntu/fiesta_backup_{ts}.tar.gz"
+        backup_dir = SERVER_CONFIG.get("backup_dir") or os.path.join(os.path.dirname(SERVER_DIR), "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        target_tar = os.path.join(backup_dir, f"fiesta_backup_{ts}.tar.gz")
         send_mc_command("save-all")
         time.sleep(2)
-        subprocess.run(["tar", "-czf", target_tar, "-C", "/home/ubuntu", "fiesta"])
+        try:
+            with tarfile.open(target_tar, "w:gz") as tar:
+                tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR))
+        except Exception as err:
+            print("Backup creation error:", err)
 
     threading.Thread(target=backup_task, daemon=True).start()
     return jsonify({"success": True, "message": "Background backup archive initiated! Check Backups list shortly."})
@@ -2042,7 +2443,7 @@ def api_action():
     if action == "restart":
         def restart_worker():
             time.sleep(1)
-            subprocess.run(["sudo", "systemctl", "restart", "fiesta"])
+            server_runner.restart()
         threading.Thread(target=restart_worker, daemon=True).start()
         return jsonify({"success": True, "message": "Server reboot sequence initiated!"})
 
