@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/banner.png" alt="FiestaPanel Banner" width="100%">
-</p>
-
 <h1 align="center">🌐 FiestaPanel</h1>
 
 <p align="center">
