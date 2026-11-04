@@ -1321,6 +1321,30 @@ def api_player_inventory_clear():
     success, msg = send_mc_command(cmd)
     return jsonify({"success": success, "message": f"Executed: {cmd}"})
 
+def get_installed_mc_version():
+    meta_path = os.path.join(SERVER_DIR, "installed_software.json")
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                v = data.get("version")
+                if v:
+                    return str(v).strip()
+        except Exception:
+            pass
+    jar_path = os.path.join(SERVER_DIR, "server.jar")
+    if os.path.exists(jar_path):
+        try:
+            with zipfile.ZipFile(jar_path, "r") as zf:
+                if "version.json" in zf.namelist():
+                    vdata = json.loads(zf.read("version.json"))
+                    v = vdata.get("id") or vdata.get("name")
+                    if v:
+                        return str(v).strip()
+        except Exception:
+            pass
+    return "1.21.1"
+
 @app.route("/api/mc-item-icon/<path:item_id>")
 def api_mc_item_icon(item_id):
     clean = item_id.lower().replace("minecraft:", "").strip()
@@ -1329,14 +1353,25 @@ def api_mc_item_icon(item_id):
     if os.path.exists(cached):
         return send_from_directory(MCASSETS_DIR, f"{clean}.png", mimetype="image/png", max_age=604800)
 
-    # Dynamic fallback check if not cached yet
-    for tmpl in [
-        f"https://assets.mcasset.cloud/1.21.1/assets/minecraft/textures/item/{clean}.png",
-        f"https://assets.mcasset.cloud/1.21.1/assets/minecraft/textures/block/{clean}.png",
-        f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/1.21.1/items/{clean}.png"
-    ]:
+    # Dynamic fallback check using installed version candidates
+    try:
+        from fetch_mc_assets import get_version_candidates
+        v_list = get_version_candidates(get_installed_mc_version())
+    except Exception:
+        v_list = ["1.21.4", "1.21.1", "1.21"]
+
+    candidates = []
+    for v in v_list:
+        candidates.extend([
+            f"https://assets.mcasset.cloud/{v}/assets/minecraft/textures/item/{clean}.png",
+            f"https://assets.mcasset.cloud/{v}/assets/minecraft/textures/block/{clean}.png",
+            f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/{v}/items/{clean}.png",
+            f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/{v}/blocks/{clean}.png"
+        ])
+
+    for tmpl in candidates:
         try:
-            req = urllib.request.Request(tmpl, headers={"User-Agent": "Mozilla/5.0"})
+            req = urllib.request.Request(tmpl, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=2) as resp:
                 if resp.status == 200:
                     data = resp.read()
@@ -1906,6 +1941,18 @@ def api_software_install():
 
         if data.get("autostart", True):
             server_runner.start()
+
+        # Trigger background asset synchronization for newly installed Minecraft version
+        try:
+            from fetch_mc_assets import sync_mc_assets
+            threading.Thread(
+                target=sync_mc_assets,
+                args=(version,),
+                daemon=True,
+                name=f"mc-assets-sync-{version}"
+            ).start()
+        except Exception as e:
+            logging.warning(f"Could not trigger asset sync: {e}")
 
         return jsonify({
             "success": True,

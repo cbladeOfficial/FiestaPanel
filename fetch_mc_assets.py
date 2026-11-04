@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 import os
+import sys
 import json
+import re
 import urllib.request
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
-ASSET_DIR = "/home/ubuntu/fiesta-portal/static/mcassets"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSET_DIR = os.path.join(BASE_DIR, "static", "mcassets")
+MAPPING_FILE = os.path.join(BASE_DIR, "items_textures.json")
+CATALOG_FILE = os.path.join(ASSET_DIR, "catalog.json")
+
 os.makedirs(ASSET_DIR, exist_ok=True)
 
-MAPPING_FILE = "/home/ubuntu/fiesta-portal/items_textures.json"
-
-name_to_tex = {}
-if os.path.exists(MAPPING_FILE):
-    with open(MAPPING_FILE, "r") as f:
-        for entry in json.load(f):
-            n = entry.get("name")
-            t = entry.get("texture")
-            if n and t:
-                name_to_tex[n] = t
-
-# Special aliases and entity textures
+# Special aliases and entity/block texture mappings
 aliases = {
     "shield": "entity/shield_base_nopattern",
     "chest": "entity/chest/normal",
@@ -70,40 +66,76 @@ extra_items = [
     "water_bucket", "lava_bucket", "milk_bucket", "bucket", "powder_snow_bucket",
     "stone", "cobblestone", "smooth_stone", "dirt", "grass_block", "oak_planks", "spruce_planks", "birch_planks",
     "crafting_table", "furnace", "chest", "ender_chest", "barrel", "anvil", "torch", "lantern",
-    "mace", "wind_charge", "breeze_rod", "trial_key", "ominous_trial_key", "ominous_bottle"
+    "mace", "wind_charge", "breeze_rod", "trial_key", "ominous_trial_key", "ominous_bottle", "heavy_core",
+    "crafter", "copper_bulb", "copper_grate", "chiseled_copper", "chiseled_tuff", "tuff_bricks", "flow_armor_trim_smithing_template",
+    "bolt_armor_trim_smithing_template", "flow_pottery_sherd", "guster_pottery_sherd", "scrape_pottery_sherd"
 ]
 
-all_items = set(name_to_tex.keys()).union(set(aliases.keys())).union(set(extra_items))
+def load_name_to_tex():
+    name_to_tex = {}
+    if os.path.exists(MAPPING_FILE):
+        try:
+            with open(MAPPING_FILE, "r", encoding="utf-8") as f:
+                for entry in json.load(f):
+                    n = entry.get("name")
+                    t = entry.get("texture")
+                    if n and t:
+                        name_to_tex[n] = t
+        except Exception as e:
+            logging.warning(f"Failed to read {MAPPING_FILE}: {e}")
+    return name_to_tex
 
-def fetch_single(item_name):
+def get_version_candidates(version=None):
+    candidates = []
+    if version:
+        clean = version.strip()
+        candidates.append(clean)
+        parts = clean.split(".")
+        if len(parts) >= 2:
+            base = f"{parts[0]}.{parts[1]}"
+            if base != clean and base not in candidates:
+                candidates.append(base)
+    for fb in ["1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6"]:
+        if fb not in candidates:
+            candidates.append(fb)
+    return candidates
+
+def format_item_name(item_id):
+    clean = (item_id or "").replace("minecraft:", "").strip()
+    return " ".join(w.capitalize() for w in clean.split("_"))
+
+def fetch_single(item_name, versions=None):
     dest = os.path.join(ASSET_DIR, f"{item_name}.png")
     if os.path.exists(dest) and os.path.getsize(dest) > 50:
         return True
 
     clean_name = item_name.lower().replace("minecraft:", "").strip()
+    name_to_tex = load_name_to_tex()
     tex = aliases.get(clean_name) or name_to_tex.get(clean_name)
+
+    version_list = versions or ["1.21.4", "1.21.1", "1.21"]
 
     candidates = []
     if tex:
         c1 = tex.replace("minecraft:", "").replace("items/", "item/")
-        candidates.append(f"https://assets.mcasset.cloud/1.21.1/assets/minecraft/textures/{c1}.png")
         c2 = tex.replace("minecraft:", "")
-        candidates.append(f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/1.21.1/{c2}.png")
-        candidates.append(f"https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/{c1}.png")
+        for v in version_list:
+            candidates.append(f"https://assets.mcasset.cloud/{v}/assets/minecraft/textures/{c1}.png")
+            candidates.append(f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/{v}/{c2}.png")
+            candidates.append(f"https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/{v}/assets/minecraft/textures/{c1}.png")
 
-    candidates.extend([
-        f"https://assets.mcasset.cloud/1.21.1/assets/minecraft/textures/item/{clean_name}.png",
-        f"https://assets.mcasset.cloud/1.21.1/assets/minecraft/textures/block/{clean_name}.png",
-        f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/1.21.1/items/{clean_name}.png",
-        f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/1.21.1/blocks/{clean_name}.png",
-        f"https://assets.mcasset.cloud/1.21.1/assets/minecraft/textures/entity/{clean_name}.png",
-        f"https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/item/{clean_name}.png",
-        f"https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/1.21/assets/minecraft/textures/block/{clean_name}.png"
-    ])
+    for v in version_list:
+        candidates.extend([
+            f"https://assets.mcasset.cloud/{v}/assets/minecraft/textures/item/{clean_name}.png",
+            f"https://assets.mcasset.cloud/{v}/assets/minecraft/textures/block/{clean_name}.png",
+            f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/{v}/items/{clean_name}.png",
+            f"https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/{v}/blocks/{clean_name}.png",
+            f"https://assets.mcasset.cloud/{v}/assets/minecraft/textures/entity/{clean_name}.png"
+        ])
 
     for url in candidates:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
             with urllib.request.urlopen(req, timeout=3) as resp:
                 if resp.status == 200:
                     data = resp.read()
@@ -115,9 +147,58 @@ def fetch_single(item_name):
             continue
     return False
 
-print(f"Fetching textures for {len(all_items)} Minecraft items/blocks...")
-with ThreadPoolExecutor(max_workers=20) as executor:
-    results = list(executor.map(fetch_single, list(all_items)))
+def update_catalog():
+    try:
+        entries = []
+        if os.path.isdir(ASSET_DIR):
+            for fname in sorted(os.listdir(ASSET_DIR)):
+                if fname.endswith(".png") and not fname.startswith("empty_"):
+                    item_id = fname[:-4]
+                    entries.append({
+                        "id": item_id,
+                        "name": format_item_name(item_id),
+                        "icon": f"/static/mcassets/{fname}"
+                    })
+        with open(CATALOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(entries, f)
+        return len(entries)
+    except Exception as e:
+        logging.warning(f"Failed to update catalog.json: {e}")
+        return 0
 
-success_count = sum(1 for r in results if r)
-print(f"Finished! Successfully cached {success_count} / {len(all_items)} textures in {ASSET_DIR}")
+def sync_mc_assets(version=None, max_workers=10):
+    versions = get_version_candidates(version)
+    name_to_tex = load_name_to_tex()
+    all_items = set(name_to_tex.keys()).union(set(aliases.keys())).union(set(extra_items))
+
+    # Identify items not yet cached locally
+    missing_items = [
+        item for item in all_items
+        if not (os.path.exists(os.path.join(ASSET_DIR, f"{item}.png")) and os.path.getsize(os.path.join(ASSET_DIR, f"{item}.png")) > 50)
+    ]
+
+    newly_fetched = 0
+    if missing_items:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(fetch_single, item, versions) for item in missing_items]
+            for f in futures:
+                try:
+                    if f.result():
+                        newly_fetched += 1
+                except Exception:
+                    pass
+
+    total_catalog = update_catalog()
+    return {
+        "success": True,
+        "version_candidates": versions,
+        "missing_checked": len(missing_items),
+        "newly_fetched": newly_fetched,
+        "total_catalog": total_catalog
+    }
+
+if __name__ == "__main__":
+    target_version = sys.argv[1] if len(sys.argv) > 1 else "1.21.4"
+    print(f"Syncing Minecraft assets for target version: {target_version}...")
+    res = sync_mc_assets(target_version, max_workers=15)
+    print(f"Done! Checked {res['missing_checked']} missing items, fetched {res['newly_fetched']} new icons. Total catalog: {res['total_catalog']}")
