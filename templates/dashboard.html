@@ -6523,7 +6523,7 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
 
         // Inspect logs for moderation actions and errors in real-time
-        if (d.logs && Array.isArray(d.logs) && reqFile === 'latest.log') {
+        if (d.logs && Array.isArray(d.logs) && reqFile === 'latest.log' && !q && lvl === 'ALL') {
           inspectLogsForAlerts(d.logs);
         }
 
@@ -6565,13 +6565,13 @@ def on_action(ctx, action_name, payload):
       if (!line || typeof line !== 'string') return null;
 
       // Ignore player chat messages to prevent chat spoofing
-      if (/»|<[a-zA-Z0-9_]{2,16}>|\[Not Secure\]/i.test(line)) return null;
+      if (/»|\]:\s*(?:\[Not Secure\]\s*)?<[a-zA-Z0-9_]{2,16}>/i.test(line)) return null;
 
-      // 1. IP Ban
-      let m = line.match(/(?:Banned IP address|Banned IP)\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3}|[0-9a-fA-F:]{3,39})(?:(?::\s*|\s+for:\s*)(.*))?/i);
+      // 1. IP Ban (Vanilla, Paper, Purpur, Essentials)
+      let m = line.match(/(?:Banned IP address|Banned IP|Player\s+[a-zA-Z0-9_]+\s+banned\s+IP\s+address)\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3}|[0-9a-fA-F:]{3,39})(?:(?::\s*|\s+for:\s*)(.*))?/i);
       if (m) {
-        let r = (m[2] || "Banned by administrator").replace(/[\]\.]+$/, "").trim();
-        return { type: "BAN_IP", target: m[1], reason: r, source: "Server Console" };
+        let r = (m[2] || "Banned by administrator").replace(/^[<\[].*?[>\]]/, "").replace(/[\]\.]+$/, "").trim();
+        return { type: "BAN_IP", target: m[1], reason: r || "Banned by administrator", source: "Server Console" };
       }
 
       // 2. Disconnecting
@@ -6579,25 +6579,27 @@ def on_action(ctx, action_name, payload):
       if (m) {
         let p = m[1];
         let r = (m[2] || "").replace(/[\]\.]+$/, "").trim();
+        // Ignore connection rejections of already-banned accounts/IPs (not a new moderation action)
         if (/banned/i.test(r)) {
-          return { type: "BAN", target: p, reason: r, source: "Server Enforced" };
-        } else {
-          return { type: "KICK", target: p, reason: r || "Kicked by operator", source: "Server Enforced" };
+          return null;
         }
+        return { type: "KICK", target: p, reason: r || "Kicked by operator", source: "Server Enforced" };
       }
 
-      // 3. Lost connection with ban or kick
+      // 3. Lost connection
       m = line.match(/\]:\s*([a-zA-Z0-9_]{2,16})(?:\s*\([^)]+\))?\s+lost connection:\s*(.*)/i);
       if (m) {
         let p = m[1];
         let r = (m[2] || "").replace(/[\]\.]+$/, "").trim();
+        // Ignore disconnects caused by an existing ban
         if (/banned/i.test(r)) {
-          let reason = r.replace(/^[bB]anned(?:\s+for)?[:\s]*/, "").trim() || "Banned by administrator";
-          return { type: "BAN", target: p, reason, source: "Server Enforced" };
-        } else if (/kicked/i.test(r)) {
+          return null;
+        }
+        if (/kicked/i.test(r)) {
           let reason = r.replace(/^[kK]icked(?:\s+for)?[:\s]*/, "").trim() || "Kicked by administrator";
           return { type: "KICK", target: p, reason, source: "Server Enforced" };
         }
+        return null;
       }
 
       // 4. Was kicked
@@ -6607,18 +6609,18 @@ def on_action(ctx, action_name, payload):
         return { type: "KICK", target: m[1], reason: r, source: "Server Enforced" };
       }
 
-      // 5. Explicit Ban commands
-      m = line.match(/(?:\]:\s*(?:\[[a-zA-Z0-9_]+:\s*)?Banned(?:\s+player)?)\s+([a-zA-Z0-9_]{2,16})(?::\s*(.*))?/i);
+      // 5. Explicit Ban commands (Vanilla, Paper, Purpur, Essentials)
+      m = line.match(/(?:Banned(?:\s+player)?|Player\s+[a-zA-Z0-9_]+\s+banned)\s+([a-zA-Z0-9_]{2,16})(?::\s*|\s+for:\s*)(.*)/i);
       if (m) {
-        let r = (m[2] || "Banned by operator").replace(/[\]\.]+$/, "").trim();
-        return { type: "BAN", target: m[1], reason: r, source: "Operator / Command" };
+        let r = (m[2] || "Banned by operator").replace(/^[<\[].*?[>\]]/, "").replace(/[\]\.]+$/, "").trim();
+        return { type: "BAN", target: m[1], reason: r || "Banned by operator", source: "Operator / Command" };
       }
 
-      // 6. Explicit Kick commands
-      m = line.match(/(?:\]:\s*(?:\[[a-zA-Z0-9_]+:\s*)?Kicked(?:\s+player)?)\s+([a-zA-Z0-9_]{2,16})(?::\s*(.*))?/i);
+      // 6. Explicit Kick commands (Vanilla, Paper, Purpur, Essentials)
+      m = line.match(/(?:Kicked(?:\s+player)?|Player\s+[a-zA-Z0-9_]+\s+kicked)\s+([a-zA-Z0-9_]{2,16})(?::\s*|\s+for:\s*)(.*)/i);
       if (m) {
-        let r = (m[2] || "Kicked by operator").replace(/[\]\.]+$/, "").trim();
-        return { type: "KICK", target: m[1], reason: r, source: "Operator / Command" };
+        let r = (m[2] || "Kicked by operator").replace(/^[<\[].*?[>\]]/, "").replace(/[\]\.]+$/, "").trim();
+        return { type: "KICK", target: m[1], reason: r || "Kicked by operator", source: "Operator / Command" };
       }
 
       // 7. Server Error
@@ -6632,17 +6634,37 @@ def on_action(ctx, action_name, payload):
     function inspectLogsForAlerts(logs) {
       if (!logs || !Array.isArray(logs) || logs.length === 0) return;
 
+      // On initial load, mark all current lines as seen so historical events never trigger notifications
       if (seenLogLinesSet === null) {
         seenLogLinesSet = new Set(logs);
         return;
       }
 
-      const newLines = logs.filter(l => !seenLogLinesSet.has(l));
+      // Determine newly appended lines by scanning from newest backwards to find the last known line.
+      // This ensures that when the line window expands (e.g. switching views from 50 to 100 lines),
+      // the older backlog lines prepended at the top are NOT mistakenly treated as new real-time events.
+      let lastSeenIndex = -1;
+      for (let i = logs.length - 1; i >= 0; i--) {
+        if (seenLogLinesSet.has(logs[i])) {
+          lastSeenIndex = i;
+          break;
+        }
+      }
+
+      let newLines = [];
+      if (lastSeenIndex === -1) {
+        // If none of the lines were previously seen (log file rotated or large burst), re-sync cleanly without triggering alerts
+        seenLogLinesSet = new Set(logs);
+        return;
+      } else if (lastSeenIndex < logs.length - 1) {
+        newLines = logs.slice(lastSeenIndex + 1);
+      }
+
       for (const l of newLines) {
         seenLogLinesSet.add(l);
       }
 
-      if (seenLogLinesSet.size > 1000) {
+      if (seenLogLinesSet.size > 2000) {
         seenLogLinesSet = new Set(logs);
       }
 
@@ -6652,7 +6674,11 @@ def on_action(ctx, action_name, payload):
         if (!ev) continue;
 
         if (ev.type === 'BAN' || ev.type === 'BAN_IP' || ev.type === 'KICK') {
-          showModerationDialog(ev);
+          // Live background moderation: notify via non-intrusive toast banner (modal dialog is reserved for explicit UI actions)
+          const actionText = ev.type === 'BAN_IP' ? 'IP-banned' : (ev.type === 'BAN' ? 'banned' : 'kicked');
+          showBannerAlert(`[Live Event] ${ev.target} was ${actionText}: ${ev.reason}`);
+          if (activeView === 'security-bans') loadBans();
+          if (activeView === 'players-list') loadPlayers();
         } else if (ev.type === 'ERROR') {
           let traceLines = [line];
           while (i + 1 < newLines.length && (/^\s+at\s+/i.test(newLines[i + 1]) || /^\s*Caused by:/i.test(newLines[i + 1]) || /^\s+\.\.\.\s+\d+\s+more/i.test(newLines[i + 1]))) {
