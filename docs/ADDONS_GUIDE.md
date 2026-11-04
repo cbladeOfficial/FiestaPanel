@@ -347,7 +347,11 @@ FiestaPanel includes an integrated **Plugin Store** (`/api/panel-addons/store`) 
 - **Server Maintenance Gate & Auto-Lock**: Emergency maintenance mode switch.
 - **Panel Theme Customizer & Custom CSS Studio**: DOM style injector and wallpaper manager.
 
-To submit your community addon to the official catalog, open a pull request on the repository at [`https://github.com/open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) adding your addon definition to `addon_manager.py`.
+To submit your community addon to the official catalog:
+1. Fork [`https://github.com/open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel).
+2. Add your addon definition and bundled files to `addons/repo/repository.json` (and `addon_manager.py:STORE_CATALOG`).
+3. Open a Pull Request titled `feat(addon): add <your_addon_name>`.
+4. Once merged, it becomes instantly available in the in-panel Plugin Store across all installations!
 
 ---
 

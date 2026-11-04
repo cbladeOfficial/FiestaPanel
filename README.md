@@ -101,6 +101,39 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 
 ---
 
+## 🧩 Publishing Plugins & Extensions to the Store
+
+FiestaPanel features an open and modular **Addon & Plugin System** where developers can build and publish custom integrations, tools, dashboards, and visual controls.
+
+### 1. Building Your Plugin
+Every FiestaPanel addon is a lightweight folder with:
+- **`addon.json`**: Manifest declaring the unique `id`, `name`, `version`, `author`, `category`, FontAwesome `icon`, and optional `settings_schema` (rendered automatically in the web UI).
+- **`main.py`**: Backend Python module handling lifecycle hooks (`on_enable`, `on_disable`) and client actions (`on_action`).
+- **`tab.html`**: Interactive frontend HTML/JS template dynamically mounted into the panel workspace and navigation sidebar.
+- **`README.md`**: Plugin documentation, usage guide, and setup instructions.
+
+Refer to the [**Addon Developer Guide**](docs/ADDONS_GUIDE.md) for full specifications and templates.
+
+### 2. Publishing to the Official In-Panel Store
+To make your plugin discoverable for all FiestaPanel users with 1-click in-panel installation:
+1. **Fork the Repository**: Fork [`open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) on GitHub.
+2. **Add Your Definition**: Add your addon entry to `addons/repo/repository.json` (and `addon_manager.py:STORE_CATALOG`), including your metadata, settings schema, dependencies, and bundled files (`main.py`, `tab.html`, `README.md`).
+3. **Open a Pull Request**: Submit a PR titled `feat(addon): add <your_addon_name>`.
+4. **Instant Distribution**: Once merged into `main`, your addon is immediately indexed in the official catalog (`/api/panel-addons/store`) and available for 1-click install in every FiestaPanel installation under **Panel Extensions / Store ➔ Plugin Store**.
+
+### 3. Direct Community Distribution (.zip or URL)
+You do not need to wait for a Pull Request to share your plugins with the community:
+- **Package as ZIP**: Bundle your addon folder into a standard zip archive:
+  ```bash
+  zip -r my_plugin.zip addon.json main.py tab.html README.md
+  ```
+- **1-Click Installation by Users**:
+  - **Upload in Web UI**: Users navigate to **Panel Extensions / Store ➔ Upload Package (.jar / .zip)** in their dashboard and upload the archive.
+  - **Install from URL**: Paste any direct download link (e.g., GitHub Releases asset).
+  - **Direct Folder**: Drop the folder directly into the server's `addons/<my_plugin>/` directory and click **[ Reload Addons ]**.
+
+---
+
 ## 🔑 Forgotten passwords and account recovery
 
 ### Owner (`admin`) password
