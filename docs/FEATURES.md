@@ -62,9 +62,9 @@ A comprehensive toolset for moderating players and viewing their gear:
 ## 🔌 4. Modrinth Plugin Manager
 
 FiestaPanel features built-in search and 1-click installation from Modrinth:
-- **Online Catalog Search**: Search thousands of plugins directly from Modrinth's official repository.
-- **Compatibility Filtering**: Automatically filters for plugins compatible with your server version (e.g. 1.21.x) and engine (Paper, Purpur, Spigot).
-- **1-Click Installation**: Downloads and places JAR files directly into the `plugins/` directory.
+- **Online Catalog Search**: Search thousands of plugins and mods directly from Modrinth's official repository.
+- **Compatibility Filtering**: Automatically filters for plugins and mods compatible with your server version and engine (Paper, Purpur, Spigot plugins, or NeoForge, Fabric, Forge mods).
+- **1-Click Installation**: Downloads and places JAR files directly into `plugins/` or `mods/` directory.
 - **Local Plugin Management**:
   - View installed plugins with file size and active status.
   - Enable or disable plugins (renaming `.jar` to `.jar.disabled`).

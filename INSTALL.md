@@ -4,7 +4,7 @@ This guide walks you through deploying **FiestaPanel** across **Linux, macOS, an
 
 > [!TIP]
 > **No Pre-installed Minecraft Server Required!**  
-> You do NOT need to set up or download Minecraft prior to installing FiestaPanel. Once FiestaPanel is installed, you can choose and install **Purpur, Paper, Fabric, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal.
+> You do NOT need to set up or download Minecraft prior to installing FiestaPanel. Once FiestaPanel is installed, you can choose and install **Purpur, Paper, Fabric, NeoForge, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal.
 
 ---
 
@@ -245,6 +245,7 @@ Once logged into FiestaPanel:
    - 🦅 **Purpur** (High-performance Paper fork with extensive customization)
    - 📄 **Paper** (Industry standard high-performance engine)
    - 🧵 **Fabric** (Modular modern modding loader)
+   - 🦊 **NeoForge** (Modern modded Minecraft server platform & Forge successor)
    - 🧊 **Vanilla** (Official Mojang server)
    - ⚡ **Spigot** (Classic plugin platform)
 4. Choose your Minecraft game version (e.g. 1.21.4, 1.21.1, 1.20.4, 1.19.4).

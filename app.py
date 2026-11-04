@@ -999,6 +999,27 @@ def get_latest_paper_version():
 @login_required
 def api_software_latest():
     sw = request.args.get("software", "paper").lower().strip()
+    if sw == "neoforge":
+        try:
+            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "FiestaPanel/2.1"})
+            with urllib.request.urlopen(req, timeout=4) as r:
+                d = json.loads(r.read())
+                all_v = d.get("versions", [])
+                stables = [v for v in all_v if "beta" not in v]
+                ver = stables[-1] if stables else all_v[-1]
+                return jsonify({
+                    "success": True,
+                    "software": sw,
+                    "latest_version": ver,
+                    "display_label": f"NeoForge {ver}"
+                })
+        except Exception:
+            return jsonify({
+                "success": True,
+                "software": sw,
+                "latest_version": "26.3.0.101",
+                "display_label": "NeoForge 26.3"
+            })
     ver = get_latest_paper_version()
     return jsonify({
         "success": True,
@@ -2156,6 +2177,58 @@ def resolve_software_download(software, version, build="latest"):
         download_url = f"https://download.getbukkit.org/spigot/spigot-{version}.jar"
         return download_url, f"spigot-{version}.jar", f"Spigot {version}"
 
+    elif software == "neoforge":
+        nf_ver = None
+        try:
+            req_m = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            with urllib.request.urlopen(req_m, timeout=5) as r_m:
+                d_m = json.loads(r_m.read())
+                all_nf = d_m.get("versions", [])
+                if version in all_nf:
+                    nf_ver = version
+                else:
+                    if version.startswith("1.20."):
+                        sub = version.split(".")[2]
+                        prefix = f"20.{sub}."
+                    elif version.startswith("1.21."):
+                        sub = version.split(".")[2]
+                        prefix = f"21.{sub}."
+                    elif version == "1.21":
+                        prefix = "21.0."
+                    elif "." in version:
+                        prefix = f"{version}."
+                    else:
+                        prefix = f"{version}."
+
+                    candidates = [v for v in all_nf if v.startswith(prefix)]
+                    if candidates:
+                        stables = [v for v in candidates if "beta" not in v]
+                        nf_ver = stables[-1] if stables else candidates[-1]
+        except Exception:
+            pass
+
+        if not nf_ver:
+            NEOFORGE_FALLBACK_MAP = {
+                "26.3": "26.3.0.101",
+                "26.2": "26.2.0.93",
+                "26.1": "26.1.2.126",
+                "1.21.11": "21.11.48",
+                "1.21.10": "21.10.64",
+                "1.21.8": "21.8.57",
+                "1.21.5": "21.5.101",
+                "1.21.4": "21.4.161",
+                "1.21.3": "21.3.100",
+                "1.21.1": "21.1.265",
+                "1.21": "21.0.167",
+                "1.20.6": "20.6.144",
+                "1.20.4": "20.4.253",
+                "1.20.2": "20.2.93"
+            }
+            nf_ver = NEOFORGE_FALLBACK_MAP.get(version, "21.1.265")
+
+        download_url = f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{nf_ver}/neoforge-{nf_ver}-installer.jar"
+        return download_url, f"neoforge-{nf_ver}-installer.jar", f"NeoForge {version} ({nf_ver})"
+
     else:
         raise ValueError(f"Unsupported software engine: {software}")
 
@@ -2243,8 +2316,32 @@ def api_software_versions():
                 versions = [v["version"] for v in d if v.get("stable")][:40]
         elif sw == "spigot":
             versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
+        elif sw == "neoforge":
+            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            with urllib.request.urlopen(req, timeout=4) as r:
+                d = json.loads(r.read())
+                all_v = d.get("versions", [])
+                mc_set = set()
+                for v in all_v:
+                    parts = v.split(".")
+                    if len(parts) >= 2:
+                        if parts[0] == "20":
+                            mc_set.add(f"1.20.{parts[1]}")
+                        elif parts[0] == "21":
+                            mc_set.add(f"1.21.{parts[1]}" if parts[1] != "0" else "1.21")
+                        elif parts[0] in ["26", "25"]:
+                            mc_set.add(f"{parts[0]}.{parts[1]}")
+                def v_key(ver):
+                    try:
+                        return [int(x) for x in ver.split(".")]
+                    except Exception:
+                        return [0]
+                versions = sorted(list(mc_set), key=v_key, reverse=True)
     except Exception as e:
-        versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
+        if sw == "neoforge":
+            versions = ["26.3", "26.2", "26.1", "1.21.11", "1.21.10", "1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2"]
+        else:
+            versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
 
     return jsonify({"success": True, "software": sw, "versions": versions})
 
@@ -2289,7 +2386,21 @@ def api_software_install():
             time.sleep(1)
             shutil.copy2(jar_path, bak_path)
 
-        shutil.move(tmp_path, jar_path)
+        if software == "neoforge":
+            java_bin = detect_java_bin()
+            res = subprocess.run(
+                [java_bin, "-jar", tmp_path, "--installServer", SERVER_DIR, "--server.jar"],
+                capture_output=True,
+                text=True,
+                timeout=180
+            )
+            if res.returncode != 0:
+                raise RuntimeError(f"NeoForge installer failed (code {res.returncode}): {res.stderr or res.stdout}")
+            if os.path.exists(tmp_path):
+                try: os.remove(tmp_path)
+                except Exception: pass
+        else:
+            shutil.move(tmp_path, jar_path)
 
         # Auto-accept EULA
         eula_file = os.path.join(SERVER_DIR, "eula.txt")
@@ -2332,16 +2443,16 @@ def api_software_install():
         now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(meta_path, "w") as f_meta:
             json.dump({
-                "software": software.title(),
+                "software": "NeoForge" if software == "neoforge" else software.title(),
                 "version": version,
                 "build": build,
                 "installed_at": now_str,
-                "jar_name": filename,
+                "jar_name": filename if software != "neoforge" else "server.jar",
                 "label": label
             }, f_meta, indent=2)
 
         # Ensure appropriate addon directory exists for software engine
-        if software == "fabric":
+        if software in ["fabric", "neoforge"]:
             os.makedirs(os.path.join(SERVER_DIR, "mods"), exist_ok=True)
             os.makedirs(os.path.join(SERVER_DIR, "mods", "disabled"), exist_ok=True)
         elif software in ["purpur", "paper", "spigot"]:
@@ -3007,6 +3118,14 @@ def api_software_check_update():
                     if major in v_dict and v_dict[major]:
                         latest_ver = v_dict[major][-1]
                         break
+        elif sw_low == "neoforge":
+            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "FiestaPanel/2.1"})
+            with urllib.request.urlopen(req, timeout=3) as r:
+                p_data = json.loads(r.read())
+                v_list = p_data.get("versions", [])
+                if v_list:
+                    stables = [v for v in v_list if "beta" not in v]
+                    latest_ver = stables[-1] if stables else v_list[-1]
     except Exception:
         pass
 
@@ -3436,13 +3555,18 @@ def api_mod_upload():
 @login_required
 def api_mods_search():
     query = request.args.get("q", "").strip()
+    loader = request.args.get("loader", "").strip().lower()
     if not query:
         return jsonify({"hits": [], "total_hits": 0})
 
     try:
+        facets = [["project_type:mod"]]
+        if loader and loader not in ["all", "any"]:
+            facets.append([f"categories:{loader}"])
+
         params = {
             "query": query,
-            "facets": '[["project_type:mod"]]',
+            "facets": json.dumps(facets),
             "limit": 15
         }
         url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
@@ -3452,6 +3576,8 @@ def api_mods_search():
 
         hits = []
         for h in data.get("hits", []):
+            cats = h.get("categories", [])
+            mod_loaders = [c for c in cats if c in ["neoforge", "fabric", "forge", "quilt"]]
             hits.append({
                 "project_id": h.get("project_id"),
                 "slug": h.get("slug"),
@@ -3460,9 +3586,15 @@ def api_mods_search():
                 "author": h.get("author", "Unknown"),
                 "downloads": h.get("downloads", 0),
                 "icon_url": h.get("icon_url") or "",
-                "categories": h.get("categories", [])
+                "categories": cats,
+                "loaders": mod_loaders,
+                "compatible_neoforge": "neoforge" in cats,
+                "compatible_fabric": "fabric" in cats,
+                "compatible_forge": "forge" in cats,
+                "versions": h.get("versions", [])[:6],
+                "server_side": h.get("server_side", "")
             })
-        return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits))})
+        return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits)), "loader": loader})
     except Exception as e:
         return jsonify({"success": False, "error": str(e), "hits": []}), 500
 
@@ -3471,21 +3603,43 @@ def api_mods_search():
 def api_mod_install_online():
     data = request.get_json() or {}
     project_id = data.get("project_id", "").strip()
+    target_loader = data.get("loader", "").strip().lower()
 
     if not project_id:
         return jsonify({"success": False, "message": "Project ID required"}), 400
 
     try:
-        loaders = '["fabric","quilt","forge","neoforge"]'
-        url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        # Determine target loader from param or server context
+        if not target_loader or target_loader in ["all", "any"]:
+            ctx = detect_addon_context()
+            sw_name = ctx.get("software", "").lower()
+            if "neoforge" in sw_name:
+                target_loader = "neoforge"
+            elif "fabric" in sw_name:
+                target_loader = "fabric"
+            elif "forge" in sw_name:
+                target_loader = "forge"
 
         versions = []
-        try:
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                versions = json.loads(resp.read().decode())
-        except Exception:
-            pass
+        if target_loader and target_loader not in ["all", "any"]:
+            loaders_param = json.dumps([target_loader])
+            url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders_param})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            try:
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    versions = json.loads(resp.read().decode())
+            except Exception:
+                pass
+
+        if not versions:
+            loaders = '["neoforge","fabric","quilt","forge"]'
+            url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            try:
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    versions = json.loads(resp.read().decode())
+            except Exception:
+                pass
 
         if not versions:
             url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
@@ -3528,11 +3682,12 @@ def api_mod_install_online():
 
         file_size_kb = round(os.path.getsize(dest_path) / 1024, 1)
 
+        loader_note = f" (for {target_loader})" if target_loader and target_loader not in ["all", "any"] else ""
         return jsonify({
             "success": True,
             "filename": filename,
             "size_kb": file_size_kb,
-            "message": f"Successfully downloaded mod {filename} ({file_size_kb} KB)! Restart server to load."
+            "message": f"Successfully downloaded mod {filename}{loader_note} ({file_size_kb} KB)! Restart server to load."
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500

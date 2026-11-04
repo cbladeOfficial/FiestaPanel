@@ -68,7 +68,7 @@ unset FIESTA_ADMIN_PASS
 Open **`http://localhost:8080`** in your browser. Complete guide & options in [**INSTALL.md**](INSTALL.md#option-4-docker--docker-compose-containerized).
 
 > [!NOTE]
-> **No Pre-installed Server Required**: You do not need to install Minecraft beforehand. You can install and launch **Paper, Purpur, Fabric, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal!
+> **No Pre-installed Server Required**: You do not need to install Minecraft beforehand. You can install and launch **Paper, Purpur, Fabric, NeoForge, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal!
 
 ---
 

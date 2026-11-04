@@ -3991,11 +3991,21 @@
             <span>Forwarding / Addons - Online Repository Search &amp; Direct Download</span>
           </div>
 
-          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2; flex-wrap: wrap;">
             <span style="font-weight: bold; font-size: 11px; color: #333;">Repository Target:</span>
             <button id="btn-search-target-plugins" class="btn-classic active-tab" onclick="switchSearchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Minecraft Plugins ]</button>
             <button id="btn-search-target-mods" class="btn-classic" onclick="switchSearchAddonMode('mods')" style="padding: 2px 10px;">[ Minecraft Mods ]</button>
             <span id="addon-search-badge" style="margin-left: auto; font-size: 11px; color: #555;">Targeting: <strong id="search-target-label" style="color: #006622;">Purpur / Paper / Spigot</strong> (into <code>/plugins/</code>)</span>
+          </div>
+
+          <!-- Mod Loader Filter Bar (Visible in Mods Mode) -->
+          <div id="mod-loader-filter-bar" style="display: none; gap: 6px; margin-bottom: 10px; align-items: center; background: #fff8eb; padding: 6px 10px; border: 1px solid #fed7aa; border-radius: 3px; flex-wrap: wrap;">
+            <span style="font-weight: bold; font-size: 11px; color: #9a3412;">Mod Loader Filter:</span>
+            <button type="button" class="btn-classic active-tab" id="btn-loader-all" onclick="selectModLoaderFilter('all')" style="font-size: 10px; padding: 2px 8px; font-weight: bold;">All Loaders</button>
+            <button type="button" class="btn-classic" id="btn-loader-neoforge" onclick="selectModLoaderFilter('neoforge')" style="font-size: 10px; padding: 2px 8px; color: #c2410c; font-weight: bold;">🦊 NeoForge Only</button>
+            <button type="button" class="btn-classic" id="btn-loader-fabric" onclick="selectModLoaderFilter('fabric')" style="font-size: 10px; padding: 2px 8px; color: #1d4ed8; font-weight: bold;">🧵 Fabric</button>
+            <button type="button" class="btn-classic" id="btn-loader-forge" onclick="selectModLoaderFilter('forge')" style="font-size: 10px; padding: 2px 8px; color: #b45309; font-weight: bold;">⚒️ Forge</button>
+            <span id="loader-filter-status" style="margin-left: auto; font-size: 10.5px; color: #7c2d12; font-style: italic;">Showing all mod packages</span>
           </div>
 
           <div class="section-sub-header" id="repo-header-text">Modrinth Minecraft Plugins Repository</div>
@@ -4278,7 +4288,7 @@
             Select a software engine below. Your world data, plugins, and player inventories in <code>/world</code> remain completely preserved. Existing <code>server.jar</code> is backed up automatically.
           </div>
 
-          <!-- 5 Software Type Cards -->
+          <!-- 6 Software Type Cards -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px;">
             <div class="software-card active" data-sw="purpur" onclick="selectSoftwareType('purpur', this)">
               <div style="font-weight: bold; font-size: 13px; color: #74b21d;">Purpur</div>
@@ -4292,6 +4302,10 @@
             <div class="software-card" data-sw="fabric" onclick="selectSoftwareType('fabric', this)">
               <div style="font-weight: bold; font-size: 13px; color: #375a7f;">Fabric</div>
               <div style="font-size: 9px; color: #666; margin-top: 3px;">Modular lightweight modding loader (Lithium, Sodium, FerriteCore).</div>
+            </div>
+            <div class="software-card" data-sw="neoforge" onclick="selectSoftwareType('neoforge', this)">
+              <div style="font-weight: bold; font-size: 13px; color: #d97706;">NeoForge</div>
+              <div style="font-size: 9px; color: #666; margin-top: 3px;">Modern modded Minecraft server platform &amp; Forge successor. Rich mod ecosystem.</div>
             </div>
             <div class="software-card" data-sw="vanilla" onclick="selectSoftwareType('vanilla', this)">
               <div style="font-weight: bold; font-size: 13px; color: #885500;">Vanilla</div>
@@ -6012,7 +6026,7 @@ def on_action(ctx, action_name, payload):
         title: 'Server Software Help',
         body: `
           <div class="help-sub">Software Switcher</div>
-          <p class="help-text">Change your server software engine (Purpur, Paper, Fabric, Vanilla, Spigot) and target Minecraft version just like Aternos.</p>
+          <p class="help-text">Change your server software engine (Purpur, Paper, Fabric, NeoForge, Vanilla, Spigot) and target Minecraft version just like Aternos.</p>
           <div class="help-sub">Data Safety</div>
           <p class="help-text">Your worlds (<code>/world</code>, <code>/world_nether</code>, <code>/world_the_end</code>), player inventories, and configs are preserved. <code>server.jar</code> is backed up to <code>server.jar.bak</code> automatically before replacement.</p>
           <div class="help-sub">Rollback Protection</div>
@@ -8363,7 +8377,7 @@ def on_action(ctx, action_name, payload):
     let detectedAddonContext = null;
 
     const pluginQuickSearches = ['LuckPerms', 'Chunky', 'Vault', 'CoreProtect', 'ViaVersion', 'DeluxeMenus', 'TAB', 'SkinsRestorer', 'WorldEdit'];
-    const modQuickSearches = ['Fabric API', 'Lithium', 'FerriteCore', 'Simple Voice Chat', 'Chunky', 'WorldEdit', 'Krypton', 'Cloth Config'];
+    const modQuickSearches = ['JEI', 'JourneyMap', 'Curios API', 'Sophisticated Backpacks', 'Waystones', 'FerriteCore', 'ModernFix', 'Simple Voice Chat', 'Cloth Config', 'Chunky', 'Fabric API'];
 
     async function fetchAddonContext() {
       try {
@@ -8380,6 +8394,9 @@ def on_action(ctx, action_name, payload):
           if (modRadio) modRadio.checked = true;
           const navParent = document.getElementById('nav-parent-addons');
           if (navParent) navParent.textContent = 'Forwarding / Mods';
+          if (d.software && d.software.toLowerCase().includes('neoforge')) {
+            currentModLoaderFilter = 'neoforge';
+          }
         } else {
           currentAddonMode = 'plugins';
           currentSearchAddonMode = 'plugins';
@@ -8526,6 +8543,35 @@ def on_action(ctx, action_name, payload):
     }
 
     // ── Online Repository Search (Plugins & Mods) ──
+    let currentModLoaderFilter = 'all';
+
+    function selectModLoaderFilter(loader) {
+      currentModLoaderFilter = loader;
+      ['all', 'neoforge', 'fabric', 'forge'].forEach(l => {
+        const btn = document.getElementById(`btn-loader-${l}`);
+        if (btn) {
+          if (l === loader) {
+            btn.classList.add('active-tab');
+            btn.style.fontWeight = 'bold';
+          } else {
+            btn.classList.remove('active-tab');
+            btn.style.fontWeight = 'normal';
+          }
+        }
+      });
+      const statusEl = document.getElementById('loader-filter-status');
+      if (statusEl) {
+        if (loader === 'neoforge') statusEl.textContent = 'Filtered: NeoForge-compatible mods only';
+        else if (loader === 'fabric') statusEl.textContent = 'Filtered: Fabric-compatible mods only';
+        else if (loader === 'forge') statusEl.textContent = 'Filtered: Forge-compatible mods only';
+        else statusEl.textContent = 'Showing mods from all loaders';
+      }
+      const input = document.getElementById('plugin-search-input');
+      if (input && input.value.trim()) {
+        searchCurrentAddons();
+      }
+    }
+
     function renderSearchTargetState() {
       const pBtn = document.getElementById('btn-search-target-plugins');
       const mBtn = document.getElementById('btn-search-target-mods');
@@ -8535,8 +8581,13 @@ def on_action(ctx, action_name, payload):
       const input = document.getElementById('plugin-search-input');
       const submitBtn = document.getElementById('btn-addon-search-submit');
       const chipsContainer = document.getElementById('quick-searches-chips');
+      const loaderBar = document.getElementById('mod-loader-filter-bar');
 
       const isMods = currentSearchAddonMode === 'mods';
+      if (loaderBar) {
+        loaderBar.style.display = isMods ? 'flex' : 'none';
+      }
+
       if (pBtn && mBtn) {
         if (isMods) {
           mBtn.classList.add('active-tab');
@@ -8564,7 +8615,7 @@ def on_action(ctx, action_name, payload):
       }
       if (input) {
         input.placeholder = isMods ?
-          'Type mod name (e.g. Fabric API, Lithium, FerriteCore, Simple Voice Chat)...' :
+          'Type mod name (e.g. JEI, JourneyMap, Curios API, FerriteCore, Simple Voice Chat)...' :
           'Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)...';
       }
       if (submitBtn) {
@@ -8608,7 +8659,9 @@ def on_action(ctx, action_name, payload):
       if (!q) return showBannerAlert('Enter a search keyword first.', true);
 
       const isMods = currentSearchAddonMode === 'mods';
-      const endpoint = isMods ? `/api/mods/search?q=${encodeURIComponent(q)}` : `/api/plugins/search?q=${encodeURIComponent(q)}`;
+      const endpoint = isMods ?
+        `/api/mods/search?q=${encodeURIComponent(q)}&loader=${encodeURIComponent(currentModLoaderFilter)}` :
+        `/api/plugins/search?q=${encodeURIComponent(q)}`;
 
       const statusEl = document.getElementById('plugin-search-status');
       const tbody = document.getElementById('plugins-search-table-body');
@@ -8630,18 +8683,46 @@ def on_action(ctx, action_name, payload):
         tbody.innerHTML = d.hits.map(p => {
           const icon = p.icon_url ? `<img src="${escapeHtml(p.icon_url)}" style="width:32px; height:32px; object-fit:contain; border-radius:3px;">` : `<div style="width:32px; height:32px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#666; font-size:10px;">JAR</div>`;
           const dlFormatted = Number(p.downloads || 0).toLocaleString();
+
+          let loaderBadges = '';
+          if (isMods) {
+            const badges = [];
+            const isNfComp = p.compatible_neoforge || (p.loaders && p.loaders.includes('neoforge'));
+            if (isNfComp) {
+              badges.push('<span style="background:#ea580c; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:4px;">NeoForge</span>');
+            }
+            if (p.loaders && p.loaders.includes('fabric')) {
+              badges.push('<span style="background:#2563eb; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:4px;">Fabric</span>');
+            }
+            if (p.loaders && p.loaders.includes('forge')) {
+              badges.push('<span style="background:#b45309; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:4px;">Forge</span>');
+            }
+            if (p.loaders && p.loaders.includes('quilt')) {
+              badges.push('<span style="background:#7c3aed; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:4px;">Quilt</span>');
+            }
+
+            const isNeoServer = detectedAddonContext && detectedAddonContext.software && detectedAddonContext.software.toLowerCase().includes('neoforge');
+            const highlightBadge = (isNfComp && (currentModLoaderFilter === 'neoforge' || isNeoServer)) ?
+              '<span style="background:#dcfce7; border:1px solid #86efac; color:#15803d; padding:1px 6px; border-radius:3px; font-size:9px; font-weight:bold; margin-left:6px;">✓ NeoForge Compatible</span>' : '';
+
+            loaderBadges = `<div style="margin-top:4px; display:flex; align-items:center; flex-wrap:wrap; gap:3px;">${badges.join('')}${highlightBadge}</div>`;
+          }
+
+          const dlBtnLabel = (isMods && currentModLoaderFilter === 'neoforge') ? '[ ⬇ Download NeoForge .jar ]' : '[ ⬇ Download .jar ]';
+
           return `
             <tr>
               <td style="text-align: center; vertical-align: middle;">${icon}</td>
               <td>
                 <strong style="font-size: 12px; color: #006622;">${escapeHtml(p.title)}</strong><br>
                 <span style="color: #666; font-size: 10px;">by ${escapeHtml(p.author)}</span>
+                ${loaderBadges}
               </td>
               <td style="font-size: 10px; color: #444; line-height: 1.3;">${escapeHtml(p.description)}</td>
               <td style="text-align: right; font-family: monospace; font-size: 11px; font-weight: bold; color: #333;">${dlFormatted}</td>
               <td style="text-align: center;">
                 <button class="btn-satin-green" id="btn-dl-${p.project_id}" style="padding: 2px 8px; font-size: 10px; height: 24px;" onclick="installCurrentOnlineAddon('${p.project_id}', '${escapeHtml(p.title)}')">
-                  [ ⬇ Download .jar ]
+                  ${dlBtnLabel}
                 </button>
               </td>
             </tr>
@@ -8669,7 +8750,11 @@ def on_action(ctx, action_name, payload):
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ project_id: projectId, name: title })
+          body: JSON.stringify({
+            project_id: projectId,
+            name: title,
+            loader: isMods ? currentModLoaderFilter : undefined
+          })
         });
         const d = await res.json();
         if (d.success) {
@@ -9894,6 +9979,7 @@ def on_action(ctx, action_name, payload):
         'purpur': 'Purpur (High Performance Fork)',
         'paper': 'Paper (Standard Performance)',
         'fabric': 'Fabric (Lightweight Modding)',
+        'neoforge': 'NeoForge (Modern Modded Minecraft)',
         'vanilla': 'Vanilla (Official Mojang)',
         'spigot': 'Spigot (CraftBukkit Core)'
       };

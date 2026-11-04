@@ -39,7 +39,7 @@ FiestaPanel is designed as a lightweight, zero-overhead management suite tailore
 ┌───────────────────────┐ ┌─────────────────┐ ┌──────────────────────────┐
 │  Minecraft Server     │ │  Local Files    │ │   External Web APIs      │
 │  (Paper / Purpur /    │ │  • config.json  │ │   • Modrinth v2 API      │
-│   Spigot / Fabric)    │ │  • users.json   │ │   • Mojang Skin API      │
+│   Spigot/Fabric/Neo)  │ │  • users.json   │ │   • Mojang Skin API      │
 │  • systemd service    │ │  • branding.json│ │                          │
 │  • server.properties  │ │  • static/      │ │                          │
 │  • plugins/ & worlds/ │ │    mcassets/    │ │                          │
@@ -70,8 +70,8 @@ FiestaPanel is designed as a lightweight, zero-overhead management suite tailore
 
 ### 3. Modrinth Integration
 - Direct HTTPS queries to the official **Modrinth API v2** (`https://api.modrinth.com/v2/`).
-- Queries filter plugins compatible with server platform (Paper, Purpur, Spigot, Bukkit) and current game version (e.g. 1.21.x).
-- Downloaded JAR files are safely validated and streamed directly into `<mc_path>/plugins/`.
+- Queries filter plugins and mods compatible with server platform (Paper, Purpur, Spigot, Bukkit plugins or NeoForge, Fabric, Forge mods) and current game version.
+- Downloaded JAR files are safely validated and streamed directly into `<mc_path>/plugins/` or `<mc_path>/mods/`.
 
 ### 4. File Management & Jailed Path Resolver
 - The file manager enforces strict directory jailing:
