@@ -7,6 +7,7 @@ import json
 import shutil
 import psutil
 import glob
+import sqlite3
 import datetime
 import socket
 import struct
@@ -544,6 +545,130 @@ def send_mc_command(cmd):
     except Exception as e:
         return False, str(e)
 
+def resolve_player_ip(player_name):
+    """
+    Resolves a player username to their last known IP address from usercache, AuthMe,
+    Essentials userdata, or server connection logs.
+    """
+    if not player_name:
+        return None
+    target = str(player_name).strip()
+    if re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", target) or ":" in target:
+        return target
+
+    target_lower = target.lower()
+
+    # 1. Quick UUID lookup in usercache.json -> Essentials userdata/{uuid}.yml
+    cache_file = os.path.join(SERVER_DIR, "usercache.json")
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r") as f:
+                cache_data = json.load(f)
+                for entry in cache_data:
+                    if entry.get("name", "").lower() == target_lower:
+                        uuid_val = entry.get("uuid")
+                        if uuid_val:
+                            ess_file = os.path.join(SERVER_DIR, "plugins", "Essentials", "userdata", f"{uuid_val}.yml")
+                            if os.path.exists(ess_file):
+                                with open(ess_file, "r", encoding="utf-8", errors="ignore") as ef:
+                                    m = re.search(r"ip-address:\s*([0-9]{1,3}(?:\.[0-9]{1,3}){3})", ef.read())
+                                    if m and m.group(1) not in ("127.0.0.1", "0.0.0.0"):
+                                        return m.group(1).strip()
+        except Exception:
+            pass
+
+    # 2. Check AuthMe SQLite DB
+    authme_db = os.path.join(SERVER_DIR, "plugins", "AuthMe", "authme.db")
+    if os.path.exists(authme_db):
+        try:
+            con = sqlite3.connect(authme_db, timeout=2.0)
+            cur = con.cursor()
+            cur.execute("SELECT ip FROM authme WHERE LOWER(username)=? OR LOWER(realname)=? LIMIT 1", (target_lower, target_lower))
+            row = cur.fetchone()
+            con.close()
+            if row and row[0] and row[0] not in ("127.0.0.1", "0.0.0.0"):
+                return row[0].strip()
+        except Exception:
+            pass
+
+    # 3. Search Essentials userdata directory
+    ess_dir = os.path.join(SERVER_DIR, "plugins", "Essentials", "userdata")
+    if os.path.exists(ess_dir):
+        for fpath in glob.glob(os.path.join(ess_dir, "*.yml")):
+            try:
+                with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
+                    txt = f.read()
+                    if f"last-account-name: {target_lower}" in txt.lower():
+                        m = re.search(r"ip-address:\s*([0-9]{1,3}(?:\.[0-9]{1,3}){3})", txt)
+                        if m and m.group(1) not in ("127.0.0.1", "0.0.0.0"):
+                            return m.group(1).strip()
+            except Exception:
+                pass
+
+    # 4. Search latest.log
+    log_file = os.path.join(SERVER_DIR, "logs", "latest.log")
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                for line in reversed(f.readlines()):
+                    if target_lower in line.lower():
+                        m = re.search(r"\[/([0-9]{1,3}(?:\.[0-9]{1,3}){3}):\d+\] logged in", line, re.I)
+                        if m:
+                            return m.group(1).strip()
+                        m2 = re.search(r"\[AuthMe\]\s+" + re.escape(target) + r"\s+logged in\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3})", line, re.I)
+                        if m2:
+                            return m2.group(1).strip()
+        except Exception:
+            pass
+
+    return None
+
+def execute_ip_ban(target, reason="Banned by administrator"):
+    """
+    Executes an IP ban for target (IP address or player username).
+    Handles offline players by resolving their last known IP address and
+    dispatching both Essentials and Paper native IP ban commands.
+    """
+    target = (target or "").strip()
+    reason = (reason or "").strip() or "Banned by administrator"
+    is_ip = bool(re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", target) or ":" in target)
+    resolved_ip = resolve_player_ip(target)
+
+    if is_ip:
+        send_mc_command(f"banip {target} {reason}")
+        send_mc_command(f"ban-ip {target} {reason}")
+        return True, f"Banned IP address {target}"
+    elif resolved_ip:
+        send_mc_command(f"banip {target} {reason}")
+        send_mc_command(f"ban-ip {resolved_ip} {reason}")
+        return True, f"Banned IP {resolved_ip} for player {target}"
+    else:
+        send_mc_command(f"banip {target} {reason}")
+        send_mc_command(f"ban-ip {target} {reason}")
+        return True, f"Dispatched IP ban for {target}"
+
+def execute_ip_pardon(target):
+    """
+    Unbans an IP or player username from the IP blacklist.
+    """
+    target = (target or "").strip()
+    is_ip = bool(re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", target) or ":" in target)
+    resolved_ip = resolve_player_ip(target)
+
+    if is_ip:
+        send_mc_command(f"pardon-ip {target}")
+        send_mc_command(f"unbanip {target}")
+        return True, f"Unbanned IP {target}"
+    elif resolved_ip:
+        send_mc_command(f"pardon-ip {resolved_ip}")
+        send_mc_command(f"unbanip {resolved_ip}")
+        send_mc_command(f"unbanip {target}")
+        return True, f"Unbanned IP {resolved_ip} for player {target}"
+    else:
+        send_mc_command(f"unbanip {target}")
+        send_mc_command(f"pardon-ip {target}")
+        return True, f"Dispatched IP pardon for {target}"
+
 def ping_mc():
     """Queries live Minecraft server on 127.0.0.1:25565 via native SLP handshake."""
     try:
@@ -1072,14 +1197,20 @@ def api_player_action():
     if not player or not action:
         return jsonify({"success": False, "message": "Missing player or action"}), 400
 
+    if action == "ban_ip":
+        success, msg = execute_ip_ban(player, param or "Banned by administrator")
+        return jsonify({"success": success, "message": msg})
+
+    if action == "pardon_ip":
+        success, msg = execute_ip_pardon(player)
+        return jsonify({"success": success, "message": msg})
+
     cmd_map = {
         "op": f"op {player}",
         "deop": f"deop {player}",
         "kick": f"kick {player} {param or 'Kicked by administrator'}",
         "ban": f"ban {player} {param or 'Banned by administrator'}",
-        "ban_ip": f"ban-ip {player} {param or 'Banned by administrator'}",
         "pardon": f"pardon {player}",
-        "pardon_ip": f"pardon-ip {player}",
         "gamemode_survival": f"gamemode survival {player}",
         "gamemode_creative": f"gamemode creative {player}",
         "gamemode_adventure": f"gamemode adventure {player}",
@@ -2114,14 +2245,22 @@ def api_software_rollback():
 @login_required
 def api_get_bans():
     ban_file = os.path.join(SERVER_DIR, "banned-players.json")
+    ip_ban_file = os.path.join(SERVER_DIR, "banned-ips.json")
     banned = []
+    ip_banned = []
     if os.path.exists(ban_file):
         try:
             with open(ban_file, "r") as f:
                 banned = json.load(f)
         except Exception:
             pass
-    return jsonify({"bans": banned, "total": len(banned)})
+    if os.path.exists(ip_ban_file):
+        try:
+            with open(ip_ban_file, "r") as f:
+                ip_banned = json.load(f)
+        except Exception:
+            pass
+    return jsonify({"bans": banned, "ip_bans": ip_banned, "total": len(banned) + len(ip_banned)})
 
 @app.route("/api/ops")
 @login_required
@@ -2301,6 +2440,22 @@ def api_command():
     cmd = data.get("command", "").strip()
     if not cmd:
         return jsonify({"success": False, "message": "Command is empty"}), 400
+
+    # Intercept ban-ip / banip and pardon-ip / unbanip in console to support offline players & direct IPs
+    clean = cmd.lstrip('/')
+    parts = clean.split(None, 2)
+    cmd_name = parts[0].lower() if parts else ""
+
+    if cmd_name in ("ban-ip", "banip") and len(parts) > 1:
+        target = parts[1]
+        reason = parts[2] if len(parts) > 2 else "Banned by administrator"
+        success, msg = execute_ip_ban(target, reason)
+        return jsonify({"success": success, "message": msg})
+
+    if cmd_name in ("pardon-ip", "unbanip", "pardonip") and len(parts) > 1:
+        target = parts[1]
+        success, msg = execute_ip_pardon(target)
+        return jsonify({"success": success, "message": msg})
 
     success, msg = send_mc_command(cmd)
     return jsonify({"success": success, "message": msg})

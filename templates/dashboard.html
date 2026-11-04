@@ -3665,9 +3665,9 @@
           </table>
         </section>
 
-        <!-- ════ VIEW 9: BANNED PLAYERS ════ -->
+        <!-- ════ VIEW 9: BANNED PLAYERS & IP BLACKLIST ════ -->
         <section id="view-security-bans" class="view-panel" style="display:none;">
-          <div class="section-title-bar">Security - Banned Players (Blacklist)</div>
+          <div class="section-title-bar">Security - Banned Players & IP Blacklist</div>
           <table class="form-layout-table">
             <tr>
               <td class="label-col">Ban Player:</td>
@@ -3677,8 +3677,16 @@
                 <button class="btn-danger-red" onclick="executeBan()">[ Ban Account ]</button>
               </td>
             </tr>
+            <tr>
+              <td class="label-col">IP-Ban Player or Address:</td>
+              <td class="val-col">
+                <input type="text" id="ban-ip-target" placeholder="IP Address or Player..." style="width: 160px; font-family: monospace;">
+                <input type="text" id="ban-ip-reason" placeholder="Reason..." style="width: 180px;">
+                <button class="btn-danger-red" onclick="executeIpBanFromPanel()">[ IP-Ban Target ]</button>
+              </td>
+            </tr>
           </table>
-          <div class="section-sub-header">Blacklist Database</div>
+          <div class="section-sub-header">Banned Player Accounts</div>
           <table class="data-grid-table">
             <thead>
               <tr>
@@ -3691,6 +3699,22 @@
             </thead>
             <tbody id="bans-table-body">
               <tr><td colspan="5" style="text-align: center; color: #888;">Loading ban list...</td></tr>
+            </tbody>
+          </table>
+
+          <div class="section-sub-header" style="margin-top: 18px;">Blacklisted IP Addresses</div>
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th>IP Address</th>
+                <th>Created</th>
+                <th>Banned By</th>
+                <th>Reason</th>
+                <th style="width: 90px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="ip-bans-table-body">
+              <tr><td colspan="5" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>
             </tbody>
           </table>
         </section>
@@ -6200,7 +6224,7 @@ def on_action(ctx, action_name, payload):
       if (/»|<[a-zA-Z0-9_]{2,16}>|\[Not Secure\]/i.test(line)) return null;
 
       // 1. IP Ban
-      let m = line.match(/(?:Banned IP address|Banned IP)\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3}|[0-9a-fA-F:]{3,39})(?::\s*(.*))?/i);
+      let m = line.match(/(?:Banned IP address|Banned IP)\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3}|[0-9a-fA-F:]{3,39})(?:(?::\s*|\s+for:\s*)(.*))?/i);
       if (m) {
         let r = (m[2] || "Banned by administrator").replace(/[\]\.]+$/, "").trim();
         return { type: "BAN_IP", target: m[1], reason: r, source: "Server Console" };
@@ -7692,30 +7716,90 @@ def on_action(ctx, action_name, payload):
       }
     }
 
-    // ── Banned Players ──────────────────────────────────────────
+    // ── Banned Players & IP Blacklist ──────────────────────────
     async function loadBans() {
       try {
         const res = await fetch('/api/bans');
         if (!res.ok) return;
         const d = await res.json();
         const tbody = document.getElementById('bans-table-body');
-        if (!d.bans.length) {
+        if (!d.bans || !d.bans.length) {
           tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No players currently banned.</td></tr>';
-          return;
+        } else {
+          tbody.innerHTML = d.bans.map(b => `
+            <tr>
+              <td><strong>${escapeHtml(b.name || 'Unknown')}</strong></td>
+              <td>${b.created || '--'}</td>
+              <td>${escapeHtml(b.source || 'Admin')}</td>
+              <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
+              <td>
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px;" onclick="playerAction('${b.name}', 'pardon')">Pardon</button>
+              </td>
+            </tr>
+          `).join('');
         }
 
-        tbody.innerHTML = d.bans.map(b => `
-          <tr>
-            <td><strong>${escapeHtml(b.name || 'Unknown')}</strong></td>
-            <td>${b.created || '--'}</td>
-            <td>${escapeHtml(b.source || 'Admin')}</td>
-            <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
-            <td>
-              <button class="btn-classic" style="padding: 1px 6px; font-size: 10px;" onclick="playerAction('${b.name}', 'pardon')">Pardon</button>
-            </td>
-          </tr>
-        `).join('');
+        const ipTbody = document.getElementById('ip-bans-table-body');
+        if (ipTbody) {
+          if (!d.ip_bans || !d.ip_bans.length) {
+            ipTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>';
+          } else {
+            ipTbody.innerHTML = d.ip_bans.map(b => `
+              <tr>
+                <td><strong style="font-family: monospace; color: #b00;">${escapeHtml(b.ip || 'Unknown')}</strong></td>
+                <td>${b.created || '--'}</td>
+                <td>${escapeHtml(b.source || 'Admin')}</td>
+                <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
+                <td>
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px;" onclick="pardonIpAddress('${b.ip}')">Pardon IP</button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        }
       } catch (e) {}
+    }
+
+    async function pardonIpAddress(ip) {
+      if (!confirm(`Pardon (unban) IP address "${ip}"?`)) return;
+      try {
+        const res = await fetch('/api/command', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ command: `pardon-ip ${ip}` })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message || `Dispatched unban for IP: ${ip}`);
+        setTimeout(loadBans, 400);
+      } catch (e) {
+        showBannerAlert('Failed to pardon IP.', true);
+      }
+    }
+
+    async function executeIpBanFromPanel() {
+      const target = document.getElementById('ban-ip-target').value.trim();
+      const reason = document.getElementById('ban-ip-reason').value.trim() || 'Banned by administrator';
+      if (!target) return showBannerAlert('Enter player username or IP address to ban.', true);
+      try {
+        const res = await fetch('/api/command', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ command: `ban-ip ${target} ${reason}` })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message || `Dispatched IP ban for ${target}`);
+        showModerationDialog({
+          type: 'BAN_IP',
+          target: target,
+          reason: reason,
+          source: 'Web Portal Admin'
+        });
+        document.getElementById('ban-ip-target').value = '';
+        document.getElementById('ban-ip-reason').value = '';
+        setTimeout(loadBans, 500);
+      } catch (e) {
+        showBannerAlert('Failed to dispatch IP ban.', true);
+      }
     }
 
     async function executeBan() {
