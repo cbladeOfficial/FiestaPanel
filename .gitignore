@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 users.json
+events.json
 venv/
 .env
 static/*.tar.gz

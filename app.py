@@ -2460,6 +2460,320 @@ def api_command():
     success, msg = send_mc_command(cmd)
     return jsonify({"success": success, "message": msg})
 
+# ── Events Manager (Server & Player Events - Admin Only) ────────────────────
+EVENTS_FILE = os.path.join(DATA_DIR, "events.json")
+
+def load_events():
+    if os.path.exists(EVENTS_FILE):
+        try:
+            with open(EVENTS_FILE, "r", encoding="utf-8") as f:
+                d = json.load(f)
+                if isinstance(d, list):
+                    return d
+        except Exception as e:
+            app.logger.warning(f"Error reading events.json: {e}")
+    initial_events = [
+        {
+            "id": "evt_default_drop_party",
+            "title": "Weekend Spawn Drop Party",
+            "type": "server",
+            "description": "Weekly drop party at server spawn with diamond & speed rewards.",
+            "start_time": (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y-%m-%dT18:00"),
+            "recurring": "weekly",
+            "broadcast_msg": "&6[EVENT]&e Spawn Drop Party is LIVE! Free rewards for all active players!",
+            "commands": "give @a diamond 1\neffect give @a speed 180 1",
+            "target_player": "",
+            "status": "scheduled",
+            "created_by": "admin",
+            "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "last_run": None
+        },
+        {
+            "id": "evt_default_save",
+            "title": "Automated Daily World Sync & Flush",
+            "type": "maintenance",
+            "description": "Daily world flush to prevent data loss and keep chunks synchronized.",
+            "start_time": (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%dT04:00"),
+            "recurring": "daily",
+            "broadcast_msg": "&a[SYSTEM]&f Scheduled world save completed successfully.",
+            "commands": "save-all",
+            "target_player": "",
+            "status": "scheduled",
+            "created_by": "admin",
+            "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "last_run": None
+        }
+    ]
+    save_events(initial_events)
+    return initial_events
+
+def save_events(events_list):
+    try:
+        with open(EVENTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(events_list, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        app.logger.error(f"Error saving events.json: {e}")
+        return False
+
+def execute_event(evt, trigger_source="Manual Admin"):
+    title = evt.get("title", "Server Event")
+    bcast = evt.get("broadcast_msg", "").strip()
+    target_player = evt.get("target_player", "").strip()
+    commands_raw = evt.get("commands", "")
+
+    executed_cmds = []
+
+    if bcast:
+        clean_bcast = bcast.replace("&", "§")
+        if target_player:
+            send_mc_command(f'title {target_player} title {{"text":"{title}","color":"gold","bold":true}}')
+            send_mc_command(f'msg {target_player} {clean_bcast}')
+        else:
+            send_mc_command(f'title @a title {{"text":"{title}","color":"gold","bold":true}}')
+            send_mc_command(f'title @a actionbar {{"text":"{clean_bcast}","color":"yellow"}}')
+            send_mc_command(f'say {clean_bcast}')
+
+    if commands_raw:
+        lines = [line.strip() for line in commands_raw.splitlines() if line.strip()]
+        for cmd_line in lines:
+            c = cmd_line.lstrip("/")
+            if target_player:
+                c = c.replace("{player}", target_player).replace("%player%", target_player)
+            send_mc_command(c)
+            executed_cmds.append(c)
+
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    evt["last_run"] = now_str
+
+    recurring = evt.get("recurring", "none").lower()
+    if recurring == "none":
+        evt["status"] = "completed"
+    else:
+        try:
+            curr_start = datetime.datetime.fromisoformat(evt.get("start_time"))
+            if recurring == "hourly":
+                next_start = curr_start + datetime.timedelta(hours=1)
+            elif recurring == "daily":
+                next_start = curr_start + datetime.timedelta(days=1)
+            elif recurring == "weekly":
+                next_start = curr_start + datetime.timedelta(weeks=1)
+            else:
+                next_start = curr_start + datetime.timedelta(days=1)
+            evt["start_time"] = next_start.strftime("%Y-%m-%dT%H:%M")
+            evt["status"] = "scheduled"
+        except Exception:
+            evt["status"] = "active"
+
+    return True, f"Event '{title}' executed successfully ({len(executed_cmds)} commands dispatched)."
+
+def _events_scheduler_loop():
+    while True:
+        try:
+            time.sleep(20)
+            events = load_events()
+            now = datetime.datetime.now()
+            modified = False
+            for evt in events:
+                if evt.get("status") == "scheduled":
+                    st = evt.get("start_time")
+                    if st:
+                        try:
+                            evt_time = datetime.datetime.fromisoformat(st)
+                            if now >= evt_time:
+                                execute_event(evt, trigger_source="Scheduler")
+                                modified = True
+                        except Exception:
+                            pass
+            if modified:
+                save_events(events)
+        except Exception:
+            pass
+
+threading.Thread(target=_events_scheduler_loop, daemon=True).start()
+
+def is_admin_for_events():
+    return session.get("role") in ("owner", "administrator") or "all" in session.get("permissions", []) or "events" in session.get("permissions", [])
+
+@app.route("/api/events", methods=["GET"])
+@login_required
+def api_get_events():
+    events = load_events()
+    total = len(events)
+    scheduled = sum(1 for e in events if e.get("status") == "scheduled")
+    active = sum(1 for e in events if e.get("status") == "active")
+    completed = sum(1 for e in events if e.get("status") == "completed")
+    return jsonify({
+        "success": True,
+        "events": events,
+        "counts": {
+            "total": total,
+            "scheduled": scheduled,
+            "active": active,
+            "completed": completed
+        },
+        "is_admin": is_admin_for_events()
+    })
+
+@app.route("/api/events/create", methods=["POST"])
+@login_required
+def api_create_event():
+    if not is_admin_for_events():
+        return jsonify({"success": False, "message": "Permission denied: Only administrators can configure events."}), 403
+
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    if not title:
+        return jsonify({"success": False, "message": "Event title is required."}), 400
+
+    evt_type = data.get("type", "server").strip().lower()
+    start_time = data.get("start_time", "").strip() or datetime.datetime.now().strftime("%Y-%m-%dT%H:%M")
+    recurring = data.get("recurring", "none").strip().lower()
+
+    new_evt = {
+        "id": f"evt_{int(time.time())}_{secrets.token_hex(3)}",
+        "title": title,
+        "type": evt_type,
+        "description": data.get("description", "").strip(),
+        "start_time": start_time,
+        "recurring": recurring,
+        "broadcast_msg": data.get("broadcast_msg", "").strip(),
+        "commands": data.get("commands", "").strip(),
+        "target_player": data.get("target_player", "").strip(),
+        "status": "scheduled",
+        "created_by": session.get("user", "admin"),
+        "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "last_run": None
+    }
+
+    events = load_events()
+    events.insert(0, new_evt)
+    save_events(events)
+    return jsonify({"success": True, "message": f"Event '{title}' created successfully!", "event": new_evt})
+
+@app.route("/api/events/update", methods=["POST"])
+@login_required
+def api_update_event():
+    if not is_admin_for_events():
+        return jsonify({"success": False, "message": "Permission denied: Only administrators can configure events."}), 403
+
+    data = request.get_json() or {}
+    evt_id = data.get("id", "").strip()
+    if not evt_id:
+        return jsonify({"success": False, "message": "Event ID is required."}), 400
+
+    events = load_events()
+    for evt in events:
+        if evt.get("id") == evt_id:
+            if "title" in data and data["title"].strip():
+                evt["title"] = data["title"].strip()
+            if "type" in data:
+                evt["type"] = data["type"].strip().lower()
+            if "description" in data:
+                evt["description"] = data["description"].strip()
+            if "start_time" in data:
+                evt["start_time"] = data["start_time"].strip()
+            if "recurring" in data:
+                evt["recurring"] = data["recurring"].strip().lower()
+            if "broadcast_msg" in data:
+                evt["broadcast_msg"] = data["broadcast_msg"].strip()
+            if "commands" in data:
+                evt["commands"] = data["commands"].strip()
+            if "target_player" in data:
+                evt["target_player"] = data["target_player"].strip()
+            if "status" in data:
+                evt["status"] = data["status"].strip().lower()
+            save_events(events)
+            return jsonify({"success": True, "message": f"Event '{evt['title']}' updated successfully!"})
+
+    return jsonify({"success": False, "message": "Event not found."}), 404
+
+@app.route("/api/events/delete", methods=["POST"])
+@login_required
+def api_delete_event():
+    if not is_admin_for_events():
+        return jsonify({"success": False, "message": "Permission denied: Only administrators can configure events."}), 403
+
+    data = request.get_json() or {}
+    evt_id = data.get("id", "").strip()
+    if not evt_id:
+        return jsonify({"success": False, "message": "Event ID is required."}), 400
+
+    events = load_events()
+    new_events = [e for e in events if e.get("id") != evt_id]
+    if len(new_events) == len(events):
+        return jsonify({"success": False, "message": "Event not found."}), 404
+
+    save_events(new_events)
+    return jsonify({"success": True, "message": "Event deleted successfully!"})
+
+@app.route("/api/events/trigger", methods=["POST"])
+@login_required
+def api_trigger_event():
+    if not is_admin_for_events():
+        return jsonify({"success": False, "message": "Permission denied: Only administrators can configure events."}), 403
+
+    data = request.get_json() or {}
+    evt_id = data.get("id", "").strip()
+    events = load_events()
+    for evt in events:
+        if evt.get("id") == evt_id:
+            success, msg = execute_event(evt, trigger_source="Manual Admin")
+            save_events(events)
+            return jsonify({"success": success, "message": msg})
+
+    return jsonify({"success": False, "message": "Event not found."}), 404
+
+@app.route("/api/software/check-update", methods=["GET"])
+@login_required
+def api_software_check_update():
+    meta_path = os.path.join(SERVER_DIR, "installed_software.json")
+    cur_sw = "Purpur"
+    cur_ver = "1.21.11"
+    cur_build = "Build #2568"
+
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path) as f:
+                d = json.load(f)
+                cur_sw = d.get("software", cur_sw)
+                cur_ver = d.get("version", cur_ver)
+                cur_build = d.get("build", cur_build)
+        except Exception:
+            pass
+
+    latest_ver = cur_ver
+    try:
+        sw_low = cur_sw.lower().strip()
+        if sw_low == "purpur":
+            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": "FiestaPanel/2.1"})
+            with urllib.request.urlopen(req, timeout=3) as r:
+                p_data = json.loads(r.read())
+                v_list = p_data.get("versions", [])
+                if v_list:
+                    latest_ver = v_list[-1]
+        elif sw_low == "paper":
+            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": "FiestaPanel/2.1"})
+            with urllib.request.urlopen(req, timeout=3) as r:
+                p_data = json.loads(r.read())
+                v_dict = p_data.get("versions", {})
+                for major in ["26.3", "26.2", "26.1", "1.21"]:
+                    if major in v_dict and v_dict[major]:
+                        latest_ver = v_dict[major][-1]
+                        break
+    except Exception:
+        pass
+
+    has_update = (latest_ver != cur_ver)
+    return jsonify({
+        "success": True,
+        "has_update": has_update,
+        "current_software": cur_sw,
+        "current_version": cur_ver,
+        "current_build": cur_build,
+        "latest_version": latest_ver
+    })
+
 # ── Plugins Management ───────────────────────────────────────────────────────
 @app.route("/api/plugins")
 @login_required
