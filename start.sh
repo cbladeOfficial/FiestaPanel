@@ -38,6 +38,8 @@ if [ ! -f "$SCRIPT_DIR/config.json" ]; then
     cp "$SCRIPT_DIR/config.example.json" "$SCRIPT_DIR/config.json"
 fi
 
+"$PY_BIN" "$SCRIPT_DIR/setup_admin.py" || exit 1
+
 mkdir -p "$SCRIPT_DIR/minecraft_server"
 
 echo -e "${COLOR_GREEN}Launching FiestaPanel on http://localhost:8080${COLOR_RESET}"

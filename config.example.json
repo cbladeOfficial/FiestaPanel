@@ -1,7 +1,6 @@
 {
   "_comment": "FiestaPanel - Modern & Retro Minecraft Management Suite Configuration",
   "admin_user": "admin",
-  "admin_pass": "ChangeThisPassword123!",
   "server_dir": "/path/to/minecraft/server",
   "service_name": "minecraft",
   "screen_session": "minecraft",

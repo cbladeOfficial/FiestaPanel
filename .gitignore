@@ -6,3 +6,5 @@ venv/
 .env
 static/*.tar.gz
 static/*.zip
+
+config.json

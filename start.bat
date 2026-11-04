@@ -58,6 +58,12 @@ if not exist "config.json" (
     copy config.example.json config.json >nul
 )
 
+venv\Scripts\python.exe setup_admin.py
+if errorlevel 1 (
+    echo [ERROR] Owner setup failed.
+    exit /b 1
+)
+
 if not exist "minecraft_server" (
     mkdir "minecraft_server" 2>nul
 )

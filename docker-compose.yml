@@ -16,7 +16,7 @@ services:
       - FIESTA_SERVER_DIR=/server
       - FIESTA_DATA_DIR=/app/data
       - FIESTA_ADMIN_USER=admin
-      - FIESTA_ADMIN_PASS=FiestaSMP@2026
+      - FIESTA_ADMIN_PASS=${FIESTA_ADMIN_PASS:-}
     volumes:
       - ./minecraft_server:/server
       - ./data:/app/data

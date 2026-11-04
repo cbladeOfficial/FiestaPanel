@@ -1,5 +1,5 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal DisableDelayedExpansion
 
 title FiestaPanel - Windows Installer
 echo ==============================================================================
@@ -36,50 +36,25 @@ set /p MC_PATH="Enter Minecraft Server directory [.\minecraft_server]: "
 if "%MC_PATH%"=="" set MC_PATH=.\minecraft_server
 if not exist "%MC_PATH%" mkdir "%MC_PATH%"
 
-REM 4. Admin password
-set /p ADMIN_PASS="Enter Admin password (leave blank for default 'FiestaAdmin2026'): "
-if "%ADMIN_PASS%"=="" set ADMIN_PASS=FiestaAdmin2026
-
-REM 5. Virtual environment setup
+REM 4. Virtual environment and dependencies
 echo.
 echo [1/4] Setting up Python virtual environment...
-if not exist "venv\Scripts\python.exe" (
-    %PY_CMD% -m venv venv
-)
+if not exist "venv\Scripts\python.exe" %PY_CMD% -m venv venv
+if errorlevel 1 exit /b 1
 
 echo [2/4] Installing Python requirements...
 venv\Scripts\pip.exe install -r requirements.txt -q
+if errorlevel 1 exit /b 1
 
-echo [3/4] Writing config.json and users.json...
-venv\Scripts\python.exe -c "
-import json, hashlib, time, os
-
-cfg = {
-    'admin_user': 'admin',
-    'admin_pass': '%ADMIN_PASS%',
-    'server_dir': os.path.abspath(r'%MC_PATH%'),
-    'service_name': '',
-    'screen_session': '',
-    'host': '0.0.0.0',
-    'port': int('%PORT%')
-}
-with open('config.json', 'w') as f:
-    json.dump(cfg, f, indent=2)
-
-p_hash = hashlib.sha256('%ADMIN_PASS%'.encode('utf-8')).hexdigest()
-users = {
-    'admin': {
-        'username': 'admin',
-        'password_hash': p_hash,
-        'role': 'owner',
-        'permissions': ['all'],
-        'status': 'active',
-        'created_at': time.strftime('%%Y-%%m-%%d %%H:%%M:%%S')
-    }
-}
-with open('users.json', 'w') as f:
-    json.dump(users, f, indent=2)
-"
+echo [3/4] Setting up the owner account and configuration...
+venv\Scripts\python.exe setup_admin.py
+if errorlevel 1 exit /b 1
+if not exist "config.json" (
+    set "FIESTA_SETUP_MC_PATH=%MC_PATH%"
+    set "FIESTA_SETUP_PORT=%PORT%"
+    venv\Scripts\python.exe -c "import os,json; cfg={'admin_user':'admin','server_dir':os.path.abspath(os.environ['FIESTA_SETUP_MC_PATH']),'service_name':'','screen_session':'','host':'0.0.0.0','port':int(os.environ['FIESTA_SETUP_PORT'])}; f=open('config.json','x',encoding='utf-8'); json.dump(cfg,f,indent=2); f.close()"
+    if errorlevel 1 exit /b 1
+)
 
 echo [4/4] Creating desktop / quick launcher...
 echo @echo off > "%~dp0run_fiestapanel.bat"
@@ -93,7 +68,7 @@ echo             🎉 FIESTAPANEL INSTALLED SUCCESSFULLY ON WINDOWS!
 echo ==============================================================================
 echo Web Interface URL:  http://localhost:%PORT%
 echo Administrator User: admin
-echo Admin Password:     %ADMIN_PASS%
+echo Admin Password:     Use the password you selected during setup.
 echo Minecraft Folder:   %MC_PATH%
 echo.
 echo You can start FiestaPanel anytime by double-clicking: start.bat

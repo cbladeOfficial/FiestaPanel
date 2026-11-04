@@ -418,24 +418,7 @@ def load_users():
         except Exception:
             target = os.path.join(BASE_DIR, "users.json")
     if not os.path.exists(target):
-        if not ADMIN_PASS:
-            return {}
-        default_users = {
-            ADMIN_USER: {
-                "username": ADMIN_USER,
-                "password_hash": hash_password(ADMIN_PASS),
-                "role": "owner",
-                "permissions": ["all"],
-                "created_at": "2026-11-02 12:00:00",
-                "status": "active"
-            }
-        }
-        try:
-            with open(USERS_FILE, "w", encoding="utf-8") as f:
-                json.dump(default_users, f, indent=2)
-        except Exception:
-            pass
-        return default_users
+        return {}
     try:
         with open(target, "r", encoding="utf-8") as f:
             return json.load(f)

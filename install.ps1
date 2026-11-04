@@ -146,7 +146,8 @@ if (-not (Test-Path $VenvPy)) {
 # 5. Install Dependencies
 Write-Host "[3/4] Installing / updating dependencies..." -ForegroundColor Cyan
 & $VenvPip install --upgrade pip -q
-& $VenvPip install flask requests psutil Pillow nbtlib -q
+& $VenvPip install -r (Join-Path $InstallDir "requirements.txt") -q
+if ($LASTEXITCODE -ne 0) { throw "Failed to install Python dependencies." }
 
 # 6. Initialize Config & Admin User
 Write-Host "[4/4] Validating configuration & storage paths..." -ForegroundColor Cyan
@@ -158,39 +159,21 @@ if (-not (Test-Path $DefaultMC)) {
     New-Item -ItemType Directory -Path $DefaultMC -Force | Out-Null
 }
 
+# Create an owner only when no user store exists; existing accounts are preserved.
+& $VenvPy (Join-Path $InstallDir "setup_admin.py") --data-dir $InstallDir
+if ($LASTEXITCODE -ne 0) { throw "Owner account setup failed." }
 if (-not (Test-Path $ConfigFile)) {
-    $AdminPass = "FiestaAdmin2026"
-    & $VenvPy -c @"
-import json, hashlib, time, os
-
-cfg = {
-    'admin_user': 'admin',
-    'admin_pass': '$AdminPass',
-    'server_dir': r'$DefaultMC',
-    'service_name': '',
-    'screen_session': '',
-    'host': '0.0.0.0',
-    'port': 8080
-}
-with open(r'$ConfigFile', 'w') as f:
-    json.dump(cfg, f, indent=2)
-
-p_hash = hashlib.sha256(b'$AdminPass').hexdigest()
-users = {
-    'admin': {
-        'username': 'admin',
-        'password_hash': p_hash,
-        'role': 'owner',
-        'permissions': ['all'],
-        'status': 'active',
-        'created_at': time.strftime('%Y-%m-%d %H:%M:%S')
+    $Config = @{
+        admin_user = "admin"
+        server_dir = $DefaultMC
+        service_name = ""
+        screen_session = ""
+        host = "0.0.0.0"
+        port = 8080
     }
+    $Config | ConvertTo-Json | Set-Content -Path $ConfigFile -Encoding UTF8
 }
-with open(r'$UsersFile', 'w') as f:
-    json.dump(users, f, indent=2)
-"@
-    Write-Host "[✓] Initial config and owner user created." -ForegroundColor Green
-}
+Write-Host "[✓] Configuration and owner account are ready." -ForegroundColor Green
 
 # 7. Create Windows Desktop Shortcut (Optional convenience)
 try {
@@ -219,7 +202,7 @@ Write-Host ""
 Write-Host "  Location:   $InstallDir" -ForegroundColor White
 Write-Host "  Portal URL: http://localhost:8080" -ForegroundColor Yellow
 Write-Host "  Admin User: admin" -ForegroundColor Yellow
-Write-Host "  Admin Pass: FiestaAdmin2026" -ForegroundColor Yellow
+Write-Host "  Admin Pass: Use the password you created during setup." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Quick Launch:" -ForegroundColor Cyan
 Write-Host "    cd `"$InstallDir`"" -ForegroundColor White

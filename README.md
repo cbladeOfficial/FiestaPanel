@@ -20,6 +20,8 @@
 
 ## ⚡ Quick Start
 
+On first installation, enter and confirm an admin password of at least **12 characters** when prompted. The input is hidden, the owner username is `admin`, and there is no preset password. All installers and standalone launchers use the same setup: a scrypt hash is stored in `users.json`, and existing accounts are preserved. The owner can change passwords under **Security → Sub-Users & Access**. For unattended setup, set `FIESTA_ADMIN_PASS` instead of using an interactive prompt.
+
 ### 🐧 Linux & 🍎 macOS (1-Line Install)
 ```bash
 curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash
@@ -42,15 +44,22 @@ Deploy FiestaPanel and your Minecraft server in an isolated container with Java 
 # Clone and launch turnkey container
 git clone https://github.com/open-fiestasmp/FiestaPanel.git
 cd FiestaPanel
+read -rs -p "Create admin password (12+ characters): " FIESTA_ADMIN_PASS; echo
+export FIESTA_ADMIN_PASS
 docker compose up -d
+unset FIESTA_ADMIN_PASS
 ```
 *(Or 1-line Docker run)*:
 ```bash
+read -rs -p "Create admin password (12+ characters): " FIESTA_ADMIN_PASS; echo
+export FIESTA_ADMIN_PASS
 docker run -d --name fiestapanel --restart unless-stopped \
+  -e FIESTA_ADMIN_PASS \
   -p 8080:8080 -p 25565:25565 -p 19132:19132/udp \
   -v $(pwd)/minecraft_server:/server \
   -v $(pwd)/data:/app/data \
   ghcr.io/open-fiestasmp/fiestapanel:latest
+unset FIESTA_ADMIN_PASS
 ```
 Open **`http://localhost:8080`** in your browser. Complete guide & options in [**INSTALL.md**](INSTALL.md#option-4-docker--docker-compose-containerized).
 
@@ -68,7 +77,7 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 | 🏗️ [**Architecture & Design**](docs/ARCHITECTURE.md) | Deep-dive into process model, daemon control, texture atlas, and data flow |
 | 🌟 [**Feature Tour**](docs/FEATURES.md) | Exhaustive guide covering console, inventory inspector, Modrinth, world controls, etc. |
 | 📡 [**REST API Reference**](docs/API.md) | Full JSON API specification for headless integrations and automation |
-| 🛡️ [**Security & Best Practices**](docs/SECURITY.md) | PBKDF2 hashing, path traversal defenses, role-based access control, firewall setup |
+| 🛡️ [**Security & Best Practices**](docs/SECURITY.md) | scrypt hashing, path traversal defenses, role-based access control, firewall setup |
 
 ---
 
@@ -82,9 +91,31 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 | 🔌 **Game Addons (Plugins & Mods)** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with 1-click Modrinth directory installation. |
 | 📁 **Jailed File Manager** | In-browser code & config editor, directory navigation, and drag-and-drop file uploads with traversal protection. |
 | 🌍 **World & Weather Controls** | Day/Noon/Night cycles, weather clear/rain/thunder toggles, and safe world flushing (`/save-all`). |
-| 👥 **Sub-Users & Access Control** | Multi-user roles (Admin, Operator, Viewer) with salted PBKDF2 password hashing. |
+| 👥 **Sub-Users & Access Control** | Multi-user roles and scrypt password hashing. |
 | 🎨 **Windows 7 Aero & Retro Themes** | Authentic 7.css specular glass reflection, TP-Link legacy, Windows 98, Dark Mode, Matrix, and Cyberpunk. |
 | 🏷️ **Complete Brand Customization** | Header icon picker (12 themed presets + local file upload + custom URL/SVG), custom title, hardware model number, and tagline. |
+
+---
+
+## 🔑 Forgotten passwords and account recovery
+
+### Owner (`admin`) password
+
+If you have forgotten the owner password, run `reset-admin` on the machine hosting FiestaPanel. The command generates and displays a new password for the `admin` account; keep that output private. It preserves other accounts when the existing `users.json` is valid. The command requires write access to the panel's data directory.
+
+- **Linux/macOS:** run `panelctl reset-admin`, or `./panelctl reset-admin` from the FiestaPanel directory. Use `sudo` if the data files require it.
+- **Windows:** open PowerShell in the FiestaPanel directory and run `.\panelctl.bat reset-admin` (in Command Prompt, run `panelctl.bat reset-admin`).
+- **Docker:** run `docker exec -it fiestapanel panelctl reset-admin`. Replace `fiestapanel` with your container name if different.
+
+The command resets or creates the account named `admin`, even if the installation uses a different owner username. It operates on the data directory selected by `FIESTA_DATA_DIR` or `GATEWAY_DATA_DIR`; make sure it is the directory used by your running panel. Back up `users.json` first if you are unsure of its state: the current reset command can replace an unreadable or invalid user file, losing other accounts. For Docker, back up the persistent data volume.
+
+Sign in as `admin` with the generated password, then choose a new password under **Security → Sub-Users & Access → Change Password**. Enter your current owner password and a new password of at least 12 characters. Other sessions for that account will be signed out.
+
+### Sub-user password
+
+Sub-users cannot recover or reset their own passwords. Ask the panel owner to sign in, open **Security → Sub-Users & Access**, and choose **Change Password** next to the affected account. The owner confirms their own current password and enters a new password of at least 12 characters. The sub-user's existing sessions are signed out, and they can then sign in using the new password. Share it through a secure channel.
+
+If the owner has also forgotten their password, recover the owner account first using the steps above, then reset the sub-user's password.
 
 ---
 
@@ -96,7 +127,7 @@ FiestaPanel installs a system management CLI accessible anywhere:
 panelctl status        # Check daemon health and memory usage
 panelctl restart       # Gracefully restart FiestaPanel
 panelctl logs          # Tail live systemd journal logs
-panelctl reset-admin   # Interactively reset or generate admin password
+panelctl reset-admin   # Generate a new admin password
 panelctl set-port 8080 # Update HTTP listener port
 panelctl set-mc-path   # Switch managed Minecraft server path
 panelctl info          # Print configuration overview

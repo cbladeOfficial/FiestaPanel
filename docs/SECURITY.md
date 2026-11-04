@@ -7,7 +7,7 @@ FiestaPanel is built with security, isolation, and defense-in-depth principles i
 ## 🔒 Built-in Security Controls
 
 ### 1. Password Hashing & Key Derivation
-- All user passwords stored in `users.json` are hashed using **PBKDF2 with SHA-256** using unique cryptographic salts generated via `werkzeug.security.generate_password_hash`.
+- All user passwords stored in `users.json` are hashed using **scrypt** using unique cryptographic salts generated via `werkzeug.security.generate_password_hash`.
 - FiestaPanel never stores plain-text passwords on disk.
 
 ### 2. Path Traversal & File Jail
@@ -59,5 +59,5 @@ sudo ufw enable
 ```
 
 ### 4. Admin Password Hygiene
-- Always change the default admin password immediately upon first installation.
+- Choose a unique admin password of at least 12 characters during first installation.
 - Use `panelctl reset-admin` to rotate credentials securely.

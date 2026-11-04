@@ -32,12 +32,14 @@ curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/inst
 *(Or via short mirror: `curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash`)*
 
 ### Unattended / Custom Flags
-Pass environment variables to customize your setup:
+Pass arguments to customize your setup:
 
 ```bash
 # Custom HTTP Port & Minecraft Server Directory
-PORT=9000 MC_PATH=/opt/minecraft curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash -s -- --port 9000 --dir /opt/minecraft
 ```
+
+For unattended installation, provide `FIESTA_ADMIN_PASS` (at least 12 characters) to the installer process and pass `--unattended`; no default is used. For example, when using `sudo`, preserve that variable explicitly according to your sudo policy. The optional `--admin-pass` argument also works, but can expose the password in shell history or process listings.
 
 ### What the Automated Installer Does:
 1. Detects OS package manager (`apt-get`, `dnf`, `pacman`, `brew`).
@@ -46,14 +48,14 @@ PORT=9000 MC_PATH=/opt/minecraft curl -sSL https://raw.githubusercontent.com/ope
 4. Sets up an isolated Python virtual environment (`venv`) and installs dependencies.
 5. Installs the `panelctl` CLI tool into `/usr/local/bin/panelctl` (or `~/.local/bin/panelctl`).
 6. Configures and registers a `systemd` service (`fiestapanel.service`) on Linux.
-7. Auto-generates a secure administrator credential if none exists and prints login details.
+7. Prompts for and confirms a password of at least 12 characters for a new owner account; existing accounts are preserved.
 8. Starts the service immediately.
 
 ---
 
 ## 🪟 Option 2: Windows Installation (10 / 11 / Server)
 
-FiestaPanel natively supports Windows without requiring WSL or Docker!
+FiestaPanel natively supports Windows without requiring WSL or Docker! First setup asks for and confirms an owner password of at least 12 characters; it stores a scrypt hash and preserves existing accounts on subsequent runs.
 
 ### Method A: 1-Line Automated Install (Recommended)
 
@@ -78,7 +80,7 @@ irm https://fiesta.debarkak.xyz/install.ps1 | iex
 2. Downloads and extracts the latest FiestaPanel application package into `C:\FiestaPanel` (or `$env:FIESTA_DIR`).
 3. Creates a dedicated Python virtual environment (`venv`).
 4. Installs required Python dependencies (`flask`, `requests`, `psutil`, `Pillow`, `nbtlib`).
-5. Generates initial `config.json` and default Minecraft server storage folder.
+5. Prompts for and confirms the owner password on first setup, then creates `config.json` and the default server storage folder.
 6. Creates a convenient desktop shortcut to launch anytime with 1-click.
 
 ---
@@ -145,9 +147,12 @@ FiestaPanel includes first-class Docker support with a pre-configured Java 21 LT
    cd FiestaPanel
    ```
 
-2. **Launch Container**:
+2. **Choose an admin password and launch** (first run):
    ```bash
+   read -rs -p "Create admin password (12+ characters): " FIESTA_ADMIN_PASS; echo
+   export FIESTA_ADMIN_PASS
    docker compose up -d
+   unset FIESTA_ADMIN_PASS
    ```
 
 3. **Check status**:
@@ -165,6 +170,8 @@ FiestaPanel includes first-class Docker support with a pre-configured Java 21 LT
 Run FiestaPanel directly with automated storage mounts:
 
 ```bash
+read -rs -p "Create admin password (12+ characters): " FIESTA_ADMIN_PASS; echo
+export FIESTA_ADMIN_PASS
 docker run -d \
   --name fiestapanel \
   --restart unless-stopped \
@@ -174,8 +181,9 @@ docker run -d \
   -v $(pwd)/minecraft_server:/server \
   -v $(pwd)/data:/app/data \
   -e FIESTA_ADMIN_USER=admin \
-  -e FIESTA_ADMIN_PASS=FiestaSMP@2026 \
+  -e FIESTA_ADMIN_PASS \
   ghcr.io/open-fiestasmp/fiestapanel:latest
+unset FIESTA_ADMIN_PASS
 ```
 
 ---
@@ -186,7 +194,10 @@ docker run -d \
 git clone https://github.com/open-fiestasmp/FiestaPanel.git
 cd FiestaPanel
 docker build -t fiestapanel:latest .
-docker run -d --name fiestapanel -p 8080:8080 -p 25565:25565 -v $(pwd)/minecraft_server:/server -v $(pwd)/data:/app/data fiestapanel:latest
+read -rs -p "Create admin password (12+ characters): " FIESTA_ADMIN_PASS; echo
+export FIESTA_ADMIN_PASS
+docker run -d --name fiestapanel -e FIESTA_ADMIN_PASS -p 8080:8080 -p 25565:25565 -v $(pwd)/minecraft_server:/server -v $(pwd)/data:/app/data fiestapanel:latest
+unset FIESTA_ADMIN_PASS
 ```
 
 ---
@@ -207,7 +218,9 @@ docker run -d --name fiestapanel -p 8080:8080 -p 25565:25565 -v $(pwd)/minecraft
 | `FIESTA_SERVER_DIR` | `/server` | Internal container path to Minecraft server root |
 | `FIESTA_DATA_DIR` | `/app/data` | Internal container path to panel data store |
 | `FIESTA_ADMIN_USER` | `admin` | Initial admin username if database not created |
-| `FIESTA_ADMIN_PASS` | `FiestaSMP@2026` | Initial admin password if database not created |
+| `FIESTA_ADMIN_PASS` | None | Required on first non-interactive setup; at least 12 characters |
+
+Docker environment variables are visible to users with access to container configuration. Restrict Docker access. Existing accounts are preserved on restart; changing the environment variable does not reset their passwords. For interactive installations without a container, run `python setup_admin.py` if initializing an owner manually.
 
 ### 🧰 Running `panelctl` Inside Container
 

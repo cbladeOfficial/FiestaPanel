@@ -104,7 +104,7 @@ elif [ "$UNATTENDED" = true ]; then
     FINAL_MC_DIR="$DEFAULT_MC"
 else
     echo -e "${COLOR_YELLOW}Enter the absolute path to your Minecraft server directory:${COLOR_RESET}"
-    read -rp "Path [$DEFAULT_MC]: " USER_MC_DIR
+    read -rp "Path [$DEFAULT_MC]: " USER_MC_DIR </dev/tty
     FINAL_MC_DIR="${USER_MC_DIR:-$DEFAULT_MC}"
 fi
 
@@ -118,25 +118,14 @@ elif [ "$UNATTENDED" = true ]; then
     FINAL_PORT=$DEFAULT_PORT
 else
     echo -e "${COLOR_YELLOW}Enter the Web Panel HTTP port:${COLOR_RESET}"
-    read -rp "Port [$DEFAULT_PORT]: " USER_PORT
+    read -rp "Port [$DEFAULT_PORT]: " USER_PORT </dev/tty
     FINAL_PORT="${USER_PORT:-$DEFAULT_PORT}"
 fi
 
-# 4. Configure Admin Password
+# 4. Owner credentials are initialized after dependencies are installed.
+# --admin-pass remains available for automation; environment input avoids a shell argument.
 if [ -n "$ADMIN_PASS_ARG" ]; then
-    FINAL_PASS="$ADMIN_PASS_ARG"
-elif [ "$UNATTENDED" = true ]; then
-    FINAL_PASS="FiestaAdmin@$(openssl rand -hex 4 2>/dev/null || echo '2026')"
-else
-    echo -e "${COLOR_YELLOW}Enter administrator password (leave blank to auto-generate secure password):${COLOR_RESET}"
-    read -rsp "Password: " USER_PASS
-    echo ""
-    if [ -z "$USER_PASS" ]; then
-        FINAL_PASS="FiestaAdmin@$(openssl rand -hex 4 2>/dev/null || echo '2026')"
-        echo -e "${COLOR_CYAN}Auto-generated secure admin password: $FINAL_PASS${COLOR_RESET}"
-    else
-        FINAL_PASS="$USER_PASS"
-    fi
+    export FIESTA_ADMIN_PASS="$ADMIN_PASS_ARG"
 fi
 
 # 5. Install System Dependencies
@@ -169,6 +158,7 @@ if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/branding.json" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/requirements.txt" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/addon_manager.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/setup_admin.py" "$TARGET_INSTALL_DIR/"
     cp -r "$SOURCE_DIR/addons" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
@@ -191,35 +181,24 @@ fi
 echo -e "${COLOR_CYAN}[3/6] Setting up Python virtual environment and dependencies...${COLOR_RESET}"
 python3 -m venv "$TARGET_INSTALL_DIR/venv"
 "$TARGET_INSTALL_DIR/venv/bin/pip" install --upgrade pip -q || true
-"$TARGET_INSTALL_DIR/venv/bin/pip" install flask requests psutil Pillow nbtlib -q
+"$TARGET_INSTALL_DIR/venv/bin/pip" install -r "$TARGET_INSTALL_DIR/requirements.txt" -q
 
-# 8. Create Configuration Files
-echo -e "${COLOR_CYAN}[4/6] Generating config.json and credentials...${COLOR_RESET}"
-cat > "$TARGET_INSTALL_DIR/config.json" << EOF
-{
-  "admin_user": "admin",
-  "admin_pass": "$FINAL_PASS",
-  "server_dir": "$FINAL_MC_DIR",
-  "service_name": "fiestapanel",
-  "screen_session": "fiesta",
-  "host": "0.0.0.0",
-  "port": $FINAL_PORT
-}
-EOF
-
-PASS_HASH=$(python3 -c "import hashlib; print(hashlib.sha256('$FINAL_PASS'.encode('utf-8')).hexdigest())")
-cat > "$TARGET_INSTALL_DIR/users.json" << EOF
-{
-  "admin": {
-    "username": "admin",
-    "password_hash": "$PASS_HASH",
-    "role": "owner",
-    "permissions": ["all"],
-    "created_at": "$(date '+%Y-%m-%d %H:%M:%S')",
-    "status": "active"
-  }
-}
-EOF
+# 8. Initialize credentials and configuration without overwriting an existing installation.
+echo -e "${COLOR_CYAN}[4/6] Checking credentials and config.json...${COLOR_RESET}"
+SETUP_FLAGS=()
+if [ "$UNATTENDED" = true ]; then SETUP_FLAGS+=(--non-interactive); fi
+"$TARGET_INSTALL_DIR/venv/bin/python3" "$TARGET_INSTALL_DIR/setup_admin.py" --data-dir "$TARGET_INSTALL_DIR" "${SETUP_FLAGS[@]}"
+if [ ! -f "$TARGET_INSTALL_DIR/config.json" ]; then
+    FIESTA_SETUP_MC_DIR="$FINAL_MC_DIR" FIESTA_SETUP_PORT="$FINAL_PORT" \
+      "$TARGET_INSTALL_DIR/venv/bin/python3" - "$TARGET_INSTALL_DIR/config.json" <<'PYCONFIG'
+import json, os, sys
+config = {'admin_user': 'admin', 'server_dir': os.environ['FIESTA_SETUP_MC_DIR'],
+          'service_name': 'fiestapanel', 'screen_session': 'fiesta',
+          'host': '0.0.0.0', 'port': int(os.environ['FIESTA_SETUP_PORT'])}
+with open(sys.argv[1], 'x', encoding='utf-8') as f:
+    json.dump(config, f, indent=2)
+PYCONFIG
+fi
 
 # Ensure default branding
 if [ ! -f "$TARGET_INSTALL_DIR/branding.json" ]; then
@@ -296,7 +275,7 @@ echo -e "${COLOR_BOLD}Access Credentials & URLs:${COLOR_RESET}"
 echo -e "  • Web Portal URL:    ${COLOR_CYAN}http://${PUBLIC_IP}:${FINAL_PORT}/${COLOR_RESET}"
 echo -e "  • Localhost URL:     ${COLOR_CYAN}http://127.0.0.1:${FINAL_PORT}/${COLOR_RESET}"
 echo -e "  • Username:          ${COLOR_BOLD}admin${COLOR_RESET}"
-echo -e "  • Password:          ${COLOR_YELLOW}${FINAL_PASS}${COLOR_RESET}"
+echo -e "  • Password:          ${COLOR_YELLOW}Your chosen password (existing accounts are preserved)${COLOR_RESET}"
 echo -e "  • Managed Server:    ${COLOR_CYAN}${FINAL_MC_DIR}${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_BOLD}CLI Management Commands (panelctl):${COLOR_RESET}"

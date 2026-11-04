@@ -16,3 +16,7 @@ static/*.tar.gz
 static/*.zip
 .DS_Store
 Thumbs.db
+
+# Local credentials and configuration must not enter image layers
+users.json
+config.json
