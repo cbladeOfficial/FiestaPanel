@@ -5203,6 +5203,123 @@ def on_action(ctx, action_name, payload):
     </div>
   </div>
 
+  <!-- ── MODERATION EVENT DIALOG (BAN / IP-BAN / KICK) ───── -->
+  <div id="tp-moderation-dialog" class="inv-modal-overlay" style="display:none; z-index: 10060;" onclick="if(event.target===this) closeModerationDialog();">
+    <div class="inv-modal-box" style="width: 520px; max-width: 95vw;">
+      <div class="section-title-bar" style="margin-bottom: 0;">
+        <span style="display: flex; align-items: center; gap: 7px;">
+          <i id="mod-dialog-icon" class="fa-solid fa-gavel" style="color: #ef4444;"></i>
+          <span id="mod-dialog-title">Moderation Action Enforced</span>
+        </span>
+        <button class="btn-classic" type="button" style="height: 19px; line-height: 15px; font-weight: bold;" onclick="closeModerationDialog()">[ X ]</button>
+      </div>
+      <div style="padding: 16px; background: var(--table-bg); color: var(--text-color);">
+        <!-- Top banner with Action Badge & Target -->
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--table-td-border);">
+          <div style="width: 52px; height: 52px; background: #222; border: 2px inset #555; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0;">
+            <img id="mod-dialog-avatar" src="" alt="Avatar" style="width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated;" onerror="this.src='/static/mcassets/empty_armor_head.png'">
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span id="mod-dialog-badge" class="badge-status offline" style="font-size: 11px; padding: 2px 7px; font-weight: bold; text-transform: uppercase;">BANNED</span>
+              <span id="mod-dialog-time" style="font-size: 10px; color: #888; font-family: monospace;">Just now</span>
+            </div>
+            <div id="mod-dialog-target" style="font-size: 16px; font-weight: bold; color: var(--primary-accent, #006622); margin-top: 3px; word-break: break-all;">PlayerName</div>
+          </div>
+        </div>
+
+        <!-- Detail table -->
+        <table class="classic-table" style="width: 100%; margin-bottom: 14px; font-size: 11.5px;">
+          <tbody>
+            <tr>
+              <td style="width: 25%; font-weight: bold; background: rgba(0,0,0,0.03);">Action:</td>
+              <td id="mod-dialog-action-text" style="font-weight: bold;">Player Ban</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold; background: rgba(0,0,0,0.03);">Reason:</td>
+              <td id="mod-dialog-reason" style="color: #cc0000; word-break: break-word;">Banned by administrator</td>
+            </tr>
+            <tr>
+              <td style="font-weight: bold; background: rgba(0,0,0,0.03);">Source / By:</td>
+              <td id="mod-dialog-source">Admin / Server</td>
+            </tr>
+            <tr id="mod-dialog-ip-row" style="display: none;">
+              <td style="font-weight: bold; background: rgba(0,0,0,0.03);">IP Address:</td>
+              <td id="mod-dialog-ip" style="font-family: monospace;">--</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Action buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn-classic" style="height: 26px; padding: 0 10px;" onclick="copyModerationDetails()">
+            <i class="fa-regular fa-copy" style="margin-right: 4px;"></i> [ Copy Details ]
+          </button>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" id="mod-dialog-pardon-btn" class="btn-satin-green" style="height: 26px; padding: 0 12px; display: none;" onclick="pardonFromModerationDialog()">
+              [ Pardon (Unban) ]
+            </button>
+            <button type="button" class="btn-classic" style="height: 26px; padding: 0 14px; font-weight: bold;" onclick="closeModerationDialog()">
+              [ Acknowledge ]
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SERVER LOG ERROR DIALOG ──────────────────────────── -->
+  <div id="tp-error-dialog" class="inv-modal-overlay" style="display:none; z-index: 10070;" onclick="if(event.target===this) closeErrorDialog();">
+    <div class="inv-modal-box" style="width: 680px; max-width: 95vw;">
+      <div class="section-title-bar" style="margin-bottom: 0; background: #b91c1c;">
+        <span style="display: flex; align-items: center; gap: 7px; color: #ffffff;">
+          <i class="fa-solid fa-triangle-exclamation" style="color: #fef08a;"></i>
+          <span>Server Log Error Alert</span>
+          <span id="err-dialog-count-badge" style="background: #7f1d1d; color: #ffffff; font-size: 9px; padding: 1px 6px; border-radius: 3px; font-weight: bold; margin-left: 6px; display: none;">1</span>
+        </span>
+        <button class="btn-classic" type="button" style="height: 19px; line-height: 15px; font-weight: bold; background: #eee;" onclick="closeErrorDialog()">[ X ]</button>
+      </div>
+      <div style="padding: 16px; background: var(--table-bg); color: var(--text-color);">
+        <!-- Summary Warning Banner -->
+        <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border: 1px solid rgba(239,68,68,0.25); padding: 10px 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.45;">
+          <div style="font-weight: bold; color: #dc2626; display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>Error / Exception Detected in Server Engine Log</span>
+          </div>
+          <div id="err-dialog-summary" style="font-family: monospace; font-size: 11px; word-break: break-all; color: var(--text-color);">
+            [Server thread/ERROR]: An unexpected exception occurred.
+          </div>
+        </div>
+
+        <!-- Full log snippet / trace -->
+        <div style="font-weight: bold; font-size: 11px; margin-bottom: 4px; text-transform: uppercase; color: #666; display: flex; justify-content: space-between; align-items: center;">
+          <span>Log Trace Extract</span>
+          <span id="err-dialog-timestamp" style="font-size: 10px; font-family: monospace; color: #888;">00:00:00</span>
+        </div>
+        <pre id="err-dialog-trace" style="background: #111827; color: #f87171; border: 1px solid #374151; padding: 10px; font-family: Consolas, monospace; font-size: 11px; line-height: 1.4; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin: 0 0 14px 0; border-radius: 2px;"></pre>
+
+        <!-- Controls: Silence checkbox & Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="err-dialog-mute-chk" onchange="toggleMuteErrors(this.checked)">
+            <span>Mute error popups for 5 minutes</span>
+          </label>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn-classic" style="height: 26px; padding: 0 10px;" onclick="copyErrorTrace()">
+              <i class="fa-regular fa-copy" style="margin-right: 4px;"></i> [ Copy Trace ]
+            </button>
+            <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 12px;" onclick="viewErrorInConsole()">
+              [ View in Console ]
+            </button>
+            <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px; font-weight: bold;" onclick="closeErrorDialog()">
+              [ Dismiss ]
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── TRUSTED DOMAINS MANAGEMENT MODAL ─────────────────── -->
   <div id="tp-trusted-domains-modal" class="inv-modal-overlay" style="display:none;" onclick="if(event.target===this) closeTrustedDomainsModal();">
     <div class="inv-modal-box" style="width: 580px; max-width: 95vw;">
@@ -6018,9 +6135,9 @@ def on_action(ctx, action_name, payload):
     }
 
     let lastRenderedConsoleLogKey = '';
+    let seenLogLinesSet = null;
 
     async function pollLogs(isAutoInterval = false) {
-      if (activeView !== 'diag-console') return;
       const fileSel = document.getElementById('console-log-file-select');
       const reqFile = fileSel ? fileSel.value : 'latest.log';
 
@@ -6029,13 +6146,21 @@ def on_action(ctx, action_name, payload):
       }
 
       try {
-        const q = document.getElementById('log-search-box')?.value || '';
-        const lvl = document.getElementById('log-level-select')?.value || 'ALL';
-        const lines = document.getElementById('console-lines-select')?.value || '100';
+        const q = (activeView === 'diag-console') ? (document.getElementById('log-search-box')?.value || '') : '';
+        const lvl = (activeView === 'diag-console') ? (document.getElementById('log-level-select')?.value || 'ALL') : 'ALL';
+        const lines = (activeView === 'diag-console') ? (document.getElementById('console-lines-select')?.value || '100') : '50';
 
         const res = await fetch(`/api/logs?file=${encodeURIComponent(reqFile)}&lines=${lines}&q=${encodeURIComponent(q)}&level=${lvl}`);
         if (!res.ok) return;
         const d = await res.json();
+
+        // Inspect logs for moderation actions and errors in real-time
+        if (d.logs && Array.isArray(d.logs) && reqFile === 'latest.log') {
+          inspectLogsForAlerts(d.logs);
+        }
+
+        if (activeView !== 'diag-console') return;
+
         const box = document.getElementById('tp-console-display');
         const autoScroll = document.getElementById('chk-auto-scroll')?.checked;
 
@@ -6061,6 +6186,294 @@ def on_action(ctx, action_name, payload):
           box.scrollTop = box.scrollHeight;
         }
       } catch (e) {}
+    }
+
+    // ── Real-time Moderation & Error Dialog Event Detection ──────
+    let currentModEvent = null;
+    let errorMutedUntil = 0;
+    let activeErrorCount = 0;
+
+    function parseLogEvent(line) {
+      if (!line || typeof line !== 'string') return null;
+
+      // Ignore player chat messages to prevent chat spoofing
+      if (/»|<[a-zA-Z0-9_]{2,16}>|\[Not Secure\]/i.test(line)) return null;
+
+      // 1. IP Ban
+      let m = line.match(/(?:Banned IP address|Banned IP)\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3}|[0-9a-fA-F:]{3,39})(?::\s*(.*))?/i);
+      if (m) {
+        let r = (m[2] || "Banned by administrator").replace(/[\]\.]+$/, "").trim();
+        return { type: "BAN_IP", target: m[1], reason: r, source: "Server Console" };
+      }
+
+      // 2. Disconnecting
+      m = line.match(/\]:\s*Disconnecting\s+([a-zA-Z0-9_]{2,16})(?:\s*\([^)]+\))?:\s*(.*)/i);
+      if (m) {
+        let p = m[1];
+        let r = (m[2] || "").replace(/[\]\.]+$/, "").trim();
+        if (/banned/i.test(r)) {
+          return { type: "BAN", target: p, reason: r, source: "Server Enforced" };
+        } else {
+          return { type: "KICK", target: p, reason: r || "Kicked by operator", source: "Server Enforced" };
+        }
+      }
+
+      // 3. Lost connection with ban or kick
+      m = line.match(/\]:\s*([a-zA-Z0-9_]{2,16})(?:\s*\([^)]+\))?\s+lost connection:\s*(.*)/i);
+      if (m) {
+        let p = m[1];
+        let r = (m[2] || "").replace(/[\]\.]+$/, "").trim();
+        if (/banned/i.test(r)) {
+          let reason = r.replace(/^[bB]anned(?:\s+for)?[:\s]*/, "").trim() || "Banned by administrator";
+          return { type: "BAN", target: p, reason, source: "Server Enforced" };
+        } else if (/kicked/i.test(r)) {
+          let reason = r.replace(/^[kK]icked(?:\s+for)?[:\s]*/, "").trim() || "Kicked by administrator";
+          return { type: "KICK", target: p, reason, source: "Server Enforced" };
+        }
+      }
+
+      // 4. Was kicked
+      m = line.match(/\]:\s*([a-zA-Z0-9_]{2,16})\s+was kicked(?::\s*|\s+due to\s*|\s+for\s*)(.*)/i);
+      if (m) {
+        let r = (m[2] || "Kicked by administrator").replace(/[\]\.]+$/, "").trim();
+        return { type: "KICK", target: m[1], reason: r, source: "Server Enforced" };
+      }
+
+      // 5. Explicit Ban commands
+      m = line.match(/(?:\]:\s*(?:\[[a-zA-Z0-9_]+:\s*)?Banned(?:\s+player)?)\s+([a-zA-Z0-9_]{2,16})(?::\s*(.*))?/i);
+      if (m) {
+        let r = (m[2] || "Banned by operator").replace(/[\]\.]+$/, "").trim();
+        return { type: "BAN", target: m[1], reason: r, source: "Operator / Command" };
+      }
+
+      // 6. Explicit Kick commands
+      m = line.match(/(?:\]:\s*(?:\[[a-zA-Z0-9_]+:\s*)?Kicked(?:\s+player)?)\s+([a-zA-Z0-9_]{2,16})(?::\s*(.*))?/i);
+      if (m) {
+        let r = (m[2] || "Kicked by operator").replace(/[\]\.]+$/, "").trim();
+        return { type: "KICK", target: m[1], reason: r, source: "Operator / Command" };
+      }
+
+      // 7. Server Error
+      if (/\/(?:ERROR|FATAL)\]/i.test(line) || /Exception in thread/i.test(line) || /^java\.[a-zA-Z0-9_.]*(?:Exception|Error):/i.test(line)) {
+        return { type: "ERROR", raw: line };
+      }
+
+      return null;
+    }
+
+    function inspectLogsForAlerts(logs) {
+      if (!logs || !Array.isArray(logs) || logs.length === 0) return;
+
+      if (seenLogLinesSet === null) {
+        seenLogLinesSet = new Set(logs);
+        return;
+      }
+
+      const newLines = logs.filter(l => !seenLogLinesSet.has(l));
+      for (const l of newLines) {
+        seenLogLinesSet.add(l);
+      }
+
+      if (seenLogLinesSet.size > 1000) {
+        seenLogLinesSet = new Set(logs);
+      }
+
+      for (let i = 0; i < newLines.length; i++) {
+        const line = newLines[i];
+        const ev = parseLogEvent(line);
+        if (!ev) continue;
+
+        if (ev.type === 'BAN' || ev.type === 'BAN_IP' || ev.type === 'KICK') {
+          showModerationDialog(ev);
+        } else if (ev.type === 'ERROR') {
+          let traceLines = [line];
+          while (i + 1 < newLines.length && (/^\s+at\s+/i.test(newLines[i + 1]) || /^\s*Caused by:/i.test(newLines[i + 1]) || /^\s+\.\.\.\s+\d+\s+more/i.test(newLines[i + 1]))) {
+            i++;
+            traceLines.push(newLines[i]);
+          }
+          showErrorDialog({ summary: line, trace: traceLines.join('\n') });
+        }
+      }
+    }
+
+    let lastModDialogKey = '';
+    let lastModDialogTime = 0;
+
+    function showModerationDialog(ev) {
+      if (!ev || !ev.target) return;
+      const key = `${ev.type}::${ev.target}`;
+      const now = Date.now();
+      if (lastModDialogKey === key && (now - lastModDialogTime) < 4000) {
+        return;
+      }
+      lastModDialogKey = key;
+      lastModDialogTime = now;
+      currentModEvent = ev;
+      const modal = document.getElementById('tp-moderation-dialog');
+      if (!modal) return;
+
+      const icon = document.getElementById('mod-dialog-icon');
+      const title = document.getElementById('mod-dialog-title');
+      const badge = document.getElementById('mod-dialog-badge');
+      const target = document.getElementById('mod-dialog-target');
+      const actionText = document.getElementById('mod-dialog-action-text');
+      const reason = document.getElementById('mod-dialog-reason');
+      const source = document.getElementById('mod-dialog-source');
+      const time = document.getElementById('mod-dialog-time');
+      const avatar = document.getElementById('mod-dialog-avatar');
+      const ipRow = document.getElementById('mod-dialog-ip-row');
+      const ipVal = document.getElementById('mod-dialog-ip');
+      const pardonBtn = document.getElementById('mod-dialog-pardon-btn');
+
+      target.textContent = ev.target || 'Unknown';
+      reason.textContent = ev.reason || 'No reason specified';
+      source.textContent = ev.source || 'Server Console / Operator';
+      time.textContent = new Date().toLocaleTimeString();
+
+      if (ev.type === 'BAN_IP') {
+        title.textContent = 'IP-Ban Enforced';
+        badge.textContent = 'IP-BANNED';
+        badge.className = 'badge-status offline';
+        badge.style.background = '#7f1d1d';
+        actionText.textContent = 'Server IP Address Ban';
+        ipRow.style.display = 'table-row';
+        ipVal.textContent = ev.target;
+        avatar.src = '/static/mcassets/barrier.png';
+        pardonBtn.style.display = 'inline-block';
+        pardonBtn.textContent = '[ Pardon IP ]';
+        icon.className = 'fa-solid fa-ban';
+        icon.style.color = '#dc2626';
+      } else if (ev.type === 'BAN') {
+        title.textContent = 'Player Ban Enforced';
+        badge.textContent = 'BANNED';
+        badge.className = 'badge-status offline';
+        badge.style.background = '#dc2626';
+        actionText.textContent = 'Player Account Ban';
+        ipRow.style.display = 'none';
+        avatar.src = `https://mc-heads.net/avatar/${encodeURIComponent(ev.target)}/44`;
+        pardonBtn.style.display = 'inline-block';
+        pardonBtn.textContent = '[ Pardon (Unban) ]';
+        icon.className = 'fa-solid fa-gavel';
+        icon.style.color = '#dc2626';
+      } else { // KICK
+        title.textContent = 'Player Kicked from Server';
+        badge.textContent = 'KICKED';
+        badge.className = 'badge-status online';
+        badge.style.background = '#d97706';
+        actionText.textContent = 'Session Disconnection / Kick';
+        ipRow.style.display = 'none';
+        avatar.src = `https://mc-heads.net/avatar/${encodeURIComponent(ev.target)}/44`;
+        pardonBtn.style.display = 'none';
+        icon.className = 'fa-solid fa-user-slash';
+        icon.style.color = '#d97706';
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closeModerationDialog() {
+      const modal = document.getElementById('tp-moderation-dialog');
+      if (modal) modal.style.display = 'none';
+      currentModEvent = null;
+    }
+
+    async function pardonFromModerationDialog() {
+      if (!currentModEvent) return;
+      const isIp = currentModEvent.type === 'BAN_IP';
+      const target = currentModEvent.target;
+      closeModerationDialog();
+      if (isIp) {
+        try {
+          const res = await fetch('/api/command', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ command: `pardon-ip ${target}` })
+          });
+          const d = await res.json();
+          showBannerAlert(d.message || `Dispatched unban for IP: ${target}`);
+        } catch (e) {
+          showBannerAlert('Failed to dispatch pardon-ip', true);
+        }
+      } else {
+        await playerAction(target, 'pardon');
+      }
+    }
+
+    function copyModerationDetails() {
+      if (!currentModEvent) return;
+      const txt = `[${currentModEvent.type}] Target: ${currentModEvent.target}\nReason: ${currentModEvent.reason}\nSource: ${currentModEvent.source || 'Admin'}\nTimestamp: ${new Date().toISOString()}`;
+      navigator.clipboard.writeText(txt).then(() => {
+        showBannerAlert('Moderation details copied to clipboard!');
+      }).catch(() => {
+        prompt('Copy moderation details:', txt);
+      });
+    }
+
+    function isErrorMuted() {
+      return Date.now() < errorMutedUntil;
+    }
+
+    function toggleMuteErrors(checked) {
+      if (checked) {
+        errorMutedUntil = Date.now() + (5 * 60 * 1000);
+        showBannerAlert('Error dialog notifications muted for 5 minutes.');
+      } else {
+        errorMutedUntil = 0;
+      }
+    }
+
+    function showErrorDialog(errData) {
+      if (isErrorMuted()) return;
+      const modal = document.getElementById('tp-error-dialog');
+      if (!modal) return;
+
+      const summary = errData.summary || errData.raw || 'An unexpected server error occurred.';
+      const trace = errData.trace || errData.raw || '';
+
+      if (modal.style.display === 'flex') {
+        activeErrorCount++;
+        const badge = document.getElementById('err-dialog-count-badge');
+        badge.textContent = `+${activeErrorCount} more`;
+        badge.style.display = 'inline-block';
+        const traceBox = document.getElementById('err-dialog-trace');
+        traceBox.textContent += '\n\n' + trace;
+        return;
+      }
+
+      activeErrorCount = 1;
+      const badge = document.getElementById('err-dialog-count-badge');
+      badge.style.display = 'none';
+
+      document.getElementById('err-dialog-summary').textContent = summary.slice(0, 300);
+      document.getElementById('err-dialog-trace').textContent = trace;
+      document.getElementById('err-dialog-timestamp').textContent = new Date().toLocaleTimeString();
+      document.getElementById('err-dialog-mute-chk').checked = false;
+
+      modal.style.display = 'flex';
+    }
+
+    function closeErrorDialog() {
+      const modal = document.getElementById('tp-error-dialog');
+      if (modal) modal.style.display = 'none';
+      activeErrorCount = 0;
+    }
+
+    function copyErrorTrace() {
+      const trace = document.getElementById('err-dialog-trace')?.textContent || '';
+      navigator.clipboard.writeText(trace).then(() => {
+        showBannerAlert('Error trace copied to clipboard!');
+      }).catch(() => {
+        prompt('Copy error trace:', trace);
+      });
+    }
+
+    function viewErrorInConsole() {
+      closeErrorDialog();
+      selectNavView('diag-console');
+      setTimeout(() => {
+        pollLogs(false);
+        scrollConsoleToBottom();
+      }, 100);
     }
 
     function clearConsoleView() {
@@ -6552,28 +6965,52 @@ def on_action(ctx, action_name, payload):
       `).join('');
     }
 
-    function instantKickPlayer(name) {
+    async function instantKickPlayer(name) {
       const reason = prompt(`Reason for kicking "${name}":`, 'Kicked by administrator');
       if (reason === null) return;
-      playerAction(name, 'kick', reason);
+      const res = await playerAction(name, 'kick', reason);
+      if (res && res.success !== false) {
+        showModerationDialog({
+          type: 'KICK',
+          target: name,
+          reason: reason || 'Kicked by administrator',
+          source: 'Web Portal Admin'
+        });
+      }
     }
 
-    function instantBanPlayer(name, isBanned) {
+    async function instantBanPlayer(name, isBanned) {
       if (isBanned) {
         if (confirm(`Pardon (unban) "${name}"?`)) {
-          playerAction(name, 'pardon');
+          await playerAction(name, 'pardon');
         }
       } else {
         const reason = prompt(`Reason for banning "${name}":`, 'Banned by administrator');
         if (reason === null) return;
-        playerAction(name, 'ban', reason);
+        const res = await playerAction(name, 'ban', reason);
+        if (res && res.success !== false) {
+          showModerationDialog({
+            type: 'BAN',
+            target: name,
+            reason: reason || 'Banned by administrator',
+            source: 'Web Portal Admin'
+          });
+        }
       }
     }
 
-    function instantBanIpPlayer(name) {
+    async function instantBanIpPlayer(name) {
       const reason = prompt(`IP-BAN "${name}" and prevent connections from their IP address?\nReason:`, 'IP-Banned by administrator');
       if (reason === null) return;
-      playerAction(name, 'ban_ip', reason);
+      const res = await playerAction(name, 'ban_ip', reason);
+      if (res && res.success !== false) {
+        showModerationDialog({
+          type: 'BAN_IP',
+          target: name,
+          reason: reason || 'IP-Banned by administrator',
+          source: 'Web Portal Admin'
+        });
+      }
     }
 
     function filterPlayersTable() {
@@ -6592,8 +7029,10 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         showBannerAlert(d.message);
         setTimeout(loadPlayers, 400);
+        return d;
       } catch (e) {
         showBannerAlert('Player action failed.', true);
+        return null;
       }
     }
 
@@ -7283,7 +7722,15 @@ def on_action(ctx, action_name, payload):
       const player = document.getElementById('ban-player-name').value.trim();
       const reason = document.getElementById('ban-player-reason').value.trim() || 'Banned by administrator';
       if (!player) return showBannerAlert('Enter username to ban.', true);
-      await playerAction(player, 'ban', reason);
+      const res = await playerAction(player, 'ban', reason);
+      if (res && res.success !== false) {
+        showModerationDialog({
+          type: 'BAN',
+          target: player,
+          reason: reason,
+          source: 'Web Portal Admin'
+        });
+      }
       document.getElementById('ban-player-name').value = '';
       document.getElementById('ban-player-reason').value = '';
       setTimeout(loadBans, 500);
