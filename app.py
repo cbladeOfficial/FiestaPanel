@@ -27,7 +27,7 @@ import zipfile
 import gzip
 from PIL import Image
 from functools import wraps
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory, Response
 from addon_manager import AddonManager
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -2472,40 +2472,78 @@ def load_events():
                     return d
         except Exception as e:
             app.logger.warning(f"Error reading events.json: {e}")
-    initial_events = [
-        {
-            "id": "evt_default_drop_party",
-            "title": "Weekend Spawn Drop Party",
-            "type": "server",
-            "description": "Weekly drop party at server spawn with diamond & speed rewards.",
-            "start_time": (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y-%m-%dT18:00"),
-            "recurring": "weekly",
-            "broadcast_msg": "&6[EVENT]&e Spawn Drop Party is LIVE! Free rewards for all active players!",
-            "commands": "give @a diamond 1\neffect give @a speed 180 1",
-            "target_player": "",
-            "status": "scheduled",
-            "created_by": "admin",
-            "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "last_run": None
-        },
-        {
-            "id": "evt_default_save",
-            "title": "Automated Daily World Sync & Flush",
-            "type": "maintenance",
-            "description": "Daily world flush to prevent data loss and keep chunks synchronized.",
-            "start_time": (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%dT04:00"),
-            "recurring": "daily",
-            "broadcast_msg": "&a[SYSTEM]&f Scheduled world save completed successfully.",
-            "commands": "save-all",
-            "target_player": "",
-            "status": "scheduled",
-            "created_by": "admin",
-            "created_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "last_run": None
-        }
+    return []
+
+def get_calendar_feed_token():
+    return hashlib.sha256(b"fiesta_cal_feed_" + _get_secret_key()).hexdigest()[:24]
+
+def ical_escape(text):
+    if not text:
+        return ""
+    text = str(text)
+    text = text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+    text = text.replace("\r\n", "\\n").replace("\r", "\\n").replace("\n", "\\n")
+    return text
+
+def generate_ics(events, calendar_name="Fiesta Minecraft Server Events"):
+    now_utc = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//FiestaPanel//Minecraft Events Manager//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        f"X-WR-CALNAME:{ical_escape(calendar_name)}",
+        "X-WR-TIMEZONE:UTC"
     ]
-    save_events(initial_events)
-    return initial_events
+    for evt in events:
+        eid = evt.get("id", "evt_" + hashlib.md5(str(evt).encode()).hexdigest()[:8])
+        title = evt.get("title", "Minecraft Server Event")
+        st = evt.get("start_time", "")
+        try:
+            dt = datetime.datetime.fromisoformat(st)
+        except Exception:
+            dt = datetime.datetime.now()
+        dt_utc = dt.astimezone(datetime.timezone.utc)
+        dtstart = dt_utc.strftime("%Y%m%dT%H%M%SZ")
+        dtend = (dt_utc + datetime.timedelta(hours=1)).strftime("%Y%m%dT%H%M%SZ")
+
+        desc_parts = []
+        if evt.get("description"):
+            desc_parts.append(evt["description"])
+        if evt.get("type"):
+            desc_parts.append("Type: " + str(evt["type"]).upper())
+        if evt.get("target_player"):
+            desc_parts.append("Target Player: " + str(evt["target_player"]))
+        if evt.get("broadcast_msg"):
+            desc_parts.append("Broadcast: " + str(evt["broadcast_msg"]))
+        desc_text = "\n".join(desc_parts)
+
+        status_val = "CANCELLED" if evt.get("status") == "cancelled" else "CONFIRMED"
+
+        lines.append("BEGIN:VEVENT")
+        lines.append(f"UID:{eid}@fiestapanel")
+        lines.append(f"DTSTAMP:{now_utc}")
+        lines.append(f"DTSTART:{dtstart}")
+        lines.append(f"DTEND:{dtend}")
+        lines.append(f"SUMMARY:{ical_escape(title)}")
+        if desc_text:
+            lines.append(f"DESCRIPTION:{ical_escape(desc_text)}")
+        lines.append("LOCATION:Minecraft Server")
+        lines.append(f"STATUS:{status_val}")
+
+        rec = str(evt.get("recurring", "")).lower()
+        if rec == "daily":
+            lines.append("RRULE:FREQ=DAILY")
+        elif rec == "weekly":
+            lines.append("RRULE:FREQ=WEEKLY")
+        elif rec == "hourly":
+            lines.append("RRULE:FREQ=HOURLY")
+
+        lines.append("END:VEVENT")
+
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(lines) + "\r\n"
 
 def save_events(events_list):
     try:
@@ -2723,6 +2761,29 @@ def api_trigger_event():
             return jsonify({"success": success, "message": msg})
 
     return jsonify({"success": False, "message": "Event not found."}), 404
+
+@app.route("/api/events/calendar-token", methods=["GET"])
+@login_required
+def api_get_calendar_token():
+    token = get_calendar_feed_token()
+    return jsonify({"success": True, "token": token})
+
+@app.route("/api/events/calendar.ics", methods=["GET"])
+@app.route("/api/events/feed.ics", methods=["GET"])
+def api_events_ics():
+    req_token = request.args.get("token", "").strip()
+    valid_token = get_calendar_feed_token()
+    is_authed = session.get("logged_in") or session.get("user")
+    if req_token != valid_token and not is_authed:
+        return jsonify({"error": "Unauthorized calendar feed request. Invalid or missing feed token."}), 401
+
+    events = load_events()
+    cal_ics = generate_ics(events, calendar_name="Fiesta Minecraft Server Events")
+    response = Response(cal_ics, mimetype="text/calendar")
+    response.headers["Content-Type"] = "text/calendar; charset=utf-8"
+    response.headers["Content-Disposition"] = 'inline; filename="minecraft_events.ics"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 @app.route("/api/software/check-update", methods=["GET"])
 @login_required
