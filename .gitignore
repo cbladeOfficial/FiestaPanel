@@ -10,3 +10,9 @@ static/*.zip
 config.json
 addon_stats.json
 .secret_key
+
+# Dynamically generated Minecraft inventory icon assets & catalog
+static/mcassets/*.png
+!static/mcassets/empty_*.png
+static/mcassets/catalog.json
+

@@ -71,7 +71,12 @@ extra_items = [
     "bolt_armor_trim_smithing_template", "flow_pottery_sherd", "guster_pottery_sherd", "scrape_pottery_sherd"
 ]
 
+_name_to_tex_cache = None
+
 def load_name_to_tex():
+    global _name_to_tex_cache
+    if _name_to_tex_cache is not None:
+        return _name_to_tex_cache
     name_to_tex = {}
     if os.path.exists(MAPPING_FILE):
         try:
@@ -83,7 +88,8 @@ def load_name_to_tex():
                         name_to_tex[n] = t
         except Exception as e:
             logging.warning(f"Failed to read {MAPPING_FILE}: {e}")
-    return name_to_tex
+    _name_to_tex_cache = name_to_tex
+    return _name_to_tex_cache
 
 def get_version_candidates(version=None):
     candidates = []
@@ -166,7 +172,7 @@ def update_catalog():
         logging.warning(f"Failed to update catalog.json: {e}")
         return 0
 
-def sync_mc_assets(version=None, max_workers=10):
+def sync_mc_assets(version=None, max_workers=15):
     versions = get_version_candidates(version)
     name_to_tex = load_name_to_tex()
     all_items = set(name_to_tex.keys()).union(set(aliases.keys())).union(set(extra_items))
@@ -179,16 +185,35 @@ def sync_mc_assets(version=None, max_workers=10):
 
     newly_fetched = 0
     if missing_items:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(fetch_single, item, versions) for item in missing_items]
-            for f in futures:
-                try:
-                    if f.result():
-                        newly_fetched += 1
-                except Exception:
-                    pass
+        logging.info(f"Syncing MC assets: {len(missing_items)} missing items to fetch for version candidate(s) {versions}...")
+        priority_items = [i for i in extra_items if i in missing_items]
+        other_items = [i for i in missing_items if i not in priority_items]
+
+        # Fetch essential/priority items first
+        if priority_items:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(fetch_single, item, versions) for item in priority_items]
+                for f in futures:
+                    try:
+                        if f.result():
+                            newly_fetched += 1
+                    except Exception:
+                        pass
+            update_catalog()
+
+        # Fetch remaining items
+        if other_items:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(fetch_single, item, versions) for item in other_items]
+                for f in futures:
+                    try:
+                        if f.result():
+                            newly_fetched += 1
+                    except Exception:
+                        pass
 
     total_catalog = update_catalog()
+    logging.info(f"MC asset sync complete: {newly_fetched} newly fetched, {total_catalog} items in catalog.")
     return {
         "success": True,
         "version_candidates": versions,

@@ -779,6 +779,11 @@ def api_status():
     disk = psutil.disk_usage("/")
 
     jar_exists = os.path.exists(os.path.join(SERVER_DIR, "server.jar"))
+    if not _asset_sync_started and jar_exists:
+        try:
+            check_and_sync_existing_server_assets()
+        except Exception:
+            pass
     mc_running = server_runner.is_running()
     mc_pid, mc_mem_mb, _ = server_runner.get_process_info()
 
@@ -1345,6 +1350,54 @@ def get_installed_mc_version():
             pass
     return "1.21.1"
 
+_asset_sync_lock = threading.Lock()
+_asset_sync_started = False
+
+def check_and_sync_existing_server_assets(force=False):
+    """
+    Checks if an existing Minecraft server exists (server.jar or installed_software.json),
+    and if static/mcassets is empty or missing catalog, downloads textures in the background.
+    """
+    global _asset_sync_started
+    with _asset_sync_lock:
+        if _asset_sync_started and not force:
+            return None
+        jar_path = os.path.join(SERVER_DIR, "server.jar")
+        meta_path = os.path.join(SERVER_DIR, "installed_software.json")
+        has_server = os.path.exists(jar_path) or os.path.exists(meta_path)
+        if not has_server:
+            return None
+
+        png_count = 0
+        if os.path.isdir(MCASSETS_DIR):
+            png_count = len([f for f in os.listdir(MCASSETS_DIR) if f.endswith(".png") and not f.startswith("empty_")])
+        catalog_exists = os.path.exists(os.path.join(MCASSETS_DIR, "catalog.json"))
+
+        if force or png_count < 50 or not catalog_exists:
+            _asset_sync_started = True
+            v = get_installed_mc_version()
+            logging.info(f"Existing Minecraft server detected (version {v}, {png_count} assets). Starting background mc asset generation...")
+            try:
+                from fetch_mc_assets import sync_mc_assets
+                t = threading.Thread(
+                    target=sync_mc_assets,
+                    args=(v,),
+                    daemon=True,
+                    name=f"mc-assets-sync-{v}"
+                )
+                t.start()
+                return t
+            except Exception as e:
+                logging.warning(f"Could not trigger mc-assets sync: {e}")
+                return None
+        return None
+
+# Check on module initialization for existing server
+try:
+    check_and_sync_existing_server_assets()
+except Exception:
+    pass
+
 @app.route("/api/mc-item-icon/<path:item_id>")
 def api_mc_item_icon(item_id):
     clean = item_id.lower().replace("minecraft:", "").strip()
@@ -1390,7 +1443,26 @@ def api_mc_items_list():
     catalog_path = os.path.join(MCASSETS_DIR, "catalog.json")
     if os.path.exists(catalog_path):
         return send_from_directory(MCASSETS_DIR, "catalog.json", mimetype="application/json", max_age=86400)
+    check_and_sync_existing_server_assets()
     return jsonify([])
+
+@app.route("/api/mc-assets/sync", methods=["POST"])
+@login_required
+def api_mc_assets_sync():
+    version = (request.json or {}).get("version") if request.is_json else None
+    if not version:
+        version = get_installed_mc_version()
+    try:
+        from fetch_mc_assets import sync_mc_assets
+        threading.Thread(
+            target=sync_mc_assets,
+            args=(version,),
+            daemon=True,
+            name=f"mc-assets-manual-sync-{version}"
+        ).start()
+        return jsonify({"success": True, "message": f"Asset synchronization started for Minecraft {version}"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ── Portal Branding & Customization APIs ──────────────────────
 
@@ -1951,6 +2023,7 @@ def api_software_install():
                 daemon=True,
                 name=f"mc-assets-sync-{version}"
             ).start()
+            _asset_sync_started = True
         except Exception as e:
             logging.warning(f"Could not trigger asset sync: {e}")
 

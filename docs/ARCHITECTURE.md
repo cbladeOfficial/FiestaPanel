@@ -59,7 +59,7 @@ FiestaPanel is designed as a lightweight, zero-overhead management suite tailore
   3. `screen` / `tmux` process forwarding when deployed in interactive session mode.
 
 ### 2. Player Inventory & Texture Atlas Engine
-- **Texture Mapping**: FiestaPanel bundles `items_textures.json` and a full offline directory of over 1,300 extracted vanilla Minecraft textures (`static/mcassets/`).
+- **Texture Mapping**: FiestaPanel bundles `items_textures.json` and essential slot silhouettes while keeping the Git repository lightweight. Over 1,300 vanilla item textures (`static/mcassets/`) are dynamically fetched and cached in the background when server software is installed or an existing server is detected, with dynamic fallback CDN resolution and elegant text fallbacks for newly added items.
 - **NBT Parsing**: Player data files (`world/playerdata/<UUID>.dat`) are uncompressed and parsed into memory.
 - **Slot Mapping**:
   - `Equipment / Armor`: Helmet (Slot 103), Chestplate (Slot 102), Leggings (Slot 101), Boots (Slot 100).
