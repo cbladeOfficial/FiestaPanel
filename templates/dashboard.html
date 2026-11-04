@@ -3849,14 +3849,15 @@
             <thead>
               <tr>
                 <th>Name</th>
+                <th>IP Address</th>
                 <th>Created</th>
                 <th>Banned By</th>
                 <th>Reason</th>
-                <th style="width: 90px;">Action</th>
+                <th style="width: 140px;">Action</th>
               </tr>
             </thead>
             <tbody id="bans-table-body">
-              <tr><td colspan="5" style="text-align: center; color: #888;">Loading ban list...</td></tr>
+              <tr><td colspan="6" style="text-align: center; color: #888;">Loading ban list...</td></tr>
             </tbody>
           </table>
 
@@ -3865,14 +3866,15 @@
             <thead>
               <tr>
                 <th>IP Address</th>
+                <th>Associated Player</th>
                 <th>Created</th>
                 <th>Banned By</th>
                 <th>Reason</th>
-                <th style="width: 90px;">Action</th>
+                <th style="width: 100px;">Action</th>
               </tr>
             </thead>
             <tbody id="ip-bans-table-body">
-              <tr><td colspan="5" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>
+              <tr><td colspan="6" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>
             </tbody>
           </table>
         </section>
@@ -6682,6 +6684,18 @@ def on_action(ctx, action_name, payload):
         pardonBtn.textContent = '[ Pardon IP ]';
         icon.className = 'fa-solid fa-ban';
         icon.style.color = '#dc2626';
+      } else if (ev.type === 'PARDON_IP') {
+        title.textContent = 'IP-Ban Pardoned';
+        badge.textContent = 'PARDONED';
+        badge.className = 'badge-status online';
+        badge.style.background = '#15803d';
+        actionText.textContent = 'Server IP Unbanned';
+        ipRow.style.display = 'table-row';
+        ipVal.textContent = ev.target;
+        avatar.src = '/static/mcassets/barrier.png';
+        pardonBtn.style.display = 'none';
+        icon.className = 'fa-solid fa-check-circle';
+        icon.style.color = '#15803d';
       } else if (ev.type === 'BAN') {
         title.textContent = 'Player Ban Enforced';
         badge.textContent = 'BANNED';
@@ -6730,6 +6744,10 @@ def on_action(ctx, action_name, payload):
           });
           const d = await res.json();
           showBannerAlert(d.message || `Dispatched unban for IP: ${target}`);
+          setTimeout(() => {
+            loadBans();
+            loadPlayers();
+          }, 400);
         } catch (e) {
           showBannerAlert('Failed to dispatch pardon-ip', true);
         }
@@ -7269,6 +7287,7 @@ def on_action(ctx, action_name, payload):
               <div>
                 <strong>${escapeHtml(p.name)}</strong>
                 ${p.is_online ? '<span class="badge-status online" style="margin-left: 4px; font-size: 9px; padding: 0 4px;">ONLINE</span>' : ''}
+                ${p.ip ? `<div style="font-size: 9px; color: #777; font-family: monospace;">${escapeHtml(p.ip)}</div>` : ''}
               </div>
             </div>
           </td>
@@ -7277,7 +7296,16 @@ def on_action(ctx, action_name, payload):
             ${p.is_op ? '<span style="color: #d96b00; font-weight: bold;">[OP]</span>' : '<span style="color: #666;">User</span>'}
           </td>
           <td>
-            ${p.is_banned ? '<span class="badge-status offline">BANNED</span>' : '<span style="color: #008822;">Active</span>'}
+            ${p.is_banned && p.is_ip_banned
+              ? '<span class="badge-status offline" title="Account & IP Banned">BANNED (IP)</span>'
+              : (p.is_banned
+                ? '<span class="badge-status offline">BANNED</span>'
+                : (p.is_ip_banned
+                  ? '<span class="badge-status offline">IP-BANNED</span>'
+                  : '<span style="color: #008822;">Active</span>'
+                )
+              )
+            }
           </td>
           <td>
             <div style="display: flex; flex-wrap: wrap; gap: 3px; align-items: center;">
@@ -7285,7 +7313,10 @@ def on_action(ctx, action_name, payload):
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="playerAction('${escapeHtml(p.name)}', '${p.is_op ? 'deop' : 'op'}')">${p.is_op ? 'De-OP' : 'Make OP'}</button>
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #b00;" onclick="instantKickPlayer('${escapeHtml(p.name)}')">Kick</button>
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; ${p.is_banned ? 'color: #008822;' : 'color: #b00;'}" onclick="instantBanPlayer('${escapeHtml(p.name)}', ${p.is_banned})">${p.is_banned ? 'Pardon' : 'Ban'}</button>
-              <button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="instantBanIpPlayer('${escapeHtml(p.name)}')">Ban-IP</button>
+              ${p.is_ip_banned
+                ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="instantPardonIpPlayer('${escapeHtml(p.name)}', '${escapeHtml(p.ip || '')}')">Pardon IP</button>`
+                : `<button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="instantBanIpPlayer('${escapeHtml(p.name)}')">Ban IP</button>`
+              }
               <select style="height: 21px; font-size: 10px; padding: 0 2px;" onchange="if(this.value){ playerAction('${escapeHtml(p.name)}', this.value); this.value=''; }">
                 <option value="">More Actions</option>
                 <option value="gamemode_survival">Gamemode: Survival</option>
@@ -7350,11 +7381,37 @@ def on_action(ctx, action_name, payload):
           source: 'Web Portal Admin'
         });
       }
+      setTimeout(() => {
+        loadBans();
+        loadPlayers();
+      }, 400);
+    }
+
+    async function instantPardonIpPlayer(name, ip) {
+      const display = ip ? `"${name}" (${ip})` : `"${name}"`;
+      if (!confirm(`Pardon (unban) IP address for ${display}?`)) return;
+      try {
+        const res = await playerAction(name, 'pardon_ip');
+        if (res && res.success !== false) {
+          showModerationDialog({
+            type: 'PARDON_IP',
+            target: ip || name,
+            reason: 'Pardoned IP by administrator',
+            source: 'Web Portal Admin'
+          });
+        }
+        setTimeout(() => {
+          loadBans();
+          loadPlayers();
+        }, 400);
+      } catch (e) {
+        showBannerAlert('Failed to pardon IP.', true);
+      }
     }
 
     function filterPlayersTable() {
       const q = document.getElementById('player-search-box').value.toLowerCase().trim();
-      const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(q));
+      const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(q) || (p.ip && p.ip.toLowerCase().includes(q)));
       renderPlayersTable(filtered);
     }
 
@@ -7367,7 +7424,10 @@ def on_action(ctx, action_name, payload):
         });
         const d = await res.json();
         showBannerAlert(d.message);
-        setTimeout(loadPlayers, 400);
+        setTimeout(() => {
+          loadPlayers();
+          loadBans();
+        }, 400);
         return d;
       } catch (e) {
         showBannerAlert('Player action failed.', true);
@@ -8039,16 +8099,26 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         const tbody = document.getElementById('bans-table-body');
         if (!d.bans || !d.bans.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No players currently banned.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No players currently banned.</td></tr>';
         } else {
           tbody.innerHTML = d.bans.map(b => `
             <tr>
               <td><strong>${escapeHtml(b.name || 'Unknown')}</strong></td>
+              <td style="font-family: monospace; font-size: 11px;">
+                ${b.ip ? escapeHtml(b.ip) : '<span style="color: #999;">--</span>'}
+                ${b.is_ip_banned ? ' <span class="badge-status offline" style="font-size: 9px; padding: 0 4px; vertical-align: middle;">IP-BANNED</span>' : ''}
+              </td>
               <td>${b.created || '--'}</td>
               <td>${escapeHtml(b.source || 'Admin')}</td>
               <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
               <td>
-                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px;" onclick="playerAction('${b.name}', 'pardon')">Pardon</button>
+                <div style="display: flex; gap: 3px; align-items: center;">
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="playerAction('${escapeHtml(b.name)}', 'pardon')">Pardon</button>
+                  ${b.is_ip_banned
+                    ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="instantPardonIpPlayer('${escapeHtml(b.name)}', '${escapeHtml(b.ip || '')}')">Pardon IP</button>`
+                    : `<button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="instantBanIpPlayer('${escapeHtml(b.name)}')">Ban IP</button>`
+                  }
+                </div>
               </td>
             </tr>
           `).join('');
@@ -8057,16 +8127,17 @@ def on_action(ctx, action_name, payload):
         const ipTbody = document.getElementById('ip-bans-table-body');
         if (ipTbody) {
           if (!d.ip_bans || !d.ip_bans.length) {
-            ipTbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>';
+            ipTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>';
           } else {
             ipTbody.innerHTML = d.ip_bans.map(b => `
               <tr>
                 <td><strong style="font-family: monospace; color: #b00;">${escapeHtml(b.ip || 'Unknown')}</strong></td>
+                <td>${b.player ? `<strong style="color: #2563eb;">${escapeHtml(b.player)}</strong>` : '<span style="color: #999;">--</span>'}</td>
                 <td>${b.created || '--'}</td>
                 <td>${escapeHtml(b.source || 'Admin')}</td>
                 <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
                 <td>
-                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px;" onclick="pardonIpAddress('${b.ip}')">Pardon IP</button>
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="pardonIpAddress('${escapeHtml(b.ip)}')">Pardon IP</button>
                 </td>
               </tr>
             `).join('');
@@ -8085,7 +8156,16 @@ def on_action(ctx, action_name, payload):
         });
         const d = await res.json();
         showBannerAlert(d.message || `Dispatched unban for IP: ${ip}`);
-        setTimeout(loadBans, 400);
+        showModerationDialog({
+          type: 'PARDON_IP',
+          target: ip,
+          reason: 'Pardoned IP by administrator',
+          source: 'Web Portal Admin'
+        });
+        setTimeout(() => {
+          loadBans();
+          loadPlayers();
+        }, 400);
       } catch (e) {
         showBannerAlert('Failed to pardon IP.', true);
       }
@@ -8111,7 +8191,10 @@ def on_action(ctx, action_name, payload):
         });
         document.getElementById('ban-ip-target').value = '';
         document.getElementById('ban-ip-reason').value = '';
-        setTimeout(loadBans, 500);
+        setTimeout(() => {
+          loadBans();
+          loadPlayers();
+        }, 500);
       } catch (e) {
         showBannerAlert('Failed to dispatch IP ban.', true);
       }
@@ -8132,7 +8215,10 @@ def on_action(ctx, action_name, payload):
       }
       document.getElementById('ban-player-name').value = '';
       document.getElementById('ban-player-reason').value = '';
-      setTimeout(loadBans, 500);
+      setTimeout(() => {
+        loadBans();
+        loadPlayers();
+      }, 500);
     }
 
     // ── Operators (OP) ──────────────────────────────────────────

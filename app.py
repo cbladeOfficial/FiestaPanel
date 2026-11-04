@@ -623,6 +623,96 @@ def resolve_player_ip(player_name):
 
     return None
 
+def add_to_banned_ips(ip, reason="IP-Banned by administrator"):
+    ip = (ip or "").strip()
+    if not ip:
+        return
+    ip_ban_file = os.path.join(SERVER_DIR, "banned-ips.json")
+    try:
+        entries = []
+        if os.path.exists(ip_ban_file):
+            with open(ip_ban_file, "r", encoding="utf-8") as f:
+                entries = json.load(f)
+        if not any(e.get("ip", "").strip() == ip for e in entries):
+            now_str = datetime.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %z")
+            entries.append({
+                "ip": ip,
+                "created": now_str,
+                "source": "Console",
+                "expires": "forever",
+                "reason": reason
+            })
+            with open(ip_ban_file, "w", encoding="utf-8") as f:
+                json.dump(entries, f, indent=2)
+    except Exception:
+        pass
+
+def remove_from_banned_ips(ip_or_target):
+    ip_or_target = (ip_or_target or "").strip()
+    if not ip_or_target:
+        return
+    ip_ban_file = os.path.join(SERVER_DIR, "banned-ips.json")
+    if os.path.exists(ip_ban_file):
+        try:
+            with open(ip_ban_file, "r", encoding="utf-8") as f:
+                entries = json.load(f)
+            new_entries = [e for e in entries if e.get("ip", "").strip().lower() != ip_or_target.lower()]
+            if len(new_entries) != len(entries):
+                with open(ip_ban_file, "w", encoding="utf-8") as f:
+                    json.dump(new_entries, f, indent=2)
+        except Exception:
+            pass
+
+def get_all_player_ips():
+    """
+    Returns a tuple (ip_map, reverse_map) mapping:
+    - lowercase player username -> IP address
+    - IP address -> player username
+    """
+    ip_map = {}
+    reverse_map = {}
+
+    authme_db = os.path.join(SERVER_DIR, "plugins", "AuthMe", "authme.db")
+    if os.path.exists(authme_db):
+        try:
+            con = sqlite3.connect(authme_db, timeout=1.0)
+            cur = con.cursor()
+            cur.execute("SELECT LOWER(username), ip FROM authme WHERE ip IS NOT NULL AND ip != ''")
+            for u, ip in cur.fetchall():
+                ip = (ip or "").strip()
+                if ip and ip not in ("127.0.0.1", "0.0.0.0"):
+                    u_clean = u.strip()
+                    ip_map[u_clean] = ip
+                    if ip not in reverse_map:
+                        reverse_map[ip] = u_clean
+            con.close()
+        except Exception:
+            pass
+
+    ess_dir = os.path.join(SERVER_DIR, "plugins", "Essentials", "userdata")
+    usercache_file = os.path.join(SERVER_DIR, "usercache.json")
+    if os.path.exists(usercache_file) and os.path.exists(ess_dir):
+        try:
+            with open(usercache_file, "r") as f:
+                cached = json.load(f)
+            for u in cached:
+                name = (u.get("name") or "").lower().strip()
+                uuid_val = u.get("uuid")
+                if name and name not in ip_map and uuid_val:
+                    ef = os.path.join(ess_dir, f"{uuid_val}.yml")
+                    if os.path.exists(ef):
+                        with open(ef, "r", encoding="utf-8", errors="ignore") as fyml:
+                            m = re.search(r"ip-address:\s*([0-9]{1,3}(?:\.[0-9]{1,3}){3})", fyml.read())
+                            if m and m.group(1) not in ("127.0.0.1", "0.0.0.0"):
+                                found_ip = m.group(1).strip()
+                                ip_map[name] = found_ip
+                                if found_ip not in reverse_map:
+                                    reverse_map[found_ip] = name
+        except Exception:
+            pass
+
+    return ip_map, reverse_map
+
 def execute_ip_ban(target, reason="Banned by administrator"):
     """
     Executes an IP ban for target (IP address or player username).
@@ -633,6 +723,10 @@ def execute_ip_ban(target, reason="Banned by administrator"):
     reason = (reason or "").strip() or "Banned by administrator"
     is_ip = bool(re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", target) or ":" in target)
     resolved_ip = resolve_player_ip(target)
+
+    target_ip = target if is_ip else resolved_ip
+    if target_ip:
+        add_to_banned_ips(target_ip, reason)
 
     if is_ip:
         send_mc_command(f"banip {target} {reason}")
@@ -654,6 +748,11 @@ def execute_ip_pardon(target):
     target = (target or "").strip()
     is_ip = bool(re.match(r"^\d{1,3}(?:\.\d{1,3}){3}$", target) or ":" in target)
     resolved_ip = resolve_player_ip(target)
+
+    target_ip = target if is_ip else resolved_ip
+    if target_ip:
+        remove_from_banned_ips(target_ip)
+    remove_from_banned_ips(target)
 
     if is_ip:
         send_mc_command(f"pardon-ip {target}")
@@ -1130,10 +1229,12 @@ def api_players():
     usercache_file = os.path.join(SERVER_DIR, "usercache.json")
     ops_file = os.path.join(SERVER_DIR, "ops.json")
     ban_file = os.path.join(SERVER_DIR, "banned-players.json")
+    ip_ban_file = os.path.join(SERVER_DIR, "banned-ips.json")
 
     users = []
     ops_names = set()
     banned_names = set()
+    banned_ips_set = set()
 
     if os.path.exists(ops_file):
         try:
@@ -1151,6 +1252,18 @@ def api_players():
         except Exception:
             pass
 
+    if os.path.exists(ip_ban_file):
+        try:
+            with open(ip_ban_file, "r") as f:
+                for ib in json.load(f):
+                    ip_val = ib.get("ip", "").strip()
+                    if ip_val:
+                        banned_ips_set.add(ip_val.lower())
+        except Exception:
+            pass
+
+    ip_map, _ = get_all_player_ips()
+
     ping_info = ping_mc()
     online_names = [name.lower() for name in ping_info.get("player_sample", [])]
 
@@ -1160,13 +1273,18 @@ def api_players():
                 cached = json.load(f)
                 for u in cached:
                     name = u.get("name")
-                    is_online = name.lower() in online_names
+                    name_lower = (name or "").lower()
+                    player_ip = ip_map.get(name_lower)
+                    is_ip_banned = bool((player_ip and player_ip.lower() in banned_ips_set) or (name_lower in banned_ips_set))
+                    is_online = name_lower in online_names
                     users.append({
                         "name": name,
                         "uuid": u.get("uuid"),
+                        "ip": player_ip,
                         "expires": u.get("expiresOn"),
-                        "is_op": name.lower() in ops_names,
-                        "is_banned": name.lower() in banned_names,
+                        "is_op": name_lower in ops_names,
+                        "is_banned": name_lower in banned_names,
+                        "is_ip_banned": is_ip_banned,
                         "is_online": is_online
                     })
         except Exception:
@@ -1179,6 +1297,7 @@ def api_players():
         "players": users,
         "ops_count": len(ops_names),
         "banned_count": len(banned_names),
+        "banned_ip_count": len(banned_ips_set),
         "online_count": ping_info.get("players_online", 0)
     })
 
@@ -2260,6 +2379,22 @@ def api_get_bans():
                 ip_banned = json.load(f)
         except Exception:
             pass
+
+    ip_map, reverse_map = get_all_player_ips()
+    banned_ips_set = set(b.get("ip", "").strip().lower() for b in ip_banned if b.get("ip"))
+
+    for b in banned:
+        pname = (b.get("name") or "").lower().strip()
+        pip = ip_map.get(pname)
+        if not pip:
+            pip = resolve_player_ip(b.get("name"))
+        b["ip"] = pip
+        b["is_ip_banned"] = bool((pip and pip.lower() in banned_ips_set) or (pname in banned_ips_set))
+
+    for ib in ip_banned:
+        cur_ip = (ib.get("ip") or "").strip()
+        ib["player"] = reverse_map.get(cur_ip)
+
     return jsonify({"bans": banned, "ip_bans": ip_banned, "total": len(banned) + len(ip_banned)})
 
 @app.route("/api/ops")
