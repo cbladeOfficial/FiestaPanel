@@ -8,3 +8,4 @@ static/*.tar.gz
 static/*.zip
 
 config.json
+addon_stats.json

@@ -3103,11 +3103,13 @@
           </div>
         </div>
 
-        <!-- 7. Panel Addons & Extensions -->
+        <!-- 7. Panel Addons & Extensions (Web Panel Customization & Store) -->
         <div class="nav-group">
-          <div class="nav-parent" onclick="toggleNavGroup('panel-addons', this)" id="nav-parent-panel-addons">Panel Extensions</div>
+          <div class="nav-parent" onclick="toggleNavGroup('panel-addons', this)" id="nav-parent-panel-addons">Panel Extensions / Store</div>
           <div class="nav-sub-list" id="sub-panel-addons">
             <div class="nav-sub-item" onclick="selectNavView('panel-addons-installed', this)" id="nav-sub-paddons-installed">- Installed Addons</div>
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-store', this)" id="nav-sub-paddons-store">- Plugin Store</div>
+            <div class="nav-sub-item" onclick="selectNavView('panel-addons-create', this)" id="nav-sub-paddons-create">- Developer Guide</div>
             <div id="dynamic-addon-nav-items"></div>
           </div>
         </div>
@@ -4674,6 +4676,7 @@
               <button class="btn-classic" onclick="loadPanelAddons(true)">[ Reload Addons ]</button>
               <button class="btn-classic" onclick="openAddonUploadModal()">[ Upload Addon (.zip) ]</button>
               <button class="btn-classic" onclick="openAddonUrlModal()">[ Install from URL ]</button>
+              <button class="btn-classic" style="font-weight: bold; color: #006622;" onclick="selectNavView('panel-addons-store')">[ Browse Plugin Store ]</button>
             </div>
           </div>
           <p class="inline-hint" style="margin-bottom: 12px;">
@@ -4690,6 +4693,128 @@
 
           <div id="installed-addons-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px;">
             <!-- Dynamically populated by loadPanelAddons() -->
+          </div>
+        </section>
+
+        <!-- ════ VIEW 18: PLUGIN STORE & EXTENSION MARKETPLACE ════ -->
+        <section id="view-panel-addons-store" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>FiestaPanel Plugin Store &amp; Extension Catalog</span>
+            <div>
+              <button class="btn-classic" onclick="loadPanelAddonStore()">[ Refresh Catalog ]</button>
+              <button class="btn-classic" style="font-weight: bold;" onclick="selectNavView('panel-addons-create')">[ Developer Guide ]</button>
+            </div>
+          </div>
+          <p class="inline-hint" style="margin-bottom: 14px;">
+            One-click install official and verified extensions to customize and automate your FiestaPanel gateway.
+          </p>
+
+          <!-- Store Category Filters -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center;">
+            <span style="font-weight: bold; font-size: 11px;">Category:</span>
+            <button class="btn-classic store-cat-btn active-tab" data-cat="all" onclick="filterStoreCategory('all', this)">All Extensions</button>
+            <button class="btn-classic store-cat-btn" data-cat="Integration" onclick="filterStoreCategory('Integration', this)">Integrations</button>
+            <button class="btn-classic store-cat-btn" data-cat="Automation" onclick="filterStoreCategory('Automation', this)">Automation</button>
+            <button class="btn-classic store-cat-btn" data-cat="Tools" onclick="filterStoreCategory('Tools', this)">Tools</button>
+            <button class="btn-classic store-cat-btn" data-cat="Visuals" onclick="filterStoreCategory('Visuals', this)">Visuals</button>
+            <button class="btn-classic store-cat-btn" data-cat="Administration" onclick="filterStoreCategory('Administration', this)">Administration</button>
+            <button class="btn-classic store-cat-btn" data-cat="Customization" onclick="filterStoreCategory('Customization', this)">Customization</button>
+            <input type="text" id="store-search-input" class="ctrl-input" style="margin-left: auto; width: 220px;" placeholder="Search store..." oninput="filterStoreCatalogSearch()">
+          </div>
+
+          <div id="store-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <!-- Dynamically populated by loadPanelAddonStore() -->
+          </div>
+
+          <div style="padding: 14px 18px; background: rgba(0, 102, 34, 0.08); border: 1px dashed rgba(0, 102, 34, 0.4); border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <strong style="color: #006622; font-size: 13px;">Want to build your own FiestaPanel Addon?</strong>
+              <div class="inline-hint">Create custom tabs, dashboard widgets, console bots, and live themes in Python and HTML.</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold;">[ Download Starter Boilerplate (.zip) ]</a>
+              <button class="btn-classic" style="padding: 4px 12px;" onclick="selectNavView('panel-addons-create')">[ View Developer Guide ]</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════ VIEW 19: ADDON DEVELOPER GUIDE & TEMPLATE CREATOR ════ -->
+        <section id="view-panel-addons-create" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>FiestaPanel Addon Developer Guide &amp; API Reference</span>
+            <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; font-weight: bold; color: #006622;">[ Download Starter Kit (.zip) ]</a>
+          </div>
+          <p class="inline-hint" style="margin-bottom: 14px;">
+            FiestaPanel provides a lightweight, powerful extension system. Build custom views, console hooks, and automated tools with Python and standard HTML.
+          </p>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">1. Addon Directory Structure</div>
+            <p class="help-text">Addons live in <code>addons/&lt;addon_id&gt;/</code>. A minimal working addon requires only <code>addon.json</code> and optional <code>main.py</code> / <code>tab.html</code>:</p>
+            <pre style="background: #111; color: #00ff66; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">addons/
+└── my_custom_addon/
+    ├── addon.json       # Required: Manifest with name, version, and schema
+    ├── main.py          # Optional: Python backend logic &amp; on_action hooks
+    ├── tab.html         # Optional: Custom UI rendered in panel tab
+    └── custom.css       # Optional: Custom DOM styles injected automatically</pre>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">2. Manifest Specification (<code>addon.json</code>)</div>
+            <pre style="background: #111; color: #38bdf8; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">{
+  "id": "my_announcer",
+  "name": "Server Auto-Announcer",
+  "version": "1.0.0",
+  "author": "YourName",
+  "description": "Periodically broadcasts custom announcement messages to all players in-game.",
+  "icon": "fas fa-bullhorn",
+  "category": "Automation",
+  "enabled": true,
+  "entrypoint": "main.py",
+  "settings_schema": [
+    { "key": "msg", "label": "Announcement Text", "type": "text", "default": "Welcome!" }
+  ],
+  "default_settings": {
+    "msg": "Welcome to our server!"
+  },
+  "ui_slots": {
+    "tab": {
+      "title": "Announcer",
+      "icon": "fas fa-bullhorn",
+      "description": "Configure automated announcements and test live chat broadcasts."
+    }
+  }
+}</pre>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">3. Backend Python Hooks (<code>main.py</code>)</div>
+            <pre style="background: #111; color: #facc15; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">def init_addon(ctx):
+    ctx.logger.info("Addon initialized!")
+
+def on_action(ctx, action_name, payload):
+    if action_name == "broadcast":
+        msg = payload.get("message") or ctx.get_settings().get("msg", "Hello")
+        success, response = ctx.send_command(f"say {msg}")
+        return {"success": success, "message": "Broadcast sent!" if success else response}
+    return {"success": False, "error": f"Unknown action: {action_name}"}</pre>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.06); padding: 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid rgba(128,128,128,0.2);">
+            <div class="section-sub-header" style="margin-top:0;">4. Frontend AJAX Communication</div>
+            <p class="help-text">Inside your <code>tab.html</code>, trigger backend actions effortlessly with standard <code>fetch()</code>:</p>
+            <pre style="background: #111; color: #e2e8f0; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto;">fetch('/api/panel-addons/my_announcer/action', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'broadcast', payload: { message: 'Hello from web!' } })
+})
+.then(res => res.json())
+.then(data => alert(data.message || data.error));</pre>
+          </div>
+
+          <div class="btn-row">
+            <a href="/api/panel-addons/template/download" class="btn-satin-green" style="text-decoration: none; padding: 6px 20px; font-weight: bold;">[ Download Starter Boilerplate Archive ]</a>
+            <button class="btn-classic" style="padding: 6px 16px;" onclick="selectNavView('panel-addons-installed')">[ Back to Installed Addons ]</button>
           </div>
         </section>
 
@@ -5182,6 +5307,22 @@
           <div class="help-sub">Enabling / Disabling</div>
           <p class="help-text">Toggle any addon off to disable its background tasks and hide its UI tab without deleting its files.</p>
         `
+      },
+      'panel-addons-store': {
+        title: 'Plugin Store Help',
+        body: `
+          <div class="help-sub">1-Click Addon Store</div>
+          <p class="help-text">Browse official and verified FiestaPanel extensions. Click Install to deploy an addon immediately into your panel without restarting.</p>
+          <div class="help-sub">Custom Addons</div>
+          <p class="help-text">You can also upload community-created ZIP packages or install directly from a Git URL.</p>
+        `
+      },
+      'panel-addons-create': {
+        title: 'Developer Guide Help',
+        body: `
+          <div class="help-sub">Building Plugins</div>
+          <p class="help-text">Anyone can write a FiestaPanel extension using Python and HTML. Download the starter kit to get a pre-configured template with full documentation.</p>
+        `
       }
     };
 
@@ -5216,7 +5357,25 @@
     function selectNavView(viewId, el) {
       activeView = viewId;
       document.querySelectorAll('.nav-sub-item').forEach(i => i.classList.remove('active'));
-      if (el) el.classList.add('active');
+      if (el) {
+        el.classList.add('active');
+      } else {
+        const matchingSub = document.querySelector(`.nav-sub-item[onclick*="'${viewId}'"]`);
+        if (matchingSub) {
+          matchingSub.classList.add('active');
+          const parentList = matchingSub.closest('.nav-sub-list');
+          if (parentList) {
+            document.querySelectorAll('.nav-sub-list').forEach(s => s.classList.remove('open'));
+            parentList.classList.add('open');
+            const navGroup = parentList.closest('.nav-group');
+            if (navGroup) {
+              const navParent = navGroup.querySelector('.nav-parent');
+              document.querySelectorAll('.nav-parent').forEach(p => p.classList.remove('active'));
+              if (navParent) navParent.classList.add('active');
+            }
+          }
+        }
+      }
 
       // Hide all panels, show selected
       document.querySelectorAll('.view-panel').forEach(p => p.style.display = 'none');
@@ -5248,6 +5407,7 @@
       if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); }
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
+      if (viewId === 'panel-addons-store') loadPanelAddonStore();
     }
 
     // ── Server Domain Admin Editor & Clipboard Helpers ────────────
