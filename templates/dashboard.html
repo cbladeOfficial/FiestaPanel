@@ -3766,8 +3766,10 @@
             <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadPlayers()">[ Refresh List ]</button>
           </div>
           <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              Filter Player: <input type="text" id="player-search-box" placeholder="Search by name..." oninput="filterPlayersTable()" style="width: 180px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>Filter Player:</span>
+              <input type="text" id="player-search-box" placeholder="Search by name, IP, or UUID..." oninput="filterPlayersTable()" style="width: 200px; height: 22px; font-size: 11px;">
+              <button type="button" class="btn-classic" style="height: 22px; font-size: 10px; padding: 0 6px;" onclick="clearPlayerSearch()" title="Clear filter">[ Clear ]</button>
             </div>
             <div style="font-size: 10px; color: #555;">
               Tip: Click <strong>Inventory</strong> to inspect live items or give/clear equipment.
@@ -3844,6 +3846,14 @@
               </td>
             </tr>
           </table>
+          <div style="margin: 10px 0 8px 0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>Filter Bans:</span>
+              <input type="text" id="ban-search-box" placeholder="Search banned player or IP..." oninput="filterBansTable()" style="width: 200px; height: 22px; font-size: 11px;">
+              <button type="button" class="btn-classic" style="height: 22px; font-size: 10px; padding: 0 6px;" onclick="clearBanSearch()" title="Clear filter">[ Clear ]</button>
+            </div>
+            <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadBans()">[ Refresh Bans ]</button>
+          </div>
           <div class="section-sub-header">Banned Player Accounts</div>
           <table class="data-grid-table">
             <thead>
@@ -7268,14 +7278,26 @@ def on_action(ctx, action_name, payload):
         if (!res.ok) return;
         const d = await res.json();
         allPlayersData = d.players || [];
-        renderPlayersTable(allPlayersData);
+        const searchBox = document.getElementById('player-search-box');
+        const q = searchBox ? searchBox.value.trim() : '';
+        if (q) {
+          filterPlayersTable();
+        } else {
+          renderPlayersTable(allPlayersData);
+        }
       } catch (e) {}
     }
 
     function renderPlayersTable(list) {
       const tbody = document.getElementById('players-table-body');
       if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No player profiles found.</td></tr>';
+        const searchBox = document.getElementById('player-search-box');
+        const q = searchBox ? searchBox.value.trim() : '';
+        if (q) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #888; padding: 16px;">No players matching "<strong>${escapeHtml(q)}</strong>". <button type="button" class="btn-classic" style="padding: 1px 6px; font-size: 10px; margin-left: 6px;" onclick="clearPlayerSearch()">[ Clear Filter ]</button></td></tr>`;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No player profiles found.</td></tr>';
+        }
         return;
       }
 
@@ -7410,9 +7432,27 @@ def on_action(ctx, action_name, payload):
     }
 
     function filterPlayersTable() {
-      const q = document.getElementById('player-search-box').value.toLowerCase().trim();
-      const filtered = allPlayersData.filter(p => p.name.toLowerCase().includes(q) || (p.ip && p.ip.toLowerCase().includes(q)));
+      const searchBox = document.getElementById('player-search-box');
+      const q = searchBox ? searchBox.value.toLowerCase().trim() : '';
+      if (!q) {
+        renderPlayersTable(allPlayersData);
+        return;
+      }
+      const filtered = allPlayersData.filter(p =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.ip && p.ip.toLowerCase().includes(q)) ||
+        (p.uuid && p.uuid.toLowerCase().includes(q))
+      );
       renderPlayersTable(filtered);
+    }
+
+    function clearPlayerSearch() {
+      const searchBox = document.getElementById('player-search-box');
+      if (searchBox) {
+        searchBox.value = '';
+        renderPlayersTable(allPlayersData);
+        searchBox.focus();
+      }
     }
 
     async function playerAction(player, action, param = '') {
@@ -8092,58 +8132,116 @@ def on_action(ctx, action_name, payload):
     }
 
     // ── Banned Players & IP Blacklist ──────────────────────────
+    let allBansData = { bans: [], ip_bans: [] };
+
     async function loadBans() {
       try {
         const res = await fetch('/api/bans');
         if (!res.ok) return;
         const d = await res.json();
-        const tbody = document.getElementById('bans-table-body');
-        if (!d.bans || !d.bans.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No players currently banned.</td></tr>';
+        allBansData = d;
+        const searchBox = document.getElementById('ban-search-box');
+        const q = searchBox ? searchBox.value.trim() : '';
+        if (q) {
+          filterBansTable();
         } else {
-          tbody.innerHTML = d.bans.map(b => `
+          renderBansTables(d.bans || [], d.ip_bans || []);
+        }
+      } catch (e) {}
+    }
+
+    function filterBansTable() {
+      const searchBox = document.getElementById('ban-search-box');
+      const q = searchBox ? searchBox.value.toLowerCase().trim() : '';
+      const bans = allBansData.bans || [];
+      const ipBans = allBansData.ip_bans || [];
+      if (!q) {
+        renderBansTables(bans, ipBans);
+        return;
+      }
+      const filteredBans = bans.filter(b =>
+        (b.name && b.name.toLowerCase().includes(q)) ||
+        (b.ip && b.ip.toLowerCase().includes(q)) ||
+        (b.reason && b.reason.toLowerCase().includes(q)) ||
+        (b.source && b.source.toLowerCase().includes(q))
+      );
+      const filteredIpBans = ipBans.filter(b =>
+        (b.ip && b.ip.toLowerCase().includes(q)) ||
+        (b.player && b.player.toLowerCase().includes(q)) ||
+        (b.reason && b.reason.toLowerCase().includes(q)) ||
+        (b.source && b.source.toLowerCase().includes(q))
+      );
+      renderBansTables(filteredBans, filteredIpBans);
+    }
+
+    function clearBanSearch() {
+      const searchBox = document.getElementById('ban-search-box');
+      if (searchBox) {
+        searchBox.value = '';
+        renderBansTables(allBansData.bans || [], allBansData.ip_bans || []);
+        searchBox.focus();
+      }
+    }
+
+    function renderBansTables(bans, ipBans) {
+      const tbody = document.getElementById('bans-table-body');
+      if (!bans || !bans.length) {
+        const searchBox = document.getElementById('ban-search-box');
+        const q = searchBox ? searchBox.value.trim() : '';
+        if (q) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888; padding: 12px;">No banned player accounts matching "<strong>${escapeHtml(q)}</strong>".</td></tr>`;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No players currently banned.</td></tr>';
+        }
+      } else {
+        tbody.innerHTML = bans.map(b => `
+          <tr>
+            <td><strong>${escapeHtml(b.name || 'Unknown')}</strong></td>
+            <td style="font-family: monospace; font-size: 11px;">
+              ${b.ip ? escapeHtml(b.ip) : '<span style="color: #999;">--</span>'}
+              ${b.is_ip_banned ? ' <span class="badge-status offline" style="font-size: 9px; padding: 0 4px; vertical-align: middle;">IP-BANNED</span>' : ''}
+            </td>
+            <td>${b.created || '--'}</td>
+            <td>${escapeHtml(b.source || 'Admin')}</td>
+            <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
+            <td>
+              <div style="display: flex; gap: 3px; align-items: center;">
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="playerAction('${escapeHtml(b.name)}', 'pardon')">Pardon</button>
+                ${b.is_ip_banned
+                  ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="instantPardonIpPlayer('${escapeHtml(b.name)}', '${escapeHtml(b.ip || '')}')">Pardon IP</button>`
+                  : `<button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="instantBanIpPlayer('${escapeHtml(b.name)}')">Ban IP</button>`
+                }
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      const ipTbody = document.getElementById('ip-bans-table-body');
+      if (ipTbody) {
+        if (!ipBans || !ipBans.length) {
+          const searchBox = document.getElementById('ban-search-box');
+          const q = searchBox ? searchBox.value.trim() : '';
+          if (q) {
+            ipTbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888; padding: 12px;">No blacklisted IP addresses matching "<strong>${escapeHtml(q)}</strong>".</td></tr>`;
+          } else {
+            ipTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>';
+          }
+        } else {
+          ipTbody.innerHTML = ipBans.map(b => `
             <tr>
-              <td><strong>${escapeHtml(b.name || 'Unknown')}</strong></td>
-              <td style="font-family: monospace; font-size: 11px;">
-                ${b.ip ? escapeHtml(b.ip) : '<span style="color: #999;">--</span>'}
-                ${b.is_ip_banned ? ' <span class="badge-status offline" style="font-size: 9px; padding: 0 4px; vertical-align: middle;">IP-BANNED</span>' : ''}
-              </td>
+              <td><strong style="font-family: monospace; color: #b00;">${escapeHtml(b.ip || 'Unknown')}</strong></td>
+              <td>${b.player ? `<strong style="color: #2563eb;">${escapeHtml(b.player)}</strong>` : '<span style="color: #999;">--</span>'}</td>
               <td>${b.created || '--'}</td>
               <td>${escapeHtml(b.source || 'Admin')}</td>
               <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
               <td>
-                <div style="display: flex; gap: 3px; align-items: center;">
-                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="playerAction('${escapeHtml(b.name)}', 'pardon')">Pardon</button>
-                  ${b.is_ip_banned
-                    ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="instantPardonIpPlayer('${escapeHtml(b.name)}', '${escapeHtml(b.ip || '')}')">Pardon IP</button>`
-                    : `<button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="instantBanIpPlayer('${escapeHtml(b.name)}')">Ban IP</button>`
-                  }
-                </div>
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="pardonIpAddress('${escapeHtml(b.ip)}')">Pardon IP</button>
               </td>
             </tr>
           `).join('');
         }
-
-        const ipTbody = document.getElementById('ip-bans-table-body');
-        if (ipTbody) {
-          if (!d.ip_bans || !d.ip_bans.length) {
-            ipTbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>';
-          } else {
-            ipTbody.innerHTML = d.ip_bans.map(b => `
-              <tr>
-                <td><strong style="font-family: monospace; color: #b00;">${escapeHtml(b.ip || 'Unknown')}</strong></td>
-                <td>${b.player ? `<strong style="color: #2563eb;">${escapeHtml(b.player)}</strong>` : '<span style="color: #999;">--</span>'}</td>
-                <td>${b.created || '--'}</td>
-                <td>${escapeHtml(b.source || 'Admin')}</td>
-                <td style="color: #cc0000;">${escapeHtml(b.reason || 'Banned by operator')}</td>
-                <td>
-                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #008822;" onclick="pardonIpAddress('${escapeHtml(b.ip)}')">Pardon IP</button>
-                </td>
-              </tr>
-            `).join('');
-          }
-        }
-      } catch (e) {}
+      }
     }
 
     async function pardonIpAddress(ip) {
