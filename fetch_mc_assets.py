@@ -4,6 +4,8 @@ import sys
 import json
 import re
 import urllib.request
+import urllib.parse
+import threading
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,15 +13,31 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSET_DIR = os.path.join(BASE_DIR, "static", "mcassets")
 MAPPING_FILE = os.path.join(BASE_DIR, "items_textures.json")
 CATALOG_FILE = os.path.join(ASSET_DIR, "catalog.json")
+DESCRIPTIONS_FILE = os.path.join(ASSET_DIR, "descriptions.json")
 
 os.makedirs(ASSET_DIR, exist_ok=True)
 
+# 3D block entities & special items that fail or map to unwrapped UV net textures in vanilla dumps.
+# These prioritize Minecraft Wiki's official 3D isometric inventory icons (Invicon).
+WIKI_PREFERRED_ITEMS = {
+    "chest", "trapped_chest", "ender_chest",
+    "dragon_head", "player_head", "zombie_head", "skeleton_skull", "wither_skeleton_skull", "creeper_head", "piglin_head",
+    "bed", "red_bed", "white_bed", "black_bed", "blue_bed", "brown_bed", "cyan_bed",
+    "gray_bed", "green_bed", "light_blue_bed", "light_gray_bed", "lime_bed",
+    "magenta_bed", "orange_bed", "pink_bed", "purple_bed", "yellow_bed",
+    "shield", "conduit", "bell", "enchanting_table", "decorated_pot",
+    "shulker_box", "white_shulker_box", "orange_shulker_box", "magenta_shulker_box", "light_blue_shulker_box",
+    "yellow_shulker_box", "lime_shulker_box", "pink_shulker_box", "gray_shulker_box", "light_gray_shulker_box",
+    "cyan_shulker_box", "purple_shulker_box", "blue_shulker_box", "brown_shulker_box", "green_shulker_box",
+    "red_shulker_box", "black_shulker_box",
+    "white_banner", "orange_banner", "magenta_banner", "light_blue_banner",
+    "yellow_banner", "lime_banner", "pink_banner", "gray_banner", "light_gray_banner",
+    "cyan_banner", "purple_banner", "blue_banner", "brown_banner", "green_banner",
+    "red_banner", "black_banner"
+}
+
 # Special aliases and entity/block texture mappings
 aliases = {
-    "shield": "entity/shield_base_nopattern",
-    "chest": "entity/chest/normal",
-    "trapped_chest": "entity/chest/trapped",
-    "ender_chest": "entity/chest/ender",
     "crafting_table": "block/crafting_table_top",
     "furnace": "block/furnace_front",
     "blast_furnace": "block/blast_furnace_front",
@@ -36,15 +54,6 @@ aliases = {
     "observer": "block/observer_front",
     "piston": "block/piston_top",
     "sticky_piston": "block/piston_top_sticky",
-    "red_bed": "item/red_bed",
-    "white_bed": "item/white_bed",
-    "black_bed": "item/black_bed",
-    "blue_bed": "item/blue_bed",
-    "yellow_bed": "item/yellow_bed",
-    "green_bed": "item/green_bed",
-    "purple_bed": "item/purple_bed",
-    "pink_bed": "item/pink_bed",
-    "bed": "item/red_bed",
 }
 
 extra_items = [
@@ -110,12 +119,141 @@ def format_item_name(item_id):
     clean = (item_id or "").replace("minecraft:", "").strip()
     return " ".join(w.capitalize() for w in clean.split("_"))
 
+def to_wiki_title(item_id):
+    clean = (item_id or "").replace("minecraft:", "").lower().strip()
+    if clean == "bed":
+        return "Red Bed"
+    return " ".join(w.capitalize() for w in clean.split("_"))
+
+def fetch_wiki_item(item_name, dest=None):
+    """
+    Fetches official 3D isometric inventory sprite from Minecraft Wiki via MediaWiki API.
+    """
+    clean_name = item_name.lower().replace("minecraft:", "").strip()
+    if not dest:
+        dest = os.path.join(ASSET_DIR, f"{clean_name}.png")
+
+    title = to_wiki_title(clean_name)
+    query_titles = f"File:Invicon {title}.png|File:{title}.png|{title}"
+    url = f"https://minecraft.wiki/api.php?action=query&titles={urllib.parse.quote(query_titles)}&prop=imageinfo|pageimages&iiprop=url&piprop=original|thumbnail&pithumbsize=160&redirects=1&format=json"
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@fiestasmp.com)"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            pages = data.get("query", {}).get("pages", {})
+
+            img_url = None
+            # Check File:Invicon first
+            for pid, p in pages.items():
+                if p.get("title", "").startswith("File:Invicon") and p.get("imageinfo"):
+                    img_url = p["imageinfo"][0].get("url")
+                    break
+            # Check other File:
+            if not img_url:
+                for pid, p in pages.items():
+                    if p.get("title", "").startswith("File:") and p.get("imageinfo"):
+                        img_url = p["imageinfo"][0].get("url")
+                        break
+            # Check page thumbnail
+            if not img_url:
+                for pid, p in pages.items():
+                    if p.get("thumbnail"):
+                        img_url = p["thumbnail"].get("source")
+                        break
+                    if p.get("original"):
+                        img_url = p["original"].get("source")
+                        break
+
+            if img_url:
+                img_req = urllib.request.Request(img_url, headers={"User-Agent": "FiestaPanel/2.1 (admin@fiestasmp.com)"})
+                with urllib.request.urlopen(img_req, timeout=5) as img_resp:
+                    data = img_resp.read()
+                    if len(data) > 50:
+                        os.makedirs(os.path.dirname(dest), exist_ok=True)
+                        with open(dest, "wb") as f_out:
+                            f_out.write(data)
+                        return True
+    except Exception as e:
+        logging.debug(f"Wiki fetch failed for {clean_name}: {e}")
+    return False
+
+_descriptions_cache = None
+_descriptions_lock = threading.Lock()
+
+def get_item_description(item_name):
+    """
+    Fetches official item summary/description and wiki URL from Minecraft Wiki.
+    Cached locally in descriptions.json for instant subsequent lookups.
+    """
+    global _descriptions_cache
+    clean_name = item_name.lower().replace("minecraft:", "").strip()
+
+    with _descriptions_lock:
+        if _descriptions_cache is None:
+            _descriptions_cache = {}
+            if os.path.exists(DESCRIPTIONS_FILE):
+                try:
+                    with open(DESCRIPTIONS_FILE, "r", encoding="utf-8") as f:
+                        _descriptions_cache = json.load(f)
+                except Exception:
+                    _descriptions_cache = {}
+
+        if clean_name in _descriptions_cache:
+            return _descriptions_cache[clean_name]
+
+    title = to_wiki_title(clean_name)
+    url = f"https://minecraft.wiki/api.php?action=query&titles={urllib.parse.quote(title)}&prop=extracts&exintro=1&explaintext=1&redirects=1&format=json"
+    desc = None
+    wiki_title = title
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@fiestasmp.com)"})
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            data = json.loads(resp.read().decode())
+            pages = data.get("query", {}).get("pages", {})
+            for pid, p in pages.items():
+                if p.get("extract"):
+                    desc = p["extract"].strip()
+                    desc = re.sub(r"\n{2,}", "\n", desc)
+                if p.get("title"):
+                    wiki_title = p["title"]
+                if desc:
+                    break
+    except Exception as e:
+        logging.debug(f"Wiki description fetch failed for {clean_name}: {e}")
+
+    if not desc:
+        desc = f"A standard Minecraft block or item ({format_item_name(clean_name)})."
+
+    entry = {
+        "description": desc,
+        "title": wiki_title,
+        "wiki_url": f"https://minecraft.wiki/w/{urllib.parse.quote(wiki_title.replace(' ', '_'))}"
+    }
+
+    with _descriptions_lock:
+        _descriptions_cache[clean_name] = entry
+        try:
+            with open(DESCRIPTIONS_FILE, "w", encoding="utf-8") as f:
+                json.dump(_descriptions_cache, f, indent=2)
+        except Exception:
+            pass
+        return entry
+
 def fetch_single(item_name, versions=None):
-    dest = os.path.join(ASSET_DIR, f"{item_name}.png")
+    clean_name = item_name.lower().replace("minecraft:", "").strip()
+    dest = os.path.join(ASSET_DIR, f"{clean_name}.png")
+
+    # If it's a known 3D block entity or entity texture, use Minecraft Wiki directly
+    if clean_name in WIKI_PREFERRED_ITEMS:
+        if os.path.exists(dest) and os.path.getsize(dest) > 50:
+            return True
+        if fetch_wiki_item(clean_name, dest):
+            return True
+
     if os.path.exists(dest) and os.path.getsize(dest) > 50:
         return True
 
-    clean_name = item_name.lower().replace("minecraft:", "").strip()
     name_to_tex = load_name_to_tex()
     tex = aliases.get(clean_name) or name_to_tex.get(clean_name)
 
@@ -151,6 +289,11 @@ def fetch_single(item_name, versions=None):
                         return True
         except Exception:
             continue
+
+    # Upstream CDNs failed; fallback to Minecraft Wiki as alternate source!
+    if fetch_wiki_item(clean_name, dest):
+        return True
+
     return False
 
 def update_catalog():

@@ -5149,6 +5149,60 @@ def on_action(ctx, action_name, payload):
     </div>
   </div>
 
+  <!-- ── ITEM WIKI & DETAILS MODAL ────────────────────────── -->
+  <div id="tp-item-details-modal" class="inv-modal-overlay" style="display:none; z-index: 10050;" onclick="if(event.target===this) closeItemDetailsModal();">
+    <div class="inv-modal-box" style="width: 520px; max-width: 95vw;">
+      <div class="section-title-bar" style="margin-bottom: 0;">
+        <span style="display: flex; align-items: center; gap: 7px;">
+          <i class="fa-solid fa-cube" style="color: #22c55e;"></i>
+          <span id="item-details-modal-title">Item Details &amp; Minecraft Wiki Info</span>
+        </span>
+        <button class="btn-classic" type="button" style="height: 19px; line-height: 15px; font-weight: bold;" onclick="closeItemDetailsModal()">[ X ]</button>
+      </div>
+      <div style="padding: 16px; background: var(--table-bg); color: var(--text-color);">
+        <!-- Top header with item icon and badges -->
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--table-td-border);">
+          <div style="width: 52px; height: 52px; background: #8b8b8b; border: 2px inset #fff; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0;">
+            <img id="item-details-img" src="" alt="Icon" style="width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated;">
+            <span id="item-details-count-badge" class="item-count" style="display: none;">1</span>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div id="item-details-name" style="font-size: 15px; font-weight: bold; color: var(--primary-accent, #006622); line-height: 1.2;">Item Name</div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap;">
+              <code id="item-details-id" style="font-size: 11px; background: rgba(0,0,0,0.06); padding: 2px 6px; border: 1px solid rgba(0,0,0,0.12); font-family: monospace;">minecraft:item</code>
+              <span id="item-details-stack-info" style="font-size: 11px; color: #666;">Stack: 1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description from Minecraft Wiki -->
+        <div style="margin-bottom: 14px;">
+          <div style="font-weight: bold; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; color: #555; display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="fa-solid fa-book-open" style="margin-right: 4px;"></i> Minecraft Wiki Description</span>
+            <span id="item-details-wiki-badge" style="font-size: 9px; padding: 1px 6px; background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; border-radius: 2px;">Official Wiki</span>
+          </div>
+          <div id="item-details-desc-box" style="background: rgba(0,0,0,0.03); border: 1px solid var(--table-td-border); padding: 10px 12px; font-size: 12px; line-height: 1.5; max-height: 150px; overflow-y: auto; color: var(--text-color);">
+            <div id="item-details-desc-text">Loading description from Minecraft Wiki...</div>
+          </div>
+        </div>
+
+        <!-- Wiki Link & Action Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px;">
+          <a id="item-details-wiki-link" href="https://minecraft.wiki" target="_blank" class="btn-classic console-link" style="display: inline-flex; align-items: center; gap: 5px; height: 26px; text-decoration: none;" onclick="handleExternalLinkClick(event, this.href)">
+            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
+            <span>[ View on Minecraft Wiki ]</span>
+          </a>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 10px;" onclick="giveItemQuick(1)">[ + Give 1 ]</button>
+            <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 10px;" onclick="giveItemQuick(64)">[ + Give 64 ]</button>
+            <button type="button" class="btn-danger-red" style="height: 26px; padding: 0 8px;" onclick="removeItemQuick()">[ × Clear Stack ]</button>
+            <button type="button" class="btn-classic" style="height: 26px; padding: 0 10px; font-weight: bold;" onclick="closeItemDetailsModal()">[ Close ]</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── TRUSTED DOMAINS MANAGEMENT MODAL ─────────────────── -->
   <div id="tp-trusted-domains-modal" class="inv-modal-overlay" style="display:none;" onclick="if(event.target===this) closeTrustedDomainsModal();">
     <div class="inv-modal-box" style="width: 580px; max-width: 95vw;">
@@ -6597,14 +6651,22 @@ def on_action(ctx, action_name, payload):
     function handleInvImgError(img, cleanId) {
       if (img.dataset.failed) return;
 
-      // 1. First fallback: query backend dynamic asset cache
+      // 1. First fallback: query backend dynamic asset cache (handles Minecraft Wiki & CDN resolution)
       if (!img.dataset.triedLocalApi) {
         img.dataset.triedLocalApi = "true";
         img.src = `/api/mc-item-icon/${encodeURIComponent(cleanId)}`;
         return;
       }
 
-      // 2. Second fallback: try version-aware upstream CDN textures
+      // 2. Second fallback: try direct Minecraft Wiki Invicon sprite
+      if (!img.dataset.triedWikiInvicon) {
+        img.dataset.triedWikiInvicon = "true";
+        const wikiTitle = cleanId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
+        img.src = `https://minecraft.wiki/images/Invicon_${encodeURIComponent(wikiTitle)}.png`;
+        return;
+      }
+
+      // 3. Third fallback: try version-aware upstream CDN textures
       const v = window.installedMcVersion || '1.21.4';
       if (!img.dataset.triedMcassetItem) {
         img.dataset.triedMcassetItem = "true";
@@ -6624,7 +6686,7 @@ def on_action(ctx, action_name, payload):
         return;
       }
 
-      // 3. Final fallback: could not render icon, fallback to clean legible text
+      // 4. Final fallback: could not render icon, fallback to clean legible text
       img.dataset.failed = "true";
       img.style.display = 'none';
       const slot = img.parentElement;
@@ -6645,6 +6707,89 @@ def on_action(ctx, action_name, payload):
         const iconFallback = img.parentElement ? img.parentElement.querySelector('.item-dropdown-icon-fallback') : null;
         if (iconFallback) iconFallback.style.display = 'inline-flex';
       }
+    }
+
+    let currentDetailsFullId = null;
+
+    async function showItemDetails(fullId, cleanId, count) {
+      currentDetailsFullId = fullId;
+      const modal = document.getElementById('tp-item-details-modal');
+      if (!modal) return;
+
+      const formattedName = formatItemFallbackName(cleanId);
+      document.getElementById('item-details-modal-title').textContent = `${formattedName} Details & Wiki Info`;
+      document.getElementById('item-details-name').textContent = formattedName;
+      document.getElementById('item-details-id').textContent = fullId;
+      document.getElementById('item-details-stack-info').textContent = `Slot Count: ${count}`;
+
+      const countBadge = document.getElementById('item-details-count-badge');
+      if (count > 1) {
+        countBadge.textContent = count;
+        countBadge.style.display = 'block';
+      } else {
+        countBadge.style.display = 'none';
+      }
+
+      const img = document.getElementById('item-details-img');
+      img.dataset.failed = "";
+      img.dataset.triedLocalApi = "";
+      img.dataset.triedWikiInvicon = "";
+      img.src = `/static/mcassets/${cleanId}.png`;
+      img.onerror = () => handleInvImgError(img, cleanId);
+
+      const descText = document.getElementById('item-details-desc-text');
+      descText.textContent = 'Loading description from Minecraft Wiki...';
+      const wikiLink = document.getElementById('item-details-wiki-link');
+      const fallbackWikiTitle = cleanId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('_');
+      wikiLink.href = `https://minecraft.wiki/w/${encodeURIComponent(fallbackWikiTitle)}`;
+
+      modal.style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/mc-item-info/${encodeURIComponent(cleanId)}`);
+        if (res.ok) {
+          const d = await res.json();
+          if (d.success) {
+            descText.textContent = d.description || 'No description available for this item on Minecraft Wiki.';
+            if (d.name) document.getElementById('item-details-name').textContent = d.name;
+            if (d.wiki_url) wikiLink.href = d.wiki_url;
+          } else {
+            descText.textContent = 'Description not found on Minecraft Wiki.';
+          }
+        } else {
+          descText.textContent = 'Could not retrieve Wiki details.';
+        }
+      } catch (err) {
+        descText.textContent = 'Failed to load description from server.';
+      }
+    }
+
+    function closeItemDetailsModal() {
+      const modal = document.getElementById('tp-item-details-modal');
+      if (modal) modal.style.display = 'none';
+      currentDetailsFullId = null;
+    }
+
+    async function giveItemQuick(count) {
+      if (!currentInvPlayer || !currentDetailsFullId) return;
+      try {
+        const res = await fetch('/api/player/inventory/give', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ player: currentInvPlayer, item: currentDetailsFullId, count: count || 1 })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message);
+        setTimeout(refreshCurrentPlayerInventory, 500);
+      } catch (e) {
+        showBannerAlert('Failed to give item', true);
+      }
+    }
+
+    async function removeItemQuick() {
+      if (!currentInvPlayer || !currentDetailsFullId) return;
+      closeItemDetailsModal();
+      await clearPlayerItem(currentDetailsFullId);
     }
 
     function renderSlotHtml(item, slotLabel, emptySilhouette) {
@@ -6668,7 +6813,7 @@ def on_action(ctx, action_name, payload):
       const displayName = escapeHtml(formatItemFallbackName(cleanId, item.name));
 
       return `
-        <div class="inv-slot" title="${itemName} (${fullId})${item.count > 1 ? ' x' + item.count : ''}">
+        <div class="inv-slot" onclick="showItemDetails('${fullId}', '${escapeHtml(cleanId)}', ${item.count || 1})" title="${itemName} (${fullId})${item.count > 1 ? ' x' + item.count : ''} — Click for Wiki Details &amp; Actions" style="cursor: pointer;">
           <span class="slot-clear-btn" title="Remove this stack" onclick="event.stopPropagation(); clearPlayerItem('${fullId}')">×</span>
           <img class="inv-item-img" src="/static/mcassets/${cleanId}.png" alt="${itemName}" onerror="handleInvImgError(this, '${cleanId}')">
           <span class="item-fallback-name" style="display: none;">${displayName}</span>

@@ -15,4 +15,5 @@ addon_stats.json
 static/mcassets/*.png
 !static/mcassets/empty_*.png
 static/mcassets/catalog.json
+static/mcassets/descriptions.json
 

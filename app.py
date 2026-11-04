@@ -1403,10 +1403,19 @@ def api_mc_item_icon(item_id):
     clean = item_id.lower().replace("minecraft:", "").strip()
     clean = re.sub(r"[^a-z0-9_\-]", "", clean)
     cached = os.path.join(MCASSETS_DIR, f"{clean}.png")
-    if os.path.exists(cached):
+    if os.path.exists(cached) and os.path.getsize(cached) > 50:
         return send_from_directory(MCASSETS_DIR, f"{clean}.png", mimetype="image/png", max_age=604800)
 
-    # Dynamic fallback check using installed version candidates
+    # 1. First priority for 3D block entities & special items: Minecraft Wiki Invicon
+    try:
+        from fetch_mc_assets import WIKI_PREFERRED_ITEMS, fetch_wiki_item
+        if clean in WIKI_PREFERRED_ITEMS:
+            if fetch_wiki_item(clean, cached):
+                return send_from_directory(MCASSETS_DIR, f"{clean}.png", mimetype="image/png", max_age=604800)
+    except Exception:
+        pass
+
+    # 2. Dynamic fallback check using installed version candidates
     try:
         from fetch_mc_assets import get_version_candidates
         v_list = get_version_candidates(get_installed_mc_version())
@@ -1436,7 +1445,35 @@ def api_mc_item_icon(item_id):
         except Exception:
             continue
 
+    # 3. Third fallback: Minecraft Wiki MediaWiki API & Invicon
+    try:
+        from fetch_mc_assets import fetch_wiki_item
+        if fetch_wiki_item(clean, cached):
+            return send_from_directory(MCASSETS_DIR, f"{clean}.png", mimetype="image/png", max_age=604800)
+    except Exception:
+        pass
+
     return jsonify({"error": "Icon not found"}), 404
+
+@app.route("/api/mc-item-info/<path:item_id>")
+def api_mc_item_info(item_id):
+    clean = item_id.lower().replace("minecraft:", "").strip()
+    clean = re.sub(r"[^a-z0-9_\-]", "", clean)
+    try:
+        from fetch_mc_assets import get_item_description, format_item_name
+        info = get_item_description(clean)
+        return jsonify({
+            "success": True,
+            "id": f"minecraft:{clean}",
+            "clean_id": clean,
+            "name": format_item_name(clean),
+            "icon_url": f"/api/mc-item-icon/{clean}",
+            "description": info.get("description", ""),
+            "wiki_title": info.get("title", ""),
+            "wiki_url": info.get("wiki_url", f"https://minecraft.wiki/w/{clean}")
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route("/api/mc-items-list")
 def api_mc_items_list():
