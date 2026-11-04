@@ -29,14 +29,36 @@ from functools import wraps
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
 from addon_manager import AddonManager
 
-app = Flask(__name__)
-app.secret_key = os.urandom(32)
-app.config.update(SESSION_COOKIE_SECURE=True, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", MAX_CONTENT_LENGTH=100 * 1024 * 1024)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("FIESTA_DATA_DIR") or os.environ.get("GATEWAY_DATA_DIR") or BASE_DIR
 os.makedirs(DATA_DIR, exist_ok=True)
+
+def _get_secret_key():
+    env_key = os.environ.get("FIESTA_SECRET_KEY")
+    if env_key:
+        return env_key.encode("utf-8")
+    key_file = os.path.join(DATA_DIR, ".secret_key")
+    if os.path.isfile(key_file):
+        try:
+            with open(key_file, "rb") as f:
+                k = f.read().strip()
+                if len(k) >= 32:
+                    return k
+        except Exception:
+            pass
+    k = os.urandom(32)
+    try:
+        with open(key_file, "wb") as f:
+            f.write(k)
+        os.chmod(key_file, 0o600)
+    except Exception:
+        pass
+    return k
+
+app = Flask(__name__)
+app.secret_key = _get_secret_key()
+app.config.update(SESSION_COOKIE_SECURE=True, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", MAX_CONTENT_LENGTH=100 * 1024 * 1024)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 
 def load_server_config():

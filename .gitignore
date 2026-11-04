@@ -9,3 +9,4 @@ static/*.zip
 
 config.json
 addon_stats.json
+.secret_key
