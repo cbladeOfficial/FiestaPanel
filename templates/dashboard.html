@@ -3133,9 +3133,42 @@
             <button class="win7-btn-close" title="Close Session / Logout" type="button" onclick="window.location.href='/logout'"></button>
           </div>
         </div>
-        <div>
-          User: <strong style="color: #ffffff;">{{ user }}</strong> (<span style="text-transform: capitalize;">{{ role }}</span>) | Gateway: <span id="top-online-state" class="badge-status online">● Online</span>
-          <a class="logout-btn-link" href="/logout">[ Logout ]</a>
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+          <!-- Notification Bell & Badge Counter -->
+          <div style="position: relative; display: inline-block;">
+            <button id="btn-notifications-toggle" class="btn-theme-quick" onclick="toggleNotificationsPanel(event)" title="Notifications & Reminders" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; cursor: pointer;">
+              <i class="fa-solid fa-bell" style="font-size: 11px;"></i>
+              <span>Alerts</span>
+              <span id="notif-badge-count" style="display: none; background: #ef4444; color: #ffffff; font-size: 9px; padding: 0 5px; height: 14px; line-height: 14px; border-radius: 7px; font-weight: bold; margin-left: 2px;">0</span>
+            </button>
+
+            <!-- Notifications Dropdown Flyout Panel -->
+            <div id="tp-notifications-dropdown" class="inv-modal-box" style="display: none; position: absolute; right: 0; top: calc(100% + 6px); width: 420px; max-width: 92vw; z-index: 10060; box-shadow: 0 8px 24px rgba(0,0,0,0.3); text-align: left; padding: 0;">
+              <div class="section-title-bar" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; padding: 5px 10px;">
+                <span style="display: flex; align-items: center; gap: 6px; font-weight: bold; font-size: 11px;">
+                  <i class="fa-solid fa-bell" style="color: #2563eb;"></i>
+                  <span>Notifications &amp; Reminders</span>
+                  <span id="notif-dropdown-badge" class="badge-status" style="background: #ef4444; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 4px;">0 New</span>
+                </span>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button type="button" class="btn-classic" style="height: 18px; font-size: 9.5px; padding: 0 6px;" onclick="clearAllNotifications()">[ Clear All ]</button>
+                  <button type="button" class="btn-classic" style="height: 18px; font-size: 9.5px; padding: 0 5px; font-weight: bold;" onclick="closeNotificationsPanel()">[ X ]</button>
+                </div>
+              </div>
+              <div id="notif-dropdown-list" style="max-height: 340px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary, #fafafa);">
+                <!-- Dynamically populated notification items -->
+              </div>
+              <div style="padding: 6px 10px; background: var(--bg-tertiary, #f1f5f9); border-top: 1px solid var(--table-border, #cbd5e1); display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
+                <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="goToEventsManagerView(); closeNotificationsPanel();">[ 📅 Events Manager ]</button>
+                <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="openGoogleCalendarSyncModal(); closeNotificationsPanel();">[ 📅 Link Google Cal ]</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            User: <strong style="color: #ffffff;">{{ user }}</strong> (<span style="text-transform: capitalize;">{{ role }}</span>) | Gateway: <span id="top-online-state" class="badge-status online">● Online</span>
+            <a class="logout-btn-link" href="/logout">[ Logout ]</a>
+          </div>
         </div>
       </div>
     </header>
@@ -3160,7 +3193,10 @@
           <div class="nav-sub-list" id="sub-quicksetup">
             <div class="nav-sub-item" onclick="selectNavView('world-control', this)">- World Controls</div>
             <div class="nav-sub-item" onclick="selectNavView('world-broadcast', this)">- Announcements</div>
-            <div class="nav-sub-item" onclick="selectNavView('events-manager', this)" id="nav-sub-events">- Events Manager</div>
+            <div class="nav-sub-item" onclick="selectNavView('events-manager', this)" id="nav-sub-events" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>- Events Manager</span>
+              <span id="nav-events-badge" class="badge-status" style="display: none; background: #2563eb; color: #fff; font-size: 9px; padding: 0 5px; height: 14px; line-height: 14px; border-radius: 7px; margin-left: 4px;">0</span>
+            </div>
           </div>
         </div>
 
@@ -3268,7 +3304,33 @@
           </div>
         </div>
 
-        <!-- ════ VIEW 1: STATUS OVERVIEW ════ -->
+        <!-- ── UPCOMING EVENT NOTIFICATION BANNER ───────────────── -->
+        <div id="tp-event-reminder-banner" class="status-alert" style="display: none; background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; padding: 10px 14px; margin-bottom: 12px; border-radius: 2px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <i class="fa-solid fa-calendar-star" style="font-size: 16px; color: #2563eb;"></i>
+              <div>
+                <strong style="color: #1e3a8a;">Server Event Reminder:</strong>
+                <span id="event-reminder-banner-msg" style="margin-left: 4px; font-size: 11.5px;">No upcoming events.</span>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; user-select: none; color: #374151;">
+                <input type="checkbox" id="chk-dont-show-event-again">
+                <span>Don't show again</span>
+              </label>
+              <button type="button" class="btn-satin-green" style="height: 23px; padding: 0 10px; font-size: 10.5px;" onclick="goToEventsManagerView()">
+                [ View in Events Manager ]
+              </button>
+              <a id="btn-banner-gcal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-classic" style="height: 21px; padding: 0 8px; font-size: 10.5px; display: inline-flex; align-items: center; text-decoration: none; color: inherit;">
+                <i class="fa-solid fa-calendar-plus" style="margin-right: 3px; color: #2563eb;"></i>[ + Google Cal ]
+              </a>
+              <button type="button" class="btn-classic" style="height: 23px; padding: 0 8px; font-size: 10.5px;" onclick="dismissEventReminder()">
+                [ Dismiss ]
+              </button>
+            </div>
+          </div>
+        </div>
         <section id="view-status-overview" class="view-panel">
           <div class="section-title-bar">
             <span>Status Overview</span>
@@ -9839,30 +9901,36 @@ def on_action(ctx, action_name, payload):
     }
 
     // ── Server Software Update Reminder ──────────────────────────
+    let latestSoftwareUpdateData = null;
+
     async function checkSoftwareUpdateReminder() {
       const hideUpdates = localStorage.getItem('fiesta_hide_software_update_reminder') === 'true';
       const notifyChk = document.getElementById('chk-sw-notify-dashboard');
       if (notifyChk) notifyChk.checked = !hideUpdates;
-
-      if (hideUpdates) {
-        const banner = document.getElementById('tp-software-update-banner');
-        if (banner) banner.style.display = 'none';
-        return;
-      }
 
       try {
         const res = await fetch('/api/software/check-update');
         if (!res.ok) return;
         const d = await res.json();
         if (d.success && d.has_update) {
-          const banner = document.getElementById('tp-software-update-banner');
-          const msg = document.getElementById('sw-update-banner-msg');
-          if (banner && msg) {
-            msg.innerHTML = `A newer release of <strong>${escapeHtml(d.current_software)}</strong> is available (<strong>${escapeHtml(d.latest_version)}</strong>, currently running: <strong>${escapeHtml(d.current_version)}</strong>).`;
-            banner.style.display = 'block';
+          latestSoftwareUpdateData = d;
+          if (!hideUpdates) {
+            const banner = document.getElementById('tp-software-update-banner');
+            const msg = document.getElementById('sw-update-banner-msg');
+            if (banner && msg) {
+              msg.innerHTML = `A newer release of <strong>${escapeHtml(d.current_software)}</strong> is available (<strong>${escapeHtml(d.latest_version)}</strong>, currently running: <strong>${escapeHtml(d.current_version)}</strong>).`;
+              banner.style.display = 'block';
+            }
           }
+        } else {
+          latestSoftwareUpdateData = null;
+          const banner = document.getElementById('tp-software-update-banner');
+          if (banner) banner.style.display = 'none';
         }
       } catch (e) {}
+      if (typeof updateNotificationsSystem === 'function') {
+        updateNotificationsSystem();
+      }
     }
 
     function dismissSoftwareUpdateReminder() {
@@ -9895,6 +9963,11 @@ def on_action(ctx, action_name, payload):
       checkSoftwareUpdate();
     }
 
+    function goToEventsManagerView() {
+      selectNavView('events-manager');
+      loadEvents();
+    }
+
     // ── Events Manager Controller ────────────────────────────────
     let allEventsData = [];
     let isUserEventsAdmin = false;
@@ -9920,6 +9993,12 @@ def on_action(ctx, action_name, payload):
         if (statComp) statComp.textContent = counts.completed || 0;
 
         filterEventsList();
+        if (typeof updateEventReminderBanner === 'function') {
+          updateEventReminderBanner();
+        }
+        if (typeof updateNotificationsSystem === 'function') {
+          updateNotificationsSystem();
+        }
       } catch (err) {
         console.error('Failed to load events:', err);
       }
@@ -10274,6 +10353,331 @@ def on_action(ctx, action_name, payload):
       a.click();
       document.body.removeChild(a);
     }
+
+    // ── Notifications Panel & Event Banner Controller ────────────
+    function getDismissedNotificationKeys() {
+      try {
+        const saved = localStorage.getItem('fiesta_dismissed_notifications');
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveDismissedNotificationKeys(keys) {
+      try {
+        localStorage.setItem('fiesta_dismissed_notifications', JSON.stringify(keys));
+      } catch (e) {}
+    }
+
+    function formatEventTimeRelative(isoTime) {
+      if (!isoTime) return 'Unscheduled';
+      const target = new Date(isoTime);
+      if (isNaN(target.getTime())) return isoTime.replace('T', ' ');
+
+      const now = new Date();
+      const diffMs = target.getTime() - now.getTime();
+      const pad = n => String(n).padStart(2, '0');
+      const timeStr = `${pad(target.getHours())}:${pad(target.getMinutes())}`;
+      const dateStr = `${target.getFullYear()}-${pad(target.getMonth()+1)}-${pad(target.getDate())}`;
+
+      if (diffMs < -7200000) {
+        return `${dateStr} ${timeStr}`;
+      } else if (diffMs < 0) {
+        const minsAgo = Math.max(1, Math.round(-diffMs / 60000));
+        return `LIVE (Started ${minsAgo}m ago)`;
+      } else if (diffMs < 3600000) {
+        const mins = Math.max(1, Math.round(diffMs / 60000));
+        return `Starts in ${mins} minute${mins === 1 ? '' : 's'} (${timeStr})`;
+      } else if (diffMs < 86400000) {
+        const hours = Math.round(diffMs / 3600000);
+        return `Starts in ${hours} hour${hours === 1 ? '' : 's'} (${timeStr})`;
+      } else {
+        const days = Math.round(diffMs / 86400000);
+        return `Starts ${dateStr} at ${timeStr} (in ${days} day${days === 1 ? '' : 's'})`;
+      }
+    }
+
+    function updateEventReminderBanner() {
+      const banner = document.getElementById('tp-event-reminder-banner');
+      const msg = document.getElementById('event-reminder-banner-msg');
+      const gcalBtn = document.getElementById('btn-banner-gcal-link');
+      if (!banner || !msg) return;
+
+      const activeOrScheduled = (allEventsData || []).filter(e => e.status === 'scheduled' || e.status === 'active');
+      if (!activeOrScheduled.length) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      // Sort: active events first, then by start_time ascending
+      activeOrScheduled.sort((a, b) => {
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (b.status === 'active' && a.status !== 'active') return 1;
+        const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
+        const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
+        return ta - tb;
+      });
+
+      const nextEvt = activeOrScheduled[0];
+      const isDismissed = localStorage.getItem('fiesta_hide_event_banner_' + nextEvt.id) === 'true' ||
+                          localStorage.getItem('fiesta_hide_all_event_banners') === 'true';
+
+      if (isDismissed) {
+        banner.style.display = 'none';
+        return;
+      }
+
+      const timeText = formatEventTimeRelative(nextEvt.start_time);
+      let recurrence = '';
+      if (nextEvt.recurring && nextEvt.recurring !== 'none') {
+        recurrence = ` <span style="font-size:10px; color:#0284c7; font-weight:bold;">(${escapeHtml(nextEvt.recurring.toUpperCase())})</span>`;
+      }
+
+      let broadcastText = '';
+      if (nextEvt.broadcast_msg) {
+        broadcastText = ` — <span style="font-family:monospace; color:#b45309;">${escapeHtml(nextEvt.broadcast_msg)}</span>`;
+      }
+
+      const statusBadge = nextEvt.status === 'active'
+        ? `<span class="badge-status online" style="font-size:9.5px; margin-right:4px;">LIVE NOW</span>`
+        : `<span class="badge-status" style="background:#2563eb; color:#fff; font-size:9.5px; margin-right:4px;">UPCOMING</span>`;
+
+      msg.innerHTML = `${statusBadge}<strong>${escapeHtml(nextEvt.title)}</strong> (${timeText})${recurrence}${broadcastText}`;
+
+      if (gcalBtn) {
+        gcalBtn.href = getGoogleCalendarEventUrl(nextEvt);
+      }
+
+      banner.setAttribute('data-event-id', nextEvt.id);
+      banner.style.display = 'block';
+    }
+
+    function dismissEventReminder() {
+      const banner = document.getElementById('tp-event-reminder-banner');
+      if (!banner) return;
+      const evtId = banner.getAttribute('data-event-id');
+      const chk = document.getElementById('chk-dont-show-event-again');
+      if (chk && chk.checked) {
+        if (evtId) {
+          localStorage.setItem('fiesta_hide_event_banner_' + evtId, 'true');
+        } else {
+          localStorage.setItem('fiesta_hide_all_event_banners', 'true');
+        }
+        showBannerAlert('Event reminder hidden. You can view all events anytime in Events Manager.');
+      }
+      banner.style.display = 'none';
+    }
+
+    function updateNotificationsSystem() {
+      const listContainer = document.getElementById('notif-dropdown-list');
+      const badgeCount = document.getElementById('notif-badge-count');
+      const dropdownBadge = document.getElementById('notif-dropdown-badge');
+      const navEventsBadge = document.getElementById('nav-events-badge');
+
+      const dismissed = getDismissedNotificationKeys();
+      const notifs = [];
+
+      // 1. Software Update
+      if (latestSoftwareUpdateData && latestSoftwareUpdateData.has_update) {
+        const swKey = 'sw_' + latestSoftwareUpdateData.latest_version;
+        if (!dismissed.includes(swKey)) {
+          notifs.push({
+            key: swKey,
+            type: 'software',
+            title: 'Server Software Update Available',
+            body: `A newer release of <strong>${escapeHtml(latestSoftwareUpdateData.current_software)}</strong> is available: <strong>${escapeHtml(latestSoftwareUpdateData.latest_version)}</strong> (running: ${escapeHtml(latestSoftwareUpdateData.current_version)}).`,
+            icon: 'fa-solid fa-cloud-arrow-down',
+            iconColor: '#16a34a',
+            borderLeft: '#16a34a',
+            actionText: '[ Update Now ]',
+            onAction: 'goToSoftwareUpdateView(); closeNotificationsPanel();'
+          });
+        }
+      }
+
+      // 2. Upcoming / Active Events
+      const activeOrScheduled = (allEventsData || []).filter(e => e.status === 'scheduled' || e.status === 'active');
+      activeOrScheduled.sort((a, b) => {
+        if (a.status === 'active' && b.status !== 'active') return -1;
+        if (b.status === 'active' && a.status !== 'active') return 1;
+        const ta = a.start_time ? new Date(a.start_time).getTime() : 0;
+        const tb = b.start_time ? new Date(b.start_time).getTime() : 0;
+        return ta - tb;
+      });
+
+      // Update Nav events badge with total count of scheduled/active events
+      if (navEventsBadge) {
+        if (activeOrScheduled.length > 0) {
+          navEventsBadge.textContent = activeOrScheduled.length;
+          navEventsBadge.style.display = 'inline-block';
+        } else {
+          navEventsBadge.style.display = 'none';
+        }
+      }
+
+      for (const evt of activeOrScheduled) {
+        const evtKey = 'evt_' + evt.id;
+        if (!dismissed.includes(evtKey)) {
+          const timeRel = formatEventTimeRelative(evt.start_time);
+          const gcalUrl = getGoogleCalendarEventUrl(evt);
+          notifs.push({
+            key: evtKey,
+            type: 'event',
+            title: evt.title || 'Untitled Event',
+            status: evt.status,
+            timeSummary: timeRel,
+            recurring: evt.recurring,
+            description: evt.description,
+            broadcast: evt.broadcast_msg,
+            icon: 'fa-solid fa-calendar-star',
+            iconColor: '#2563eb',
+            borderLeft: '#2563eb',
+            gcalUrl: gcalUrl,
+            actionText: '[ View Event ]',
+            onAction: 'goToEventsManagerView(); closeNotificationsPanel();'
+          });
+        }
+      }
+
+      // Update header notification counter badge
+      const totalCount = notifs.length;
+      if (badgeCount) {
+        if (totalCount > 0) {
+          badgeCount.textContent = totalCount;
+          badgeCount.style.display = 'inline-block';
+        } else {
+          badgeCount.style.display = 'none';
+        }
+      }
+      if (dropdownBadge) {
+        dropdownBadge.textContent = totalCount + ' New';
+      }
+
+      // Render Dropdown List Items
+      if (listContainer) {
+        if (notifs.length === 0) {
+          listContainer.innerHTML = `
+            <div style="text-align: center; padding: 24px 10px; color: var(--text-sub, #666); font-size: 11.5px;">
+              <i class="fa-regular fa-bell-slash" style="font-size: 26px; color: #94a3b8; display: block; margin-bottom: 8px;"></i>
+              <strong>All caught up!</strong>
+              <div style="font-size: 10.5px; margin-top: 3px; color: #94a3b8;">No active alerts or pending scheduled reminders.</div>
+            </div>
+          `;
+        } else {
+          listContainer.innerHTML = notifs.map(n => {
+            if (n.type === 'software') {
+              return `
+                <div class="panel-box" style="margin: 0; padding: 8px 10px; border-left: 3px solid ${n.borderLeft}; background: var(--bg-primary, #fff);">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                      <i class="${n.icon}" style="color: ${n.iconColor}; font-size: 14px; margin-top: 2px;"></i>
+                      <div>
+                        <div style="font-weight: bold; font-size: 11.5px; color: var(--text-color, #111);">${escapeHtml(n.title)}</div>
+                        <div style="font-size: 11px; color: var(--text-sub, #555); margin-top: 2px;">${n.body}</div>
+                        <div style="margin-top: 6px; display: flex; gap: 4px;">
+                          <button type="button" class="btn-satin-green" style="height: 20px; font-size: 10px; padding: 0 8px;" onclick="${n.onAction}">[ Update Now ]</button>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-classic" style="height: 18px; width: 18px; padding: 0; line-height: 16px; font-size: 10px; text-align: center;" onclick="dismissNotification('${n.key}')" title="Dismiss notification">✕</button>
+                  </div>
+                </div>
+              `;
+            } else {
+              const statusTag = n.status === 'active'
+                ? '<span class="badge-status online" style="font-size: 9px;">ACTIVE</span>'
+                : '<span class="badge-status" style="background:#2563eb; color:#fff; font-size: 9px;">UPCOMING</span>';
+              const recTag = n.recurring && n.recurring !== 'none'
+                ? `<span style="font-size:9.5px; color:#0284c7; font-weight:bold;">(${escapeHtml(n.recurring.toUpperCase())})</span>`
+                : '';
+              const bcast = n.broadcast
+                ? `<div style="font-size: 10px; font-family: monospace; color: #b45309; margin-top: 2px;">📢 ${escapeHtml(n.broadcast)}</div>`
+                : '';
+              const desc = n.description
+                ? `<div style="font-size: 10.5px; color: #666; margin-top: 2px;">${escapeHtml(n.description)}</div>`
+                : '';
+
+              return `
+                <div class="panel-box" style="margin: 0; padding: 8px 10px; border-left: 3px solid ${n.borderLeft}; background: var(--bg-primary, #fff);">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                    <div style="display: flex; gap: 8px; align-items: flex-start;">
+                      <i class="${n.icon}" style="color: ${n.iconColor}; font-size: 14px; margin-top: 2px;"></i>
+                      <div>
+                        <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                          <strong style="font-size: 11.5px; color: var(--text-color, #111);">${escapeHtml(n.title)}</strong>
+                          ${statusTag}
+                          ${recTag}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-sub, #555); margin-top: 2px;">
+                          🕒 ${escapeHtml(n.timeSummary)}
+                        </div>
+                        ${desc}
+                        ${bcast}
+                        <div style="margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap;">
+                          <button type="button" class="btn-classic" style="height: 20px; font-size: 10px; padding: 0 8px;" onclick="${n.onAction}">[ View Event ]</button>
+                          <a href="${n.gcalUrl}" target="_blank" rel="noopener noreferrer" class="btn-classic" style="height: 18px; line-height: 18px; font-size: 10px; padding: 0 6px; text-decoration: none; color: inherit; display: inline-flex; align-items: center;">
+                            <i class="fa-solid fa-calendar-plus" style="margin-right: 3px; color: #2563eb;"></i>+ Google Cal
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-classic" style="height: 18px; width: 18px; padding: 0; line-height: 16px; font-size: 10px; text-align: center;" onclick="dismissNotification('${n.key}')" title="Dismiss notification">✕</button>
+                  </div>
+                </div>
+              `;
+            }
+          }).join('');
+        }
+      }
+    }
+
+    function dismissNotification(key) {
+      const dismissed = getDismissedNotificationKeys();
+      if (!dismissed.includes(key)) {
+        dismissed.push(key);
+        saveDismissedNotificationKeys(dismissed);
+      }
+      updateNotificationsSystem();
+    }
+
+    function clearAllNotifications() {
+      const dismissed = getDismissedNotificationKeys();
+      if (latestSoftwareUpdateData && latestSoftwareUpdateData.has_update) {
+        const swKey = 'sw_' + latestSoftwareUpdateData.latest_version;
+        if (!dismissed.includes(swKey)) dismissed.push(swKey);
+      }
+      for (const evt of (allEventsData || [])) {
+        const evtKey = 'evt_' + evt.id;
+        if (!dismissed.includes(evtKey)) dismissed.push(evtKey);
+      }
+      saveDismissedNotificationKeys(dismissed);
+      updateNotificationsSystem();
+      showBannerAlert('All notifications cleared.');
+    }
+
+    function toggleNotificationsPanel(event) {
+      if (event) event.stopPropagation();
+      const dropdown = document.getElementById('tp-notifications-dropdown');
+      if (!dropdown) return;
+      const isVisible = dropdown.style.display !== 'none';
+      dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+
+    function closeNotificationsPanel() {
+      const dropdown = document.getElementById('tp-notifications-dropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+      const dropdown = document.getElementById('tp-notifications-dropdown');
+      const btn = document.getElementById('btn-notifications-toggle');
+      if (dropdown && dropdown.style.display !== 'none') {
+        if (!dropdown.contains(e.target) && (!btn || !btn.contains(e.target))) {
+          dropdown.style.display = 'none';
+        }
+      }
+    });
 
     // ── Quick Install & Dynamic Version Resolution ──────────────
     let latestDetectedPaperVersion = '26.3';
@@ -12566,6 +12970,8 @@ def on_action(ctx, action_name, payload):
     fetchLatestSoftwareVersion();
     loadPanelAddons(false);
     checkSoftwareUpdateReminder();
+    loadEvents();
+    setInterval(loadEvents, 60000); // Poll/refresh scheduled events & reminders every minute
     setInterval(renderUptime, 1000); // High-precision local 1-second ticker (zero latency & zero lag)
     setInterval(pollStatus, 3000);
     setInterval(() => pollLogs(true), 2000);
