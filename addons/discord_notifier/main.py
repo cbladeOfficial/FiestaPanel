@@ -25,11 +25,11 @@ def on_action(ctx, action_name, payload):
             "avatar_url": avatar_url,
             "embeds": [
                 {
-                    "title": "🚀 FiestaPanel Webhook Bridge Verified",
+                    "title": "FiestaPanel Webhook Bridge Verified",
                     "description": "Connectivity test successful! Your Minecraft server is linked to this Discord channel.",
                     "color": color_int,
                     "fields": [
-                        {"name": "Status", "value": "✅ Online & Operational", "inline": True},
+                        {"name": "Status", "value": "Online & Operational", "inline": True},
                         {"name": "Timestamp", "value": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "inline": True}
                     ],
                     "footer": {
