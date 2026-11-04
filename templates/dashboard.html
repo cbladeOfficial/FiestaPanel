@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="disp-page-title">{{ branding.browser_title if branding else 'FIESTA-LINK | FS-GATEWAY-PRO Console' }}</title>
+  <link rel="icon" id="portal-favicon" href="{{ get_portal_favicon_url(branding) }}">
+  <link rel="shortcut icon" href="{{ get_portal_favicon_url(branding) }}">
+  <link rel="apple-touch-icon" href="{{ get_portal_favicon_url(branding) }}">
   <script>
     (function() {
       try {
@@ -11547,6 +11550,38 @@ def on_action(ctx, action_name, payload):
       return HEADER_ICONS[key] || HEADER_ICONS['tplink'];
     }
 
+    function updateBrowserTabIcon(key, customVal) {
+      let faviconEl = document.getElementById('portal-favicon');
+      if (!faviconEl) {
+        faviconEl = document.createElement('link');
+        faviconEl.id = 'portal-favicon';
+        faviconEl.rel = 'icon';
+        document.head.appendChild(faviconEl);
+      }
+
+      if (key === 'custom' && customVal) {
+        const val = customVal.trim();
+        if (val.startsWith('<svg')) {
+          const svg = val.includes('xmlns=') ? val : val.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+          faviconEl.type = 'image/svg+xml';
+          faviconEl.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        } else {
+          faviconEl.type = '';
+          faviconEl.href = `${val}${val.includes('?') ? '&' : '?'}v=${Date.now()}`;
+        }
+      } else {
+        const rawSvg = HEADER_ICONS[key] || HEADER_ICONS['tplink'];
+        let svg = rawSvg;
+        if (key === 'tplink') {
+          svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 28"><rect width="36" height="28" rx="5" fill="#006622"/>${rawSvg.replace(/<svg[^>]*>/, '').replace('</svg>', '')}</svg>`;
+        } else if (!svg.includes('xmlns=')) {
+          svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        faviconEl.type = 'image/svg+xml';
+        faviconEl.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+      }
+    }
+
     function selectHeaderIcon(iconKey) {
       const inp = document.getElementById('brand-input-icon');
       if (inp) inp.value = iconKey;
@@ -11558,6 +11593,7 @@ def on_action(ctx, action_name, payload):
         }
       });
       updateLiveBrandingPreview();
+      updateBrowserTabIcon(iconKey, '');
     }
 
     function onCustomIconInput(val) {
@@ -11569,6 +11605,60 @@ def on_action(ctx, action_name, payload):
         }
       }
       updateLiveBrandingPreview();
+      updateBrowserTabIcon(inp ? inp.value : 'tplink', val);
+    }
+
+    async function handleBrandIconFileUpload(input) {
+      if (!input || !input.files || !input.files.length) return;
+      const file = input.files[0];
+      const statusEl = document.getElementById('brand-file-status');
+      if (statusEl) {
+        statusEl.textContent = `Uploading ${file.name}...`;
+        statusEl.style.color = '#006622';
+      }
+
+      const formData = new FormData();
+      formData.append('icon', file);
+
+      try {
+        const res = await fetch('/api/branding/icon/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const d = await res.json();
+        if (d.success) {
+          const customInput = document.getElementById('brand-input-custom-icon');
+          const iconInput = document.getElementById('brand-input-icon');
+          if (customInput) customInput.value = d.icon_url;
+          if (iconInput) iconInput.value = 'custom';
+          document.querySelectorAll('.icon-choice-card').forEach(c => c.classList.remove('active'));
+          updateLiveBrandingPreview();
+
+          const dIcon = document.getElementById('disp-brand-icon');
+          if (dIcon) dIcon.innerHTML = renderIconHtml('custom', d.icon_url);
+
+          updateBrowserTabIcon('custom', d.icon_url);
+          if (statusEl) {
+            statusEl.textContent = `Uploaded & applied: ${file.name}`;
+            statusEl.style.color = '#008822';
+          }
+          showBannerAlert(d.message || 'Brand logo uploaded and applied successfully!');
+        } else {
+          if (statusEl) {
+            statusEl.textContent = d.message || 'Upload failed.';
+            statusEl.style.color = '#cc0000';
+          }
+          showBannerAlert(d.message || 'Upload failed.', true);
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = 'Upload error.';
+          statusEl.style.color = '#cc0000';
+        }
+        showBannerAlert('Network error uploading brand logo.', true);
+      } finally {
+        input.value = '';
+      }
     }
 
     // ── Portal Branding & Identity Management ───────────────────
@@ -11602,6 +11692,7 @@ def on_action(ctx, action_name, payload):
           }
 
           updateLiveBrandingPreview();
+          updateBrowserTabIcon(b.header_icon || 'tplink', b.header_icon_custom || '');
         }
       } catch (e) {
         console.error('Failed to load branding:', e);
@@ -11665,6 +11756,7 @@ def on_action(ctx, action_name, payload):
           if (dFooter) dFooter.textContent = payload.footer_text;
           if (dIcon) dIcon.innerHTML = renderIconHtml(payload.header_icon, payload.header_icon_custom);
           document.title = payload.browser_title;
+          updateBrowserTabIcon(payload.header_icon, payload.header_icon_custom);
 
           showBannerAlert('Portal branding, icon, and identity updated successfully!');
         } else {
@@ -11697,6 +11789,7 @@ def on_action(ctx, action_name, payload):
             if (dFooter) dFooter.textContent = d.branding.footer_text;
             if (dIcon) dIcon.innerHTML = renderIconHtml(d.branding.header_icon, d.branding.header_icon_custom);
             document.title = d.branding.browser_title;
+            updateBrowserTabIcon(d.branding.header_icon, d.branding.header_icon_custom);
           }
           showBannerAlert('Portal branding reset to defaults!');
         } else {

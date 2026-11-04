@@ -490,7 +490,19 @@ def get_header_icon_svg(icon_key, custom_val=""):
             return f'<img src="{custom_val}" alt="logo" style="max-height: 28px; max-width: 36px; object-fit: contain; vertical-align: middle;">'
     return HEADER_ICONS.get(icon_key, HEADER_ICONS["tplink"])
 
-app.jinja_env.globals.update(get_header_icon_svg=get_header_icon_svg)
+def get_portal_favicon_url(branding=None):
+    if not branding:
+        branding = load_branding()
+    icon_key = branding.get("header_icon", "tplink")
+    custom_val = (branding.get("header_icon_custom") or "").strip()
+    if icon_key == "custom" and custom_val and (custom_val.startswith("/static/") or custom_val.startswith("http")):
+        return custom_val
+    return f"/api/branding/favicon?v={icon_key}"
+
+app.jinja_env.globals.update(
+    get_header_icon_svg=get_header_icon_svg,
+    get_portal_favicon_url=get_portal_favicon_url
+)
 
 def load_branding():
     target = BRANDING_FILE
@@ -1814,6 +1826,44 @@ def api_upload_branding_icon():
         "icon_url": icon_url,
         "branding": branding
     })
+
+@app.route("/favicon.ico")
+@app.route("/api/branding/favicon")
+def api_branding_favicon():
+    branding = load_branding()
+    icon_key = branding.get("header_icon", "tplink")
+    custom_val = (branding.get("header_icon_custom") or "").strip()
+
+    # 1. Custom uploaded image (PNG, JPG, ICO, WEBP, SVG file)
+    if icon_key == "custom" and custom_val:
+        if custom_val.startswith("/static/"):
+            rel_path = custom_val[len("/static/"):].lstrip("/")
+            local_path = os.path.join(STATIC_DIR, rel_path)
+            if os.path.exists(local_path) and os.path.isfile(local_path):
+                ext = os.path.splitext(local_path)[1].lower()
+                mime = "image/png"
+                if ext == ".svg": mime = "image/svg+xml"
+                elif ext in (".jpg", ".jpeg"): mime = "image/jpeg"
+                elif ext == ".webp": mime = "image/webp"
+                elif ext == ".ico": mime = "image/x-icon"
+                elif ext == ".gif": mime = "image/gif"
+                return send_file(local_path, mimetype=mime)
+        elif custom_val.startswith("<svg"):
+            svg_content = custom_val
+            if "xmlns=" not in svg_content:
+                svg_content = svg_content.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"')
+            return Response(svg_content, mimetype="image/svg+xml")
+
+    # 2. Preset SVG from HEADER_ICONS
+    svg_raw = HEADER_ICONS.get(icon_key, HEADER_ICONS["tplink"])
+    if icon_key == "tplink":
+        svg_content = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 28"><rect width="36" height="28" rx="5" fill="#006622"/>{svg_raw.replace("<svg", "").replace("</svg>", "")}</svg>'
+    else:
+        svg_content = svg_raw
+        if "xmlns=" not in svg_content:
+            svg_content = svg_content.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"')
+
+    return Response(svg_content, mimetype="image/svg+xml", headers={"Cache-Control": "no-cache, must-revalidate"})
 
 @app.route("/api/branding", methods=["GET"])
 def api_get_branding():
