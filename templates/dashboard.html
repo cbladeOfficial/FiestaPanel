@@ -3158,10 +3158,6 @@
               <div id="notif-dropdown-list" style="max-height: 340px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary, #fafafa);">
                 <!-- Dynamically populated notification items -->
               </div>
-              <div style="padding: 6px 10px; background: var(--bg-tertiary, #f1f5f9); border-top: 1px solid var(--table-border, #cbd5e1); display: flex; justify-content: space-between; align-items: center; font-size: 10px;">
-                <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="goToEventsManagerView(); closeNotificationsPanel();">[ 📅 Events Manager ]</button>
-                <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="openGoogleCalendarSyncModal(); closeNotificationsPanel();">[ 📅 Link Google Cal ]</button>
-              </div>
             </div>
           </div>
 
@@ -3605,7 +3601,7 @@
           <div class="section-title-bar">
             <span>Events Manager — Server &amp; Player Operations</span>
             <div>
-              <button class="btn-classic" style="height: 20px; font-size: 10px; margin-right: 4px;" onclick="openGoogleCalendarSyncModal()"><i class="fa-solid fa-calendar-days" style="margin-right: 3px; color: #2563eb;"></i>[ 📅 Link Google Calendar ]</button>
+              <button class="btn-classic" style="height: 20px; font-size: 10px; margin-right: 4px;" onclick="openGoogleCalendarSyncModal()"><i class="fa-solid fa-calendar-days" style="margin-right: 3px; color: #2563eb;"></i>[ Link Google Calendar ]</button>
               {% if role in ['owner', 'administrator'] or 'all' in permissions or 'events' in permissions %}
               <button class="btn-satin-green" style="height: 20px; font-size: 10px; margin-right: 4px;" onclick="openCreateEventModal()">[ + Schedule New Event ]</button>
               {% endif %}
@@ -4494,7 +4490,7 @@
                     <option value="false">Disabled (Normal respawn enabled)</option>
                     <option value="true">Enabled (Permanent death: 1 life, lock to spectator)</option>
                   </select>
-                  <span class="inline-hint" style="color: #c00; font-weight: bold;">⚠ Applies hardcore rules to all players</span>
+                  <span class="inline-hint" style="color: #c00; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 3px;"></i>Applies hardcore rules to all players</span>
                 </td>
               </tr>
               <tr>
@@ -5661,11 +5657,11 @@ def on_action(ctx, action_name, payload):
         <!-- 1-Click Subscribe Button -->
         <div style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 4px; padding: 12px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
           <div>
-            <div style="font-weight: bold; font-size: 12px; color: #1d4ed8;">⚡ 1-Click Live Google Calendar Subscription</div>
+            <div style="font-weight: bold; font-size: 12px; color: #1d4ed8;">1-Click Live Google Calendar Subscription</div>
             <div style="font-size: 11px; color: var(--text-sub, #555); margin-top: 2px;">Instantly opens Google Calendar and prompts to subscribe to this server's live schedule.</div>
           </div>
           <button type="button" class="btn-satin-green" style="padding: 5px 12px; font-size: 11px; font-weight: bold; white-space: nowrap;" onclick="subscribeInGoogleCalendar()">
-            <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right: 4px;"></i>➕ Add to Google Calendar
+            <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right: 4px;"></i>Add to Google Calendar
           </button>
         </div>
 
@@ -5674,8 +5670,8 @@ def on_action(ctx, action_name, payload):
           <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 4px;">Live iCalendar / WebCal Feed URL:</label>
           <div style="display: flex; gap: 6px;">
             <input type="text" id="gcal-feed-url-input" readonly style="flex: 1; font-family: monospace; font-size: 11px; background: var(--bg-tertiary, #f8fafc); padding: 4px 8px; border: 1px solid var(--border-color, #ccc);" value="Loading feed link...">
-            <button type="button" class="btn-classic" style="padding: 4px 10px; font-size: 11px; font-weight: bold;" onclick="copyGoogleCalendarFeedUrl()">[ 📋 Copy Link ]</button>
-            <button type="button" class="btn-classic" style="padding: 4px 10px; font-size: 11px;" onclick="downloadIcsFile()" title="Download raw .ics calendar file">[ ⬇️ .ics ]</button>
+            <button type="button" class="btn-classic" style="padding: 4px 10px; font-size: 11px; font-weight: bold;" onclick="copyGoogleCalendarFeedUrl()">[ Copy Link ]</button>
+            <button type="button" class="btn-classic" style="padding: 4px 10px; font-size: 11px;" onclick="downloadIcsFile()" title="Download raw .ics calendar file">[ Download .ics ]</button>
           </div>
           <div class="inline-hint" style="font-size: 10.5px; color: #666; margin-top: 3px;">This feed token securely allows Google Calendar servers to refresh upcoming events automatically.</div>
         </div>
@@ -6255,7 +6251,7 @@ def on_action(ctx, action_name, payload):
         showBannerAlert('Copied to clipboard: ' + text);
         if (btn) {
           const originalText = btn.textContent;
-          btn.textContent = '[ ✓ Copied! ]';
+          btn.textContent = '[ Copied! ]';
           btn.style.color = '#006622';
           btn.style.fontWeight = 'bold';
           setTimeout(() => {
@@ -7292,7 +7288,7 @@ def on_action(ctx, action_name, payload):
               <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; ${p.is_banned ? 'color: #008822;' : 'color: #b00;'}" onclick="instantBanPlayer('${escapeHtml(p.name)}', ${p.is_banned})">${p.is_banned ? 'Pardon' : 'Ban'}</button>
               <button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="instantBanIpPlayer('${escapeHtml(p.name)}')">Ban-IP</button>
               <select style="height: 21px; font-size: 10px; padding: 0 2px;" onchange="if(this.value){ playerAction('${escapeHtml(p.name)}', this.value); this.value=''; }">
-                <option value="">More Actions ▾</option>
+                <option value="">More Actions</option>
                 <option value="gamemode_survival">Gamemode: Survival</option>
                 <option value="gamemode_creative">Gamemode: Creative</option>
                 <option value="gamemode_adventure">Gamemode: Adventure</option>
@@ -7635,14 +7631,14 @@ def on_action(ctx, action_name, payload):
           <div style="display: flex; flex-direction: column; gap: 4px; min-width: 170px;">
             <div style="display: flex; justify-content: space-between; font-size: 10px;">
               <span>Health: <strong>${data.health} / 20</strong></span>
-              <span style="color: #c00;">♥</span>
+              <i class="fa-solid fa-heart" style="color: #c00;"></i>
             </div>
             <div style="background: #e0e0e0; height: 8px; border: 1px solid #aaa; border-radius: 2px; overflow: hidden;">
               <div style="background: #dd2222; height: 100%; width: ${hpPercent}%;"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 10px;">
               <span>Food: <strong>${data.food} / 20</strong></span>
-              <span style="color: #bb6600;">🍗</span>
+              <i class="fa-solid fa-drumstick-bite" style="color: #bb6600;"></i>
             </div>
             <div style="background: #e0e0e0; height: 8px; border: 1px solid #aaa; border-radius: 2px; overflow: hidden;">
               <div style="background: #d8891c; height: 100%; width: ${foodPercent}%;"></div>
@@ -7712,7 +7708,7 @@ def on_action(ctx, action_name, payload):
               <div id="inv-item-dropdown" class="item-search-dropdown" style="display: none;">
                 <div class="item-dropdown-header">
                   <span id="item-dropdown-status">Select Item to Give</span>
-                  <span style="cursor: pointer; padding: 0 4px; font-weight: bold;" onclick="hideItemDropdown()">✕ Close</span>
+                  <span style="cursor: pointer; padding: 0 4px; font-weight: bold;" onclick="hideItemDropdown()">[ Close ]</span>
                 </div>
                 <div id="item-dropdown-list" class="item-dropdown-list"></div>
               </div>
@@ -8493,7 +8489,7 @@ def on_action(ctx, action_name, payload):
         if (d.success) {
           showBannerAlert(d.message);
           if (btn) {
-            btn.textContent = '✓ Installed';
+            btn.textContent = 'Installed';
             btn.style.background = '#008822';
             btn.style.color = '#ffffff';
           }
@@ -9036,7 +9032,7 @@ def on_action(ctx, action_name, payload):
       }
 
       tbody.innerHTML = items.map(item => {
-        const icon = item.is_dir ? '📁' : getFileIcon(item.extension);
+        const icon = item.is_dir ? '<i class="fa-solid fa-folder" style="color:#d97706;"></i>' : getFileIcon(item.extension);
         const nameClick = item.is_dir 
           ? `onclick="loadFileManager('${escapeHtml(item.path)}')"` 
           : (item.is_editable ? `onclick="openFileManagerEditor('${escapeHtml(item.path)}')"` : '');
@@ -9068,12 +9064,12 @@ def on_action(ctx, action_name, payload):
     }
 
     function getFileIcon(ext) {
-      if (['yml', 'yaml', 'properties', 'json', 'toml', 'cfg'].includes(ext)) return '⚙';
-      if (['jar'].includes(ext)) return '☕';
-      if (['txt', 'log', 'md'].includes(ext)) return '📄';
-      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return '🖼';
-      if (['dat', 'mca', 'mcr'].includes(ext)) return '📦';
-      return '📄';
+      if (['yml', 'yaml', 'properties', 'json', 'toml', 'cfg'].includes(ext)) return '<i class="fa-solid fa-gear" style="color:#64748b;"></i>';
+      if (['jar'].includes(ext)) return '<i class="fa-solid fa-cube" style="color:#2563eb;"></i>';
+      if (['txt', 'log', 'md'].includes(ext)) return '<i class="fa-regular fa-file-lines" style="color:#64748b;"></i>';
+      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return '<i class="fa-regular fa-file-image" style="color:#0891b2;"></i>';
+      if (['dat', 'mca', 'mcr'].includes(ext)) return '<i class="fa-solid fa-box-archive" style="color:#7c3aed;"></i>';
+      return '<i class="fa-regular fa-file" style="color:#64748b;"></i>';
     }
 
     function filterFileManagerTable() {
@@ -9215,7 +9211,7 @@ def on_action(ctx, action_name, payload):
         });
         const d = await res.json();
         if (d.success) {
-          statusEl.textContent = '✓ Saved successfully (backup created)!';
+          statusEl.textContent = 'Saved successfully (backup created)!';
           showBannerAlert(d.message);
           setTimeout(() => { statusEl.textContent = ''; }, 3000);
         } else {
@@ -9439,7 +9435,7 @@ def on_action(ctx, action_name, payload):
 
           let permsHtml = '';
           if (u.permissions.includes('all')) {
-            permsHtml = `<span class="perm-badge all">★ All Permissions (Superuser)</span>`;
+            permsHtml = `<span class="perm-badge all"><i class="fa-solid fa-star" style="margin-right:3px;"></i>All Permissions (Superuser)</span>`;
           } else if (u.permissions.length === 0) {
             permsHtml = `<span style="color:#888; font-style:italic;">No permissions granted</span>`;
           } else {
@@ -10095,7 +10091,7 @@ def on_action(ctx, action_name, payload):
             <td>
               <div style="font-weight: bold; font-size: 12px; color: var(--text-color, #111);">${escapeHtml(e.title || 'Untitled Event')}</div>
               ${e.description ? `<div style="font-size: 11px; color: var(--text-sub, #666); margin-top: 2px;">${escapeHtml(e.description)}</div>` : ''}
-              ${e.broadcast_msg ? `<div style="font-size: 10px; font-family: monospace; color: #b45309; margin-top: 3px; word-break: break-all;">📢 ${escapeHtml(e.broadcast_msg)}</div>` : ''}
+              ${e.broadcast_msg ? `<div style="font-size: 10px; font-family: monospace; color: #b45309; margin-top: 3px; word-break: break-all;"><i class="fa-solid fa-bullhorn" style="margin-right:3px;"></i>${escapeHtml(e.broadcast_msg)}</div>` : ''}
               ${lastRunInfo}
             </td>
             <td>${typeBadge}</td>
@@ -10436,7 +10432,7 @@ def on_action(ctx, action_name, payload):
 
       let broadcastText = '';
       if (nextEvt.broadcast_msg) {
-        broadcastText = ` — <span style="font-family:monospace; color:#b45309;">${escapeHtml(nextEvt.broadcast_msg)}</span>`;
+        broadcastText = ` — <span style="font-family:monospace; color:#b45309;"><i class="fa-solid fa-bullhorn" style="margin-right:3px;"></i>${escapeHtml(nextEvt.broadcast_msg)}</span>`;
       }
 
       const statusBadge = nextEvt.status === 'active'
@@ -10580,7 +10576,7 @@ def on_action(ctx, action_name, payload):
                         </div>
                       </div>
                     </div>
-                    <button type="button" class="btn-classic" style="height: 18px; width: 18px; padding: 0; line-height: 16px; font-size: 10px; text-align: center;" onclick="dismissNotification('${n.key}')" title="Dismiss notification">✕</button>
+                    <button type="button" class="btn-classic" style="height: 18px; width: 18px; padding: 0; line-height: 16px; font-size: 10px; text-align: center;" onclick="dismissNotification('${n.key}')" title="Dismiss notification"><i class="fa-solid fa-xmark"></i></button>
                   </div>
                 </div>
               `;
@@ -10592,7 +10588,7 @@ def on_action(ctx, action_name, payload):
                 ? `<span style="font-size:9.5px; color:#0284c7; font-weight:bold;">(${escapeHtml(n.recurring.toUpperCase())})</span>`
                 : '';
               const bcast = n.broadcast
-                ? `<div style="font-size: 10px; font-family: monospace; color: #b45309; margin-top: 2px;">📢 ${escapeHtml(n.broadcast)}</div>`
+                ? `<div style="font-size: 10px; font-family: monospace; color: #b45309; margin-top: 2px;"><i class="fa-solid fa-bullhorn" style="margin-right:3px;"></i>${escapeHtml(n.broadcast)}</div>`
                 : '';
               const desc = n.description
                 ? `<div style="font-size: 10.5px; color: #666; margin-top: 2px;">${escapeHtml(n.description)}</div>`
@@ -10610,7 +10606,7 @@ def on_action(ctx, action_name, payload):
                           ${recTag}
                         </div>
                         <div style="font-size: 11px; color: var(--text-sub, #555); margin-top: 2px;">
-                          🕒 ${escapeHtml(n.timeSummary)}
+                          <i class="fa-regular fa-clock" style="margin-right:3px;"></i>${escapeHtml(n.timeSummary)}
                         </div>
                         ${desc}
                         ${bcast}
@@ -10622,7 +10618,7 @@ def on_action(ctx, action_name, payload):
                         </div>
                       </div>
                     </div>
-                    <button type="button" class="btn-classic" style="height: 18px; width: 18px; padding: 0; line-height: 16px; font-size: 10px; text-align: center;" onclick="dismissNotification('${n.key}')" title="Dismiss notification">✕</button>
+                    <button type="button" class="btn-classic" style="height: 18px; width: 18px; padding: 0; line-height: 16px; font-size: 10px; text-align: center;" onclick="dismissNotification('${n.key}')" title="Dismiss notification"><i class="fa-solid fa-xmark"></i></button>
                   </div>
                 </div>
               `;
@@ -10748,7 +10744,7 @@ def on_action(ctx, action_name, payload):
         if (d.success) {
           showBannerAlert(d.message);
           buttons.forEach(b => {
-            b.textContent = `✓ Installed & Running`;
+            b.textContent = `Installed & Running`;
             b.style.background = '#008822';
             b.style.color = '#ffffff';
           });
@@ -11011,7 +11007,7 @@ def on_action(ctx, action_name, payload):
           card.classList.add('active');
           const tag = card.querySelector('.theme-card-tag');
           if (tag) {
-            tag.textContent = '✓ Active';
+            tag.textContent = 'Active';
             tag.style.display = 'inline-block';
           }
         } else {
@@ -11031,7 +11027,7 @@ def on_action(ctx, action_name, payload):
         <div class="theme-card ${t.id === active ? 'active' : ''}" data-theme-id="${t.id}" onclick="changeTheme('${t.id}')">
           <div class="theme-card-header">
             <span>${t.name}</span>
-            <span class="theme-active-tag theme-card-tag" style="${t.id === active ? '' : 'display: none;'}">✓ Active</span>
+            <span class="theme-active-tag theme-card-tag" style="${t.id === active ? '' : 'display: none;'}">Active</span>
           </div>
           <div class="theme-swatch-strip">
             ${t.swatches.map(c => `<div class="theme-swatch" style="background: ${c};" title="${c}"></div>`).join('')}
@@ -12605,18 +12601,18 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         if (d.success) {
           if (msg) {
-            msg.textContent = '✓ ' + (d.message || 'Ping delivered successfully!');
+            msg.textContent = (d.message || 'Ping delivered successfully!');
             msg.style.color = '#22c55e';
           }
         } else {
           if (msg) {
-            msg.textContent = '✗ ' + (d.error || 'Delivery failed');
+            msg.textContent = 'Error: ' + (d.error || 'Delivery failed');
             msg.style.color = '#dc2626';
           }
         }
       } catch (e) {
         if (msg) {
-          msg.textContent = '✗ Network error: ' + e.message;
+          msg.textContent = 'Network error: ' + e.message;
           msg.style.color = '#dc2626';
         }
       }
@@ -12651,17 +12647,17 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         if (d.success) {
           if (msg) {
-            msg.textContent = '✓ Webhook configuration saved!';
+            msg.textContent = 'Webhook configuration saved!';
             msg.style.color = '#22c55e';
           }
         } else {
           if (msg) {
-            msg.textContent = '✗ ' + (d.error || 'Failed to save');
+            msg.textContent = 'Error: ' + (d.error || 'Failed to save');
             msg.style.color = '#dc2626';
           }
         }
       } catch (e) {
-        if (msg) msg.textContent = '✗ Network error: ' + e.message;
+        if (msg) msg.textContent = 'Network error: ' + e.message;
       }
     }
 
@@ -12796,10 +12792,10 @@ def on_action(ctx, action_name, payload):
       const l1 = document.getElementById('addon-motd-line1');
       const l2 = document.getElementById('addon-motd-line2');
       if (preset === 'cyber') {
-        if (l1) l1.value = '§b§l✦ CYBERPUNK 2077 SMP ✦ §7[1.21.x]';
-        if (l2) l2.value = '§d⚡ High-Speed ZGC §f• §3No Phantoms §f• §bCustom Items';
+        if (l1) l1.value = '§b§l[+] CYBERPUNK 2077 SMP [+] §7[1.21.x]';
+        if (l2) l2.value = '§dHigh-Speed ZGC §f• §3No Phantoms §f• §bCustom Items';
       } else if (preset === 'gold') {
-        if (l1) l1.value = '§6§l🏆 FIESTA SURVIVAL NETWORK 🏆';
+        if (l1) l1.value = '§6§l[★] FIESTA SURVIVAL NETWORK [★]';
         if (l2) l2.value = '§eVanilla+ §7• §aEconomy §7• §eCrossplay Bedrock+Java';
       } else if (preset === 'matrix') {
         if (l1) l1.value = '§a§l[SYSTEM] §2FIESTA GATEWAY ONLINE';
@@ -12829,18 +12825,18 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         if (d.success) {
           if (statusEl) {
-            statusEl.textContent = '✓ MOTD updated in server.properties!';
+            statusEl.textContent = 'MOTD updated in server.properties!';
             statusEl.style.color = '#22c55e';
           }
           showBannerAlert('Server MOTD applied successfully!');
         } else {
           if (statusEl) {
-            statusEl.textContent = '✗ ' + (d.error || 'Failed to update');
+            statusEl.textContent = 'Error: ' + (d.error || 'Failed to update');
             statusEl.style.color = '#dc2626';
           }
         }
       } catch (e) {
-        if (statusEl) statusEl.textContent = '✗ Error: ' + e.message;
+        if (statusEl) statusEl.textContent = 'Error: ' + e.message;
       }
     }
 
@@ -12915,7 +12911,7 @@ def on_action(ctx, action_name, payload):
       styleTag.textContent = code;
       const st = document.getElementById('addon-css-status');
       if (st) {
-        st.textContent = '✓ Custom CSS injected into page!';
+        st.textContent = 'Custom CSS injected into page!';
         st.style.color = '#22c55e';
       }
       showBannerAlert('Custom CSS applied to panel DOM.');
