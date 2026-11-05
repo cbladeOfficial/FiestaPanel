@@ -46,7 +46,7 @@ For unattended installation, provide `FIESTA_ADMIN_PASS` (at least 12 characters
 2. Installs required system packages: `python3`, `python3-pip`, `python3-venv`, `curl`, `tar`.
 3. Creates dedicated directory `/opt/fiestapanel` (or updates existing installation).
 4. Sets up an isolated Python virtual environment (`venv`) and installs dependencies.
-5. Installs the `panelctl` CLI tool into `/usr/local/bin/panelctl` (or `~/.local/bin/panelctl`).
+5. Installs the `fiestapanel` CLI tool into `/usr/local/bin/fiestapanel` (or `~/.local/bin/fiestapanel`, with `panelctl` alias).
 6. Configures and registers a `systemd` service (`fiestapanel.service`) on Linux.
 7. Prompts for and confirms a password of at least 12 characters for a new owner account; existing accounts are preserved.
 8. Starts the service immediately.
@@ -110,7 +110,7 @@ irm https://fiesta.debarkak.xyz/install.ps1 | iex
 
 4. **Start Anytime**:
    Double-click `start.bat` to start FiestaPanel and open your browser automatically to `http://localhost:8080`.
-   Use `panelctl.bat status` or `panelctl.bat restart` to manage it from CMD or PowerShell.
+   Use `fiestapanel.bat status` or `fiestapanel.bat restart` to manage it from CMD or PowerShell.
 
 ---
 
@@ -222,14 +222,14 @@ unset FIESTA_ADMIN_PASS
 
 Docker environment variables are visible to users with access to container configuration. Restrict Docker access. Existing accounts are preserved on restart; changing the environment variable does not reset their passwords. For interactive installations without a container, run `python setup_admin.py` if initializing an owner manually.
 
-### 🧰 Running `panelctl` Inside Container
+### 🧰 Running `fiestapanel` Inside Container
 
 You can use the built-in management CLI inside your running container:
 
 ```bash
-docker exec -it fiestapanel panelctl status
-docker exec -it fiestapanel panelctl reset-admin
-docker exec -it fiestapanel panelctl logs
+docker exec -it fiestapanel fiestapanel status
+docker exec -it fiestapanel fiestapanel reset-admin
+docker exec -it fiestapanel fiestapanel logs
 ```
 
 ---
@@ -308,22 +308,22 @@ sudo certbot --nginx -d panel.yourdomain.com
 
 ---
 
-## 🧰 CLI Management (`panelctl`)
+## 🧰 CLI Management (`fiestapanel`)
 
 | Command | Description |
 |---|---|
-| `panelctl status` | Display panel daemon status and memory consumption |
-| `panelctl start` | Start the panel service |
-| `panelctl stop` | Stop the panel service |
-| `panelctl restart` | Gracefully restart the panel service |
-| `panelctl logs` | Stream live application logs |
-| `panelctl reset-admin` | Reset or generate new admin credentials |
-| `panelctl set-port <port>` | Change panel listening port |
-| `panelctl set-mc-path <path>` | Change target Minecraft server directory |
-| `panelctl info` | Display current directory, Java runtime, and settings |
-| `panelctl version` | Print panel version |
+| `fiestapanel status` | Display panel daemon status and memory consumption |
+| `fiestapanel start` | Start the panel service |
+| `fiestapanel stop` | Stop the panel service |
+| `fiestapanel restart` | Gracefully restart the panel service |
+| `fiestapanel logs` | Stream live application logs |
+| `fiestapanel reset-admin` | Reset or generate new admin credentials |
+| `fiestapanel set-port <port>` | Change panel listening port |
+| `fiestapanel set-mc-path <path>` | Change target Minecraft server directory |
+| `fiestapanel info` | Display current directory, Java runtime, and settings |
+| `fiestapanel version` | Print panel version |
 
-*(On Windows, use `panelctl.bat <command>` or `python panelctl.py <command>`)*
+*(On Windows, use `fiestapanel.bat <command>` or `python fiestapanel.py <command>`; `panelctl` alias also supported)*
 
 ---
 
@@ -333,5 +333,5 @@ sudo certbot --nginx -d panel.yourdomain.com
 cd /opt/fiestapanel  # or C:\FiestaPanel on Windows
 git pull origin main
 ./venv/bin/pip install -r requirements.txt
-panelctl restart
+fiestapanel restart
 ```

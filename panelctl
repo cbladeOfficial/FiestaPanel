@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# FiestaPanel Cross-Platform CLI Management Wrapper (panelctl)
-# Version: 2.1.0
-# Description: Cross-platform command-line control interface for FiestaPanel
+# FiestaPanel Backward Compatibility Wrapper (panelctl -> fiestapanel)
 # ==============================================================================
 
 TARGET="${BASH_SOURCE[0]}"
@@ -13,15 +11,4 @@ while [ -L "$TARGET" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$TARGET")" >/dev/null 2>&1 && pwd)"
 
-PY_BIN="python3"
-if [ -f "$SCRIPT_DIR/venv/bin/python3" ]; then
-    PY_BIN="$SCRIPT_DIR/venv/bin/python3"
-elif [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
-    PY_BIN="$SCRIPT_DIR/venv/bin/python"
-elif command -v python3 >/dev/null 2>&1; then
-    PY_BIN="python3"
-elif command -v python >/dev/null 2>&1; then
-    PY_BIN="python"
-fi
-
-exec "$PY_BIN" "$SCRIPT_DIR/panelctl.py" "$@"
+exec "$SCRIPT_DIR/fiestapanel" "$@"

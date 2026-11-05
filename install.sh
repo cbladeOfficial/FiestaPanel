@@ -160,6 +160,8 @@ if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/addon_manager.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/setup_admin.py" "$TARGET_INSTALL_DIR/"
     cp -r "$SOURCE_DIR/addons" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/fiestapanel" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/fiestapanel.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/start.sh" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
@@ -216,15 +218,17 @@ cat > "$TARGET_INSTALL_DIR/branding.json" << 'EOF'
 EOF
 fi
 
-# 9. Install panelctl CLI Tool
-echo -e "${COLOR_CYAN}[5/6] Installing panelctl CLI utility...${COLOR_RESET}"
-if [ -f "$TARGET_INSTALL_DIR/panelctl" ]; then
-    chmod +x "$TARGET_INSTALL_DIR/panelctl" "$TARGET_INSTALL_DIR/panelctl.py" 2>/dev/null || true
+# 9. Install fiestapanel CLI Tool
+echo -e "${COLOR_CYAN}[5/6] Installing fiestapanel CLI utility...${COLOR_RESET}"
+if [ -f "$TARGET_INSTALL_DIR/fiestapanel" ]; then
+    chmod +x "$TARGET_INSTALL_DIR/fiestapanel" "$TARGET_INSTALL_DIR/fiestapanel.py" "$TARGET_INSTALL_DIR/panelctl" "$TARGET_INSTALL_DIR/panelctl.py" 2>/dev/null || true
     if [ "$IS_DARWIN" = true ]; then
         mkdir -p "$HOME/.local/bin"
-        ln -sf "$TARGET_INSTALL_DIR/panelctl" "$HOME/.local/bin/panelctl" 2>/dev/null || true
+        ln -sf "$TARGET_INSTALL_DIR/fiestapanel" "$HOME/.local/bin/fiestapanel" 2>/dev/null || true
+        ln -sf "$TARGET_INSTALL_DIR/fiestapanel" "$HOME/.local/bin/panelctl" 2>/dev/null || true
     else
-        ln -sf "$TARGET_INSTALL_DIR/panelctl" /usr/local/bin/panelctl 2>/dev/null || true
+        ln -sf "$TARGET_INSTALL_DIR/fiestapanel" /usr/local/bin/fiestapanel 2>/dev/null || true
+        ln -sf "$TARGET_INSTALL_DIR/fiestapanel" /usr/local/bin/panelctl 2>/dev/null || true
     fi
 fi
 
@@ -278,12 +282,12 @@ echo -e "  • Username:          ${COLOR_BOLD}admin${COLOR_RESET}"
 echo -e "  • Password:          ${COLOR_YELLOW}Your chosen password (existing accounts are preserved)${COLOR_RESET}"
 echo -e "  • Managed Server:    ${COLOR_CYAN}${FINAL_MC_DIR}${COLOR_RESET}"
 echo ""
-echo -e "${COLOR_BOLD}CLI Management Commands (panelctl):${COLOR_RESET}"
-echo -e "  • Check status:      ${COLOR_CYAN}panelctl status${COLOR_RESET}"
-echo -e "  • View live logs:    ${COLOR_CYAN}panelctl logs${COLOR_RESET}"
-echo -e "  • Restart panel:     ${COLOR_CYAN}panelctl restart${COLOR_RESET}"
-echo -e "  • Reset password:    ${COLOR_CYAN}panelctl reset-admin${COLOR_RESET}"
-echo -e "  • Change web port:   ${COLOR_CYAN}panelctl set-port [port]${COLOR_RESET}"
+echo -e "${COLOR_BOLD}CLI Management Commands (fiestapanel):${COLOR_RESET}"
+echo -e "  • Check status:      ${COLOR_CYAN}fiestapanel status${COLOR_RESET}"
+echo -e "  • View live logs:    ${COLOR_CYAN}fiestapanel logs${COLOR_RESET}"
+echo -e "  • Restart panel:     ${COLOR_CYAN}fiestapanel restart${COLOR_RESET}"
+echo -e "  • Reset password:    ${COLOR_CYAN}fiestapanel reset-admin${COLOR_RESET}"
+echo -e "  • Change web port:   ${COLOR_CYAN}fiestapanel set-port [port]${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_GREEN}Thank you for installing FiestaPanel! Enjoy managing your server.${COLOR_RESET}"
 echo ""

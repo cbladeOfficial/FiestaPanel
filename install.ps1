@@ -209,6 +209,6 @@ Write-Host "    cd `"$InstallDir`"" -ForegroundColor White
 Write-Host "    .\start.bat" -ForegroundColor White
 Write-Host ""
 Write-Host "  Command Line Management:" -ForegroundColor Cyan
-Write-Host "    .\panelctl.bat status" -ForegroundColor White
-Write-Host "    .\panelctl.bat reset-admin" -ForegroundColor White
+Write-Host "    .\fiestapanel.bat status" -ForegroundColor White
+Write-Host "    .\fiestapanel.bat reset-admin" -ForegroundColor White
 Write-Host ""

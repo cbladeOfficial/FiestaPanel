@@ -35,9 +35,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy panel application files
 COPY . /app
 
-# Ensure entrypoint and panelctl are executable
-RUN chmod +x /app/entrypoint.sh /app/panelctl && \
-    ln -sf /app/panelctl /usr/local/bin/panelctl
+# Ensure entrypoint and fiestapanel are executable
+RUN chmod +x /app/entrypoint.sh /app/fiestapanel /app/panelctl && \
+    ln -sf /app/fiestapanel /usr/local/bin/fiestapanel && \
+    ln -sf /app/fiestapanel /usr/local/bin/panelctl
 
 # Create persistent storage directories
 RUN mkdir -p /server /app/data /app/static/uploads

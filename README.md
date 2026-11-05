@@ -140,9 +140,9 @@ You do not need to wait for a Pull Request to share your plugins with the commun
 
 If you have forgotten the owner password, run `reset-admin` on the machine hosting FiestaPanel. The command generates and displays a new password for the `admin` account; keep that output private. It preserves other accounts when the existing `users.json` is valid. The command requires write access to the panel's data directory.
 
-- **Linux/macOS:** run `panelctl reset-admin`, or `./panelctl reset-admin` from the FiestaPanel directory. Use `sudo` if the data files require it.
-- **Windows:** open PowerShell in the FiestaPanel directory and run `.\panelctl.bat reset-admin` (in Command Prompt, run `panelctl.bat reset-admin`).
-- **Docker:** run `docker exec -it fiestapanel panelctl reset-admin`. Replace `fiestapanel` with your container name if different.
+- **Linux/macOS:** run `fiestapanel reset-admin`, or `./fiestapanel reset-admin` from the FiestaPanel directory. Use `sudo` if the data files require it.
+- **Windows:** open PowerShell in the FiestaPanel directory and run `.\fiestapanel.bat reset-admin` (in Command Prompt, run `fiestapanel.bat reset-admin`).
+- **Docker:** run `docker exec -it fiestapanel fiestapanel reset-admin`. Replace `fiestapanel` with your container name if different.
 
 The command resets or creates the account named `admin`, even if the installation uses a different owner username. It operates on the data directory selected by `FIESTA_DATA_DIR` or `GATEWAY_DATA_DIR`; make sure it is the directory used by your running panel. Back up `users.json` first if you are unsure of its state: the current reset command can replace an unreadable or invalid user file, losing other accounts. For Docker, back up the persistent data volume.
 
@@ -156,20 +156,22 @@ If the owner has also forgotten their password, recover the owner account first 
 
 ---
 
-## 🧰 The `panelctl` CLI
+## 🧰 The `fiestapanel` CLI
 
 FiestaPanel installs a system management CLI accessible anywhere:
 
 ```bash
-panelctl status        # Check daemon health and memory usage
-panelctl restart       # Gracefully restart FiestaPanel
-panelctl logs          # Tail live systemd journal logs
-panelctl reset-admin   # Generate a new admin password
-panelctl set-port 8080 # Update HTTP listener port
-panelctl set-mc-path   # Switch managed Minecraft server path
-panelctl info          # Print configuration overview
-panelctl version       # FiestaPanel Software Suite v2.0.0
+fiestapanel status        # Check daemon health and memory usage
+fiestapanel restart       # Gracefully restart FiestaPanel
+fiestapanel logs          # Tail live systemd journal logs
+fiestapanel reset-admin   # Generate a new admin password
+fiestapanel set-port 8080 # Update HTTP listener port
+fiestapanel set-mc-path   # Switch managed Minecraft server path
+fiestapanel info          # Print configuration overview
+fiestapanel version       # FiestaPanel Software Suite v2.1.0
 ```
+
+*(Note: `panelctl` is retained as an alias for backwards compatibility)*
 
 ---
 

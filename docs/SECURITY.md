@@ -60,4 +60,4 @@ sudo ufw enable
 
 ### 4. Admin Password Hygiene
 - Choose a unique admin password of at least 12 characters during first installation.
-- Use `panelctl reset-admin` to rotate credentials securely.
+- Use `fiestapanel reset-admin` (or alias `panelctl reset-admin`) to rotate credentials securely.
