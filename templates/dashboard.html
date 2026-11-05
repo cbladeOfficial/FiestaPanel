@@ -4555,9 +4555,9 @@
           </table>
         </section>
 
-        <!-- ════ VIEW 9: BANNED PLAYERS & IP BLACKLIST ════ -->
+        <!-- ════ VIEW 9: BANNED PLAYERS ════ -->
         <section id="view-security-bans" class="view-panel" style="display:none;">
-          <div class="section-title-bar">Security - Banned Players & IP Blacklist</div>
+          <div class="section-title-bar">Security - Banned Players</div>
           <table class="form-layout-table">
             <tr>
               <td class="label-col">Ban Player:</td>
@@ -4567,24 +4567,16 @@
                 <button class="btn-danger-red" onclick="executeBan()">[ Ban Account ]</button>
               </td>
             </tr>
-            <tr>
-              <td class="label-col">IP-Ban Player or Address:</td>
-              <td class="val-col">
-                <input type="text" id="ban-ip-target" placeholder="IP Address or Player..." style="width: 160px; font-family: monospace;">
-                <input type="text" id="ban-ip-reason" placeholder="Reason..." style="width: 180px;">
-                <button class="btn-danger-red" onclick="executeIpBanFromPanel()">[ IP-Ban Target ]</button>
-              </td>
-            </tr>
           </table>
           <div style="margin: 10px 0 8px 0; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span>Filter Bans:</span>
-              <input type="text" id="ban-search-box" placeholder="Search banned player or IP..." oninput="filterBansTable()" style="width: 200px; height: 22px; font-size: 11px;">
+              <input type="text" id="ban-search-box" placeholder="Search banned player..." oninput="filterBansTable()" style="width: 200px; height: 22px; font-size: 11px;">
               <button type="button" class="btn-classic" style="height: 22px; font-size: 10px; padding: 0 6px;" onclick="clearBanSearch()" title="Clear filter">[ Clear ]</button>
             </div>
             <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadBans()">[ Refresh Bans ]</button>
           </div>
-          <div class="section-sub-header">Banned Player Accounts</div>
+          <div class="section-sub-header">Banned Player Accounts (/banned-players.json)</div>
           <table class="data-grid-table">
             <thead>
               <tr>
@@ -4598,23 +4590,6 @@
             </thead>
             <tbody id="bans-table-body">
               <tr><td colspan="6" style="text-align: center; color: #888;">Loading ban list...</td></tr>
-            </tbody>
-          </table>
-
-          <div class="section-sub-header" style="margin-top: 18px;">Blacklisted IP Addresses</div>
-          <table class="data-grid-table">
-            <thead>
-              <tr>
-                <th>IP Address</th>
-                <th>Associated Player</th>
-                <th>Created</th>
-                <th>Banned By</th>
-                <th>Reason</th>
-                <th style="width: 100px;">Action</th>
-              </tr>
-            </thead>
-            <tbody id="ip-bans-table-body">
-              <tr><td colspan="6" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>
             </tbody>
           </table>
         </section>
@@ -5415,7 +5390,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <strong style="font-size: 13px; color: #0284c7;">Scheduled Daily Restart</strong>
                 <label class="switch-toggle">
-                  <input type="checkbox" id="task-daily-restart-enable">
+                  <input type="checkbox" id="task-daily-restart-enable" onchange="saveAutomatedTasks()">
                   <span class="switch-slider"></span>
                 </label>
               </div>
@@ -5424,7 +5399,7 @@
               </p>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <span style="font-weight: bold; font-size: 11px;">Time (24h):</span>
-                <input type="time" id="task-daily-restart-time" value="04:00" style="padding: 2px 6px; font-weight: bold;">
+                <input type="time" id="task-daily-restart-time" value="04:00" onchange="saveAutomatedTasks()" style="padding: 2px 6px; font-weight: bold;">
                 <span id="task-restart-last" class="inline-hint" style="margin-left: auto;"></span>
               </div>
             </div>
@@ -5434,7 +5409,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <strong style="font-size: 13px; color: var(--primary-accent, #16a34a);">Automated Daily World Backup</strong>
                 <label class="switch-toggle">
-                  <input type="checkbox" id="task-daily-backup-enable">
+                  <input type="checkbox" id="task-daily-backup-enable" onchange="saveAutomatedTasks()">
                   <span class="switch-slider"></span>
                 </label>
               </div>
@@ -5443,7 +5418,7 @@
               </p>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <span style="font-weight: bold; font-size: 11px;">Time (24h):</span>
-                <input type="time" id="task-daily-backup-time" value="05:00" style="padding: 2px 6px; font-weight: bold;">
+                <input type="time" id="task-daily-backup-time" value="05:00" onchange="saveAutomatedTasks()" style="padding: 2px 6px; font-weight: bold;">
                 <span id="task-backup-last" class="inline-hint" style="margin-left: auto;"></span>
               </div>
             </div>
@@ -5453,7 +5428,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <strong style="font-size: 13px; color: #ea580c;">Idle Server Auto-Shutdown</strong>
                 <label class="switch-toggle">
-                  <input type="checkbox" id="task-idle-stop-enable">
+                  <input type="checkbox" id="task-idle-stop-enable" onchange="saveAutomatedTasks()">
                   <span class="switch-slider"></span>
                 </label>
               </div>
@@ -5462,7 +5437,7 @@
               </p>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <span style="font-weight: bold; font-size: 11px;">Idle Limit:</span>
-                <select id="task-idle-timeout-select" style="padding: 2px 6px;">
+                <select id="task-idle-timeout-select" onchange="saveAutomatedTasks()" style="padding: 2px 6px;">
                   <option value="15">15 minutes</option>
                   <option value="30" selected>30 minutes</option>
                   <option value="45">45 minutes</option>
@@ -5474,8 +5449,9 @@
             </div>
           </div>
 
-          <div class="btn-row">
+          <div class="btn-row" style="display: flex; align-items: center;">
             <button class="btn-satin-green" style="height: 28px; padding: 0 20px;" onclick="saveAutomatedTasks()">[ Save Automated Tasks ]</button>
+            <span id="task-save-status" style="margin-left: 12px; font-size: 11px; font-weight: bold;"></span>
           </div>
         </section>
 
@@ -10780,7 +10756,7 @@ def on_action(ctx, action_name, payload):
           document.getElementById('task-daily-restart-time').value = t.daily_restart.time || '04:00';
         }
         if (document.getElementById('task-restart-last') && t.daily_restart) {
-          document.getElementById('task-restart-last').textContent = t.daily_restart.last_run ? `Last executed: ${t.daily_restart.last_run}` : 'Never executed';
+          document.getElementById('task-restart-last').textContent = t.daily_restart.last_run ? `Last run: ${t.daily_restart.last_run}` : 'Never executed';
         }
 
         if (document.getElementById('task-daily-backup-enable')) {
@@ -10790,7 +10766,7 @@ def on_action(ctx, action_name, payload):
           document.getElementById('task-daily-backup-time').value = t.daily_backup.time || '05:00';
         }
         if (document.getElementById('task-backup-last') && t.daily_backup) {
-          document.getElementById('task-backup-last').textContent = t.daily_backup.last_run ? `Last executed: ${t.daily_backup.last_run}` : 'Never executed';
+          document.getElementById('task-backup-last').textContent = t.daily_backup.last_run ? `Last run: ${t.daily_backup.last_run}` : 'Never executed';
         }
 
         if (document.getElementById('task-idle-stop-enable')) {
@@ -10799,12 +10775,28 @@ def on_action(ctx, action_name, payload):
         if (document.getElementById('task-idle-timeout-select') && t.idle_auto_stop) {
           document.getElementById('task-idle-timeout-select').value = String(t.idle_auto_stop.timeout_minutes || 30);
         }
+        const idleStatus = document.getElementById('task-idle-status');
+        if (idleStatus) {
+          if (t.idle_auto_stop && t.idle_auto_stop.enabled) {
+            idleStatus.textContent = d.idle_state || 'Active (Monitoring players)';
+            idleStatus.style.color = 'var(--primary-accent, #16a34a)';
+          } else {
+            idleStatus.textContent = 'Disabled';
+            idleStatus.style.color = '#888888';
+          }
+        }
       } catch (e) {
         showBannerAlert('Failed to load automated tasks.', true);
       }
     }
 
     async function saveAutomatedTasks() {
+      const statusEl = document.getElementById('task-save-status');
+      if (statusEl) {
+        statusEl.textContent = 'Saving...';
+        statusEl.style.color = 'var(--text-sub, #888)';
+      }
+
       const payload = {
         daily_restart: {
           enabled: document.getElementById('task-daily-restart-enable').checked,
@@ -10827,8 +10819,26 @@ def on_action(ctx, action_name, payload):
           body: JSON.stringify(payload)
         });
         const d = await res.json();
-        showBannerAlert(d.message, !d.success);
+        if (d.success) {
+          if (statusEl) {
+            statusEl.textContent = '✓ Saved successfully';
+            statusEl.style.color = 'var(--primary-accent, #16a34a)';
+            setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+          }
+          showBannerAlert(d.message || 'Automated task schedules updated successfully!');
+          loadAutomatedTasks();
+        } else {
+          if (statusEl) {
+            statusEl.textContent = d.message || 'Save failed';
+            statusEl.style.color = '#dc2626';
+          }
+          showBannerAlert(d.message || 'Error saving automated tasks.', true);
+        }
       } catch (e) {
+        if (statusEl) {
+          statusEl.textContent = 'Error saving';
+          statusEl.style.color = '#dc2626';
+        }
         showBannerAlert('Error saving automated tasks.', true);
       }
     }

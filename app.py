@@ -3918,7 +3918,7 @@ def api_panel_addons_template_download():
 @app.route("/api/backups")
 @login_required
 def api_get_backups():
-    paths = ['/home/ubuntu/*.tar.gz', '/home/ubuntu/*.tar.zst', '/home/ubuntu/backups/*.tar.*']
+    paths = ['/home/ubuntu/*.tar.gz', '/home/ubuntu/*.tar.zst', '/home/ubuntu/backups/*.tar.*', '/home/ubuntu/backups/*.zip', '/home/ubuntu/*.zip']
     files = []
     for p in paths:
         for f in glob.glob(p):
@@ -4953,15 +4953,24 @@ def load_automated_tasks():
         try:
             with open(TASKS_CONFIG_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                default_tasks.update(data)
+                if isinstance(data, dict):
+                    for k in ("daily_restart", "daily_backup", "idle_auto_stop"):
+                        if k in data and isinstance(data[k], dict):
+                            default_tasks[k].update(data[k])
                 return default_tasks
-        except Exception:
-            pass
+        except Exception as e:
+            app.logger.warning(f"Failed to load automated tasks: {e}")
     return default_tasks
 
 def save_automated_tasks(tasks):
-    with open(TASKS_CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(tasks, f, indent=2)
+    try:
+        os.makedirs(os.path.dirname(TASKS_CONFIG_FILE), exist_ok=True)
+        tmp_file = f"{TASKS_CONFIG_FILE}.tmp.{os.getpid()}"
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, indent=2)
+        os.replace(tmp_file, TASKS_CONFIG_FILE)
+    except Exception as e:
+        app.logger.error(f"Failed to save automated tasks: {e}")
 
 def _automated_tasks_worker():
     while True:
@@ -4983,7 +4992,7 @@ def _automated_tasks_worker():
                     time.sleep(15)
                     send_mc_command("minecraft:save-all flush")
                     time.sleep(3)
-                    subprocess.run(["sudo", "systemctl", "restart", "fiesta"])
+                    server_runner.restart()
 
             # 2. Daily Backup
             db = tasks.get("daily_backup", {})
@@ -4991,18 +5000,16 @@ def _automated_tasks_worker():
                 if db.get("last_run") != today_str:
                     db["last_run"] = today_str
                     modified = True
-                    backup_dir = "/home/ubuntu/backups"
+                    backup_dir = SERVER_CONFIG.get("backup_dir") or os.path.join(os.path.dirname(SERVER_DIR), "backups")
                     os.makedirs(backup_dir, exist_ok=True)
-                    zf_path = os.path.join(backup_dir, f"auto_daily_{int(time.time())}.zip")
+                    target_tar = os.path.join(backup_dir, f"fiesta_auto_backup_{now.strftime('%Y%m%d_%H%M%S')}.tar.gz")
+                    send_mc_command("save-all")
+                    time.sleep(2)
                     try:
-                        with zipfile.ZipFile(zf_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                            for root, dirs, files in os.walk(os.path.join(SERVER_DIR, "world")):
-                                for f in files:
-                                    if not f.endswith(".lock"):
-                                        fp = os.path.join(root, f)
-                                        zf.write(fp, os.path.relpath(fp, SERVER_DIR))
-                    except Exception:
-                        pass
+                        with tarfile.open(target_tar, "w:gz") as tar:
+                            tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR))
+                    except Exception as err:
+                        app.logger.error(f"Automated daily backup error: {err}")
 
             # 3. Idle Auto-Stop
             ias = tasks.get("idle_auto_stop", {})
@@ -5021,11 +5028,15 @@ def _automated_tasks_worker():
                                 modified = True
                                 send_mc_command("say [FiestaPanel] Server has been idle with 0 players. Shutting down to conserve resources...")
                                 time.sleep(5)
-                                subprocess.run(["sudo", "systemctl", "stop", "fiesta"])
+                                server_runner.stop()
                     else:
                         if ias.get("idle_since") is not None:
                             ias["idle_since"] = None
                             modified = True
+                else:
+                    if ias.get("idle_since") is not None:
+                        ias["idle_since"] = None
+                        modified = True
 
             if modified:
                 save_automated_tasks(tasks)
@@ -5037,21 +5048,33 @@ threading.Thread(target=_automated_tasks_worker, daemon=True).start()
 @app.route("/api/tasks", methods=["GET", "POST"])
 @login_required
 def api_tasks_route():
+    tasks = load_automated_tasks()
+
     if request.method == "GET":
-        return jsonify({"success": True, "tasks": load_automated_tasks()})
+        idle_info = "Disabled"
+        ias = tasks.get("idle_auto_stop", {})
+        if ias.get("enabled"):
+            if ias.get("idle_since"):
+                mins = int((time.time() - ias["idle_since"]) / 60)
+                limit = int(ias.get("timeout_minutes", 30))
+                idle_info = f"Idle for {mins}m / {limit}m limit"
+            else:
+                idle_info = "Active (Monitoring players)"
+        return jsonify({"success": True, "tasks": tasks, "idle_state": idle_info})
 
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and session.get("role") != "owner":
-        return jsonify({"success": False, "message": "Owner permission required for automated tasks"}), 403
+    if session.get("role") != "owner" and "all" not in curr_perms and "parameters" not in curr_perms:
+        return jsonify({"success": False, "message": "Owner or Administrator permission required for automated tasks."}), 403
 
     data = request.get_json() or {}
-    tasks = load_automated_tasks()
-    if "daily_restart" in data:
-        tasks["daily_restart"].update(data["daily_restart"])
-    if "daily_backup" in data:
-        tasks["daily_backup"].update(data["daily_backup"])
-    if "idle_auto_stop" in data:
-        tasks["idle_auto_stop"].update(data["idle_auto_stop"])
+    for key in ("daily_restart", "daily_backup", "idle_auto_stop"):
+        if key in data and isinstance(data[key], dict):
+            tasks.setdefault(key, {}).update(data[key])
+
+    # If idle auto stop disabled, clear idle timer
+    if not tasks.get("idle_auto_stop", {}).get("enabled"):
+        tasks.setdefault("idle_auto_stop", {})["idle_since"] = None
+
     save_automated_tasks(tasks)
     return jsonify({"success": True, "message": "Automated task schedules updated successfully!", "tasks": tasks})
 

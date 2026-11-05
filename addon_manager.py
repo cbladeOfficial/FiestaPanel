@@ -910,18 +910,8 @@ class AddonManager:
         logger.info(f"AddonManager initialized. {len(self.installed_addons)} addons discovered.")
 
     def _seed_default_addons(self):
-        """Pre-seeds default starter addons (Discord Notifier & MOTD Styler) if addons dir is empty."""
-        existing = [d for d in os.listdir(self.addons_dir) if os.path.isdir(os.path.join(self.addons_dir, d)) and d not in ("repo", "__pycache__", ".git")]
-        if not existing:
-            # Install the first two featured addons by default
-            repo = self.load_repository()
-            addons = repo.get("addons", STORE_CATALOG)
-            for addon_def in addons[:2]:
-                try:
-                    self.install_from_catalog(addon_def["id"])
-                    logger.info(f"Seeded default starter addon: {addon_def['id']}")
-                except Exception as e:
-                    logger.warning(f"Failed to seed starter addon {addon_def['id']}: {e}")
+        """Disabled: Do not automatically install any starter addons. Addons must be installed explicitly from the Store."""
+        pass
 
     def scan_addons(self) -> Dict[str, Dict[str, Any]]:
         """Scans the addons directory for valid addon.json manifests."""
