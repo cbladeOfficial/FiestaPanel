@@ -64,7 +64,7 @@ echo venv\Scripts\python.exe app.py >> "%~dp0run_fiestapanel.bat"
 
 echo.
 echo ==============================================================================
-echo             🎉 FIESTAPANEL INSTALLED SUCCESSFULLY ON WINDOWS!
+echo                 FIESTAPANEL INSTALLED SUCCESSFULLY ON WINDOWS!
 echo ==============================================================================
 echo Web Interface URL:  http://localhost:%PORT%
 echo Administrator User: admin
