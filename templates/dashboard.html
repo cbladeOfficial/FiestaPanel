@@ -2047,6 +2047,85 @@
       color: var(--text-main);
     }
 
+    /* Status Overview Fixed 2x2 Grid & Equal Height Tables */
+    .status-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 768px) {
+      .status-overview-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    .panel-box.status-card {
+      margin: 0 !important;
+      padding: 12px 14px !important;
+      box-sizing: border-box !important;
+      height: 199px !important;
+      display: block !important;
+    }
+
+    .panel-box.status-card .section-sub-header {
+      margin-top: 0 !important;
+      margin-bottom: 8px !important;
+      height: 23px !important;
+      box-sizing: border-box !important;
+      line-height: 15px !important;
+    }
+
+    table.status-overview-table {
+      width: 100% !important;
+      height: 144px !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+      margin-bottom: 0 !important;
+      box-sizing: border-box !important;
+      font-size: 11px !important;
+    }
+
+    table.status-overview-table td {
+      padding: 2px 6px !important;
+      vertical-align: middle !important;
+      border-bottom: 1px solid var(--form-td-border) !important;
+      box-sizing: border-box !important;
+    }
+
+    table.status-overview-table td.label-col {
+      width: 122px !important;
+      text-align: right !important;
+      font-weight: bold !important;
+      color: var(--text-bold) !important;
+      padding-right: 12px !important;
+      white-space: nowrap !important;
+    }
+
+    table.status-overview-table td.val-col {
+      color: var(--text-main) !important;
+    }
+
+    table.status-overview-table tr.status-row-1, table.status-overview-table tr.status-row-1 td {
+      height: 48px !important;
+      max-height: 48px !important;
+    }
+
+    table.status-overview-table tr.status-row-2, table.status-overview-table tr.status-row-2 td {
+      height: 32px !important;
+      max-height: 32px !important;
+    }
+
+    table.status-overview-table tr.status-row-3, table.status-overview-table tr.status-row-3 td {
+      height: 32px !important;
+      max-height: 32px !important;
+    }
+
+    table.status-overview-table tr.status-row-4, table.status-overview-table tr.status-row-4 td {
+      height: 32px !important;
+      max-height: 32px !important;
+    }
+
     /* Data Grid Table */
     table.data-grid-table {
       width: 100%;
@@ -3619,34 +3698,36 @@
           </div>
 
           <!-- Clean 2x2 Layout Grid -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); grid-auto-rows: 1fr; gap: 14px; margin-bottom: 14px; align-items: stretch;">
+          <div class="status-overview-grid">
 
             <!-- Card 1: LAN / Gateway Status -->
-            <div class="panel-box" style="margin: 0; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box;">
-              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">LAN / Gateway Status</div>
-              <table class="form-layout-table" style="margin-bottom: 0; height: 100%; flex: 1; display: table;">
-                <tbody style="height: 100%; display: table-row-group;">
-                <tr style="height: 25%;">
-                  <td class="label-col" style="width: 120px;">Runtime State:</td>
+            <div class="panel-box status-card">
+              <div class="section-sub-header">LAN / Gateway Status</div>
+              <table class="form-layout-table status-overview-table">
+                <tbody>
+                <tr class="status-row-1">
+                  <td class="label-col">Runtime State:</td>
                   <td class="val-col">
                     <span id="st-mc-state" class="badge-status online">● Active / Running</span>
                     <span id="st-mc-pid" class="inline-hint">(PID: --)</span>
                   </td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-2">
                   <td class="label-col">Service Uptime:</td>
                   <td class="val-col"><strong id="st-uptime" style="color: #004080; font-family: monospace, sans-serif; font-size: 11px;">Loading...</strong></td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-3">
                   <td class="label-col">Engine TPS:</td>
                   <td class="val-col"><strong id="st-tps" style="color: var(--help-sub-text, #006622);">20.0 TPS</strong> <span class="inline-hint">(Target: 20.0 TPS)</span></td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-4">
                   <td class="label-col">Service Control:</td>
                   <td class="val-col">
-                    <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625; padding: 2px 10px;" onclick="confirmServerPower('start')">[ ▶ Start ]</button>
-                    <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b; padding: 2px 10px;" onclick="confirmServerPower('restart')">[ ↻ Restart ]</button>
-                    <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442; padding: 2px 10px;" onclick="confirmServerPower('stop')">[ ■ Stop ]</button>
+                    <div style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                      <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('start')">[ ▶ Start ]</button>
+                      <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('restart')">[ ↻ Restart ]</button>
+                      <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('stop')">[ ■ Stop ]</button>
+                    </div>
                   </td>
                 </tr>
                 </tbody>
@@ -3654,42 +3735,44 @@
             </div>
 
             <!-- Card 2: WAN / Public Gateway (With Admin-Only Domain Editing) -->
-            <div class="panel-box" style="margin: 0; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box;">
-              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">WAN / Public Gateway</div>
-              <table class="form-layout-table" style="margin-bottom: 0; height: 100%; flex: 1; display: table;">
-                <tbody style="height: 100%; display: table-row-group;">
-                <tr style="height: 25%;">
-                  <td class="label-col" style="width: 120px;">Server Domain:</td>
+            <div class="panel-box status-card">
+              <div class="section-sub-header">WAN / Public Gateway</div>
+              <table class="form-layout-table status-overview-table">
+                <tbody>
+                <tr class="status-row-1">
+                  <td class="label-col">Server Domain:</td>
                   <td class="val-col">
-                    <span id="st-server-domain-display" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                      <strong id="st-server-domain" style="color: var(--help-sub-text, #006622); font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
+                    <div style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
+                      <span id="st-server-domain-display" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <strong id="st-server-domain" style="color: var(--help-sub-text, #006622); font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
+                        {% if role in ['owner', 'administrator'] or 'all' in permissions %}
+                          <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; font-weight: bold; color: #0284c7;" onclick="openEditServerDomain()" title="Edit Domain (Admins Only)">[ Edit Domain ]</button>
+                        {% endif %}
+                      </span>
                       {% if role in ['owner', 'administrator'] or 'all' in permissions %}
-                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; font-weight: bold; color: #0284c7;" onclick="openEditServerDomain()" title="Edit Domain (Admins Only)">[ Edit Domain ]</button>
+                      <span id="st-server-domain-editor" style="display: none; align-items: center; gap: 5px; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
+                        <input type="text" id="input-server-domain" class="ctrl-input" style="width: 155px; font-size: 11px; height: 22px; padding: 0 6px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="e.g. mc.yourdomain.com">
+                        <button type="button" class="btn-satin-green" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="saveServerDomain()">[ Save ]</button>
+                        <button type="button" class="btn-classic" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
+                      </span>
                       {% endif %}
-                    </span>
-                    {% if role in ['owner', 'administrator'] or 'all' in permissions %}
-                    <span id="st-server-domain-editor" style="display: none; align-items: center; gap: 5px; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
-                      <input type="text" id="input-server-domain" class="ctrl-input" style="width: 155px; font-size: 11px; height: 22px; padding: 0 6px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="e.g. mc.yourdomain.com">
-                      <button type="button" class="btn-satin-green" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="saveServerDomain()">[ Save ]</button>
-                      <button type="button" class="btn-classic" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
-                    </span>
-                    {% endif %}
-                    <div style="margin-top: 4px; display: flex; gap: 4px; align-items: center;">
-                      <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerDomain(this)">[ Copy Domain ]</button>
-                      <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerIpPort(this)">[ Copy IP:Port ]</button>
-                      <span id="domain-update-msg" style="margin-left: 6px; font-size: 10.5px; font-weight: bold;"></span>
+                      <div style="margin-top: 3px; display: flex; gap: 4px; align-items: center;">
+                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerDomain(this)">[ Copy Domain ]</button>
+                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerIpPort(this)">[ Copy IP:Port ]</button>
+                        <span id="domain-update-msg" style="margin-left: 6px; font-size: 10.5px; font-weight: bold;"></span>
+                      </div>
                     </div>
                   </td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-2">
                   <td class="label-col">Java Port:</td>
                   <td class="val-col">25565 <span class="inline-hint">(TCP / UDP)</span></td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-3">
                   <td class="label-col">Bedrock Port:</td>
                   <td class="val-col">19132 <span class="inline-hint">(UDP via Geyser)</span></td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-4">
                   <td class="label-col">Web Console Port:</td>
                   <td class="val-col">8080 <span class="inline-hint">(Reverse-proxied)</span></td>
                 </tr>
@@ -3698,31 +3781,31 @@
             </div>
 
             <!-- Card 3: Hardware Resource Utilization -->
-            <div class="panel-box" style="margin: 0; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box;">
-              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">Hardware Resource Utilization</div>
-              <table class="form-layout-table" style="margin-bottom: 0; height: 100%; flex: 1; display: table;">
-                <tbody style="height: 100%; display: table-row-group;">
-                <tr style="height: 25%;">
-                  <td class="label-col" style="width: 120px;">CPU Load:</td>
+            <div class="panel-box status-card">
+              <div class="section-sub-header">Hardware Resource Utilization</div>
+              <table class="form-layout-table status-overview-table">
+                <tbody>
+                <tr class="status-row-1">
+                  <td class="label-col">CPU Load:</td>
                   <td class="val-col">
                     <div class="meter-container"><div id="meter-cpu" class="meter-bar"></div></div>
                     <span id="val-cpu" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0%</span>
                   </td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-2">
                   <td class="label-col">System Memory:</td>
                   <td class="val-col">
                     <div class="meter-container"><div id="meter-ram" class="meter-bar"></div></div>
                     <span id="val-ram" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0.0 / 24.0 GB (0%)</span>
                   </td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-3">
                   <td class="label-col">JVM Process RSS:</td>
                   <td class="val-col">
                     <strong id="val-jvm">0 MB</strong> <span class="inline-hint">(Max Heap: 12.0 GB)</span>
                   </td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-4">
                   <td class="label-col">Disk Storage:</td>
                   <td class="val-col">
                     <div class="meter-container"><div id="meter-disk" class="meter-bar"></div></div>
@@ -3734,26 +3817,26 @@
             </div>
 
             <!-- Card 4: Traffic & Security Statistics -->
-            <div class="panel-box" style="margin: 0; padding: 12px 14px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box;">
-              <div class="section-sub-header" style="margin-top: 0; margin-bottom: 8px;">Traffic &amp; Player Statistics</div>
-              <table class="form-layout-table" style="margin-bottom: 0; height: 100%; flex: 1; display: table;">
-                <tbody style="height: 100%; display: table-row-group;">
-                <tr style="height: 25%;">
-                  <td class="label-col" style="width: 120px;">Online Players:</td>
+            <div class="panel-box status-card">
+              <div class="section-sub-header">Traffic &amp; Player Statistics</div>
+              <table class="form-layout-table status-overview-table">
+                <tbody>
+                <tr class="status-row-1">
+                  <td class="label-col">Online Players:</td>
                   <td class="val-col">
                     <strong id="val-online-players" style="color: var(--help-sub-text, #006622); font-size: 13px;">0</strong> / <span id="val-max-players">69</span>
                     <span id="val-player-sample" class="inline-hint"></span>
                   </td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-2">
                   <td class="label-col">Whitelist:</td>
                   <td class="val-col" id="val-whitelist-status">Disabled</td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-3">
                   <td class="label-col">Active Operators:</td>
                   <td class="val-col" id="val-ops-count">0</td>
                 </tr>
-                <tr style="height: 25%;">
+                <tr class="status-row-4">
                   <td class="label-col">Blacklisted Players:</td>
                   <td class="val-col" id="val-bans-count">0</td>
                 </tr>
