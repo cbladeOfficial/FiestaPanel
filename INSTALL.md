@@ -321,9 +321,62 @@ sudo certbot --nginx -d panel.yourdomain.com
 | `fiestapanel set-port <port>` | Change panel listening port |
 | `fiestapanel set-mc-path <path>` | Change target Minecraft server directory |
 | `fiestapanel info` | Display current directory, Java runtime, and settings |
+| `fiestapanel autostart <enable\|disable\|status>` | Configure auto-start on system boot / reboot |
 | `fiestapanel version` | Print panel version |
 
 *(On Windows, use `fiestapanel.bat <command>` or `python fiestapanel.py <command>`; `panelctl` alias also supported)*
+
+---
+
+## ⚙️ Cross-Platform Auto-Start on Boot / Reboot
+
+FiestaPanel supports automatic startup on system boot or user logon across all supported platforms.
+
+### How Auto-Start Works per Platform:
+- **Linux**: Configured via a `systemd` daemon unit (`fiestapanel.service` or user unit). Enabled by default in `install.sh`.
+- **Windows**: Configured via the Windows Startup Folder (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\FiestaPanel.lnk`) and the user `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` registry key. Enabled by default in `install.ps1`.
+- **macOS**: Configured via a `launchd` LaunchAgent (`~/Library/LaunchAgents/com.fiestapanel.plist`). Enabled by default in `install.sh`.
+- **Docker**: Managed via container restart policy (`restart: unless-stopped` in `docker-compose.yml`).
+
+### Configuring Auto-Start:
+
+#### 1. Via Command Line (`fiestapanel`):
+```bash
+# Check current auto-start status and platform mechanism
+fiestapanel autostart status
+
+# Enable auto-start on boot
+fiestapanel autostart enable
+
+# Disable auto-start on boot
+fiestapanel autostart disable
+```
+*(On Windows: `.\fiestapanel.bat autostart enable` / `disable`)*
+
+#### 2. Via Web UI:
+Navigate to **System Tools ➔ System Information** in your browser. Under the **Auto-Start on Reboot** row, click **[ Enable Auto-Start ]** or **[ Disable Auto-Start ]** to toggle the configuration with one click.
+
+#### 3. Via Configuration File (`config.json`):
+Set `"autostart": true` or `"autostart": false` in `config.json`:
+```json
+{
+  "admin_user": "admin",
+  "server_dir": "/opt/minecraft",
+  "host": "0.0.0.0",
+  "port": 8080,
+  "autostart": true
+}
+```
+
+#### 4. During Installation:
+- **Linux / macOS**: Pass `--no-autostart` to `install.sh` to install without enabling the startup daemon:
+  ```bash
+  sudo bash install.sh --no-autostart
+  ```
+- **Windows**: Pass `-NoAutostart` to `install.ps1`:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File install.ps1 -NoAutostart
+  ```
 
 ---
 

@@ -165,6 +165,7 @@ fiestapanel status        # Check daemon health and memory usage
 fiestapanel restart       # Gracefully restart FiestaPanel
 fiestapanel logs          # Tail live systemd journal logs
 fiestapanel reset-admin   # Generate a new admin password
+fiestapanel autostart enable # Configure auto-start on system boot / logon
 fiestapanel set-port 8080 # Update HTTP listener port
 fiestapanel set-mc-path   # Switch managed Minecraft server path
 fiestapanel info          # Print configuration overview

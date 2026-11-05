@@ -4693,6 +4693,14 @@
               <td class="label-col">Screen Session:</td>
               <td class="val-col"><code>fiesta</code> (/home/ubuntu/fiesta/start.sh)</td>
             </tr>
+            <tr>
+              <td class="label-col">Auto-Start on Reboot:</td>
+              <td class="val-col">
+                <span id="sys-autostart-badge" style="display:inline-block; margin-right:8px; padding:2px 8px; border-radius:3px; font-weight:bold; font-size:11px; background:#64748b; color:#fff;">Detecting...</span>
+                <span id="sys-autostart-details" style="color:var(--text-sub); font-size:11px; margin-right:10px;"></span>
+                <button type="button" id="btn-toggle-autostart" class="btn-classic" onclick="toggleAutoStart()" style="padding:2px 10px; font-size:11px; cursor:pointer;">[ Configure Auto-Start ]</button>
+              </td>
+            </tr>
           </table>
         </section>
 
@@ -6157,6 +6165,7 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'sys-backups') loadBackups();
       if (viewId === 'sys-branding') loadBrandingForm();
       if (viewId === 'sys-themes') loadThemeStudio();
+      if (viewId === 'sys-info') loadAutoStartInfo();
       if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); }
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
@@ -13344,6 +13353,62 @@ def on_action(ctx, action_name, payload):
     // Initialize Theme Controls
     applyTheme(getActiveTheme(), true);
 
+    // ── Auto-Start Configuration Manager (Cross-Platform) ────────
+    async function loadAutoStartInfo() {
+      try {
+        const res = await fetch('/api/system/autostart');
+        const d = await res.json();
+        if (d && d.autostart) {
+          const st = d.autostart;
+          const badge = document.getElementById('sys-autostart-badge');
+          const details = document.getElementById('sys-autostart-details');
+          const btn = document.getElementById('btn-toggle-autostart');
+          if (badge) {
+            badge.textContent = st.enabled ? 'ENABLED' : 'DISABLED';
+            badge.style.background = st.enabled ? '#22c55e' : '#64748b';
+            badge.style.color = '#ffffff';
+          }
+          if (details) {
+            const platformName = (st.platform || 'System').toUpperCase();
+            const methodInfo = st.details || st.method || '';
+            details.textContent = `[${platformName}: ${methodInfo}]`;
+          }
+          if (btn) {
+            btn.textContent = st.enabled ? '[ Disable Auto-Start ]' : '[ Enable Auto-Start ]';
+            btn.onclick = () => toggleAutoStart(!st.enabled);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load autostart status:', e);
+      }
+    }
+
+    async function toggleAutoStart(targetState) {
+      const btn = document.getElementById('btn-toggle-autostart');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '[ Updating... ]';
+      }
+      try {
+        const res = await fetch('/api/system/autostart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: targetState })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message || 'Auto-start configuration updated.', false);
+        } else {
+          showBannerAlert(d.message || 'Failed to update auto-start configuration.', true);
+        }
+      } catch (e) {
+        showBannerAlert('Network error updating auto-start: ' + e, true);
+      } finally {
+        if (btn) btn.disabled = false;
+        loadAutoStartInfo();
+      }
+    }
+
     // Initialize timers & console interceptors
     initConsoleLinkInterceptor();
     pollStatus();
@@ -13354,6 +13419,7 @@ def on_action(ctx, action_name, payload):
     fetchLatestSoftwareVersion();
     loadPanelAddons(false);
     checkSoftwareUpdateReminder();
+    loadAutoStartInfo();
     loadEvents();
     setInterval(loadEvents, 60000); // Poll/refresh scheduled events & reminders every minute
     setInterval(renderUptime, 1000); // High-precision local 1-second ticker (zero latency & zero lag)

@@ -17,6 +17,13 @@ try:
 except ImportError:
     psutil = None
 
+try:
+    import autostart
+except ImportError:
+    # Fallback to local file lookup
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import autostart
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("FIESTA_DATA_DIR") or os.environ.get("GATEWAY_DATA_DIR") or SCRIPT_DIR
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
@@ -36,7 +43,8 @@ def load_config():
         "server_dir": "/server" if is_docker else os.path.join(SCRIPT_DIR, "minecraft_server"),
         "service_name": "fiesta-portal",
         "host": "0.0.0.0",
-        "port": 8080
+        "port": 8080,
+        "autostart": True
     }
     target_cfg = CONFIG_FILE
     if not os.path.exists(target_cfg) and DATA_DIR != SCRIPT_DIR and os.path.exists(os.path.join(SCRIPT_DIR, "config.json")):
@@ -101,6 +109,11 @@ def cmd_status():
     print("==================================================")
     print(f"Platform:      {platform.system()} {platform.release()} ({platform.machine()})")
     print(f"Panel State:   {'ONLINE (' + details + ')' if running else 'OFFLINE'}")
+    as_st = autostart.get_autostart_status(DATA_DIR)
+    as_label = "ENABLED" if as_st.get("enabled") else "DISABLED"
+    if as_st.get("details"):
+        as_label += f" ({as_st['details']})"
+    print(f"Auto-Start:    {as_label}")
     print(f"Web Port:      http://{cfg.get('host', '0.0.0.0')}:{cfg.get('port', 8080)}")
     print(f"MC Directory:  {cfg.get('server_dir')}")
     if running and psutil:
@@ -299,7 +312,45 @@ def cmd_info():
 
     print(f"Web Host & Port:   {cfg.get('host', '0.0.0.0')}:{cfg.get('port', 8080)}")
     print(f"Minecraft Folder:  {cfg.get('server_dir')}")
+    as_st = autostart.get_autostart_status(DATA_DIR)
+    as_label = "ENABLED" if as_st.get("enabled") else "DISABLED"
+    if as_st.get("details"):
+        as_label += f" ({as_st['details']})"
+    print(f"Auto-Start Config: {as_label}")
     print("==================================================")
+
+def cmd_autostart(args, prog_name="fiestapanel"):
+    sub = args[0].lower() if args else "status"
+    if sub in ("status", "check"):
+        st = autostart.get_autostart_status(DATA_DIR)
+        print("==================================================")
+        print("        FiestaPanel Auto-Start Status             ")
+        print("==================================================")
+        print(f"Platform:       {st.get('platform', platform.system())}")
+        print(f"Supported:      {'YES' if st.get('supported') else 'NO'}")
+        print(f"State:          {'ENABLED' if st.get('enabled') else 'DISABLED'}")
+        print(f"Method:         {st.get('method')}")
+        print(f"Details:        {st.get('details')}")
+        print(f"Config Setting: autostart={st.get('config_value')}")
+        print("==================================================")
+        print(f"To change: {prog_name} autostart enable | {prog_name} autostart disable")
+    elif sub in ("enable", "on", "1", "yes"):
+        ok, msg = autostart.set_autostart(True, DATA_DIR)
+        if ok:
+            print(f"[✓] {msg}")
+        else:
+            print(f"[✗] {msg}")
+            sys.exit(1)
+    elif sub in ("disable", "off", "0", "no"):
+        ok, msg = autostart.set_autostart(False, DATA_DIR)
+        if ok:
+            print(f"[✓] {msg}")
+        else:
+            print(f"[✗] {msg}")
+            sys.exit(1)
+    else:
+        print(f"Usage: {prog_name} autostart [enable|disable|status]")
+        sys.exit(1)
 
 def main():
     prog_name = "fiestapanel"
@@ -317,6 +368,7 @@ def main():
         print("  reset-admin         Generate new admin password")
         print("  set-port <port>     Change panel HTTP port")
         print("  set-mc-path <path>  Change Minecraft server directory")
+        print("  autostart [cmd]     Manage auto-start on boot (enable|disable|status)")
         print("  info                Display system and runtime details")
         print("  version             Display version number")
         return
@@ -344,6 +396,8 @@ def main():
             print(f"Error: Path required. e.g. {prog_name} set-mc-path /opt/minecraft")
             sys.exit(1)
         cmd_set_mc_path(sys.argv[2], prog_name=prog_name)
+    elif cmd == "autostart":
+        cmd_autostart(sys.argv[2:], prog_name=prog_name)
     elif cmd == "info":
         cmd_info()
     elif cmd == "version":

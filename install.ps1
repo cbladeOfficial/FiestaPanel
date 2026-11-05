@@ -14,7 +14,21 @@
 #   powershell -ExecutionPolicy Bypass -File install.ps1
 # ==============================================================================
 
+param (
+    [switch]$NoAutostart = $false,
+    [string]$Autostart = ""
+)
+
 $ErrorActionPreference = "Stop"
+
+$EnableAutostart = $true
+if ($NoAutostart) {
+    $EnableAutostart = $false
+} elseif ($Autostart -eq "false" -or $Autostart -eq "0") {
+    $EnableAutostart = $false
+} elseif ($env:FIESTA_AUTOSTART -eq "0" -or $env:FIESTA_AUTOSTART -eq "false") {
+    $EnableAutostart = $false
+}
 
 Write-Host ""
 Write-Host "  ========================================================" -ForegroundColor Cyan
@@ -170,12 +184,13 @@ if (-not (Test-Path $ConfigFile)) {
         screen_session = ""
         host = "0.0.0.0"
         port = 8080
+        autostart = $EnableAutostart
     }
     $Config | ConvertTo-Json | Set-Content -Path $ConfigFile -Encoding UTF8
 }
 Write-Host "[✓] Configuration and owner account are ready." -ForegroundColor Green
 
-# 7. Create Windows Desktop Shortcut (Optional convenience)
+# 7. Configure Auto-Start & Desktop Shortcuts
 try {
     $WshShell = New-Object -ComObject WScript.Shell
     $DesktopPath = [System.Environment]::GetFolderPath("Desktop")
@@ -188,6 +203,22 @@ try {
         $Shortcut.Description = "Launch FiestaPanel Minecraft Server Portal"
         $Shortcut.Save()
         Write-Host "[✓] Desktop shortcut created: $ShortcutPath" -ForegroundColor Green
+    }
+
+    if ($EnableAutostart -and (Test-Path $StartBat)) {
+        # Configure Windows Startup Folder
+        $StartupPath = [System.Environment]::GetFolderPath("Startup")
+        $StartupShortcut = Join-Path $StartupPath "FiestaPanel.lnk"
+        $AutoShortcut = $WshShell.CreateShortcut($StartupShortcut)
+        $AutoShortcut.TargetPath = $StartBat
+        $AutoShortcut.WorkingDirectory = $InstallDir
+        $AutoShortcut.Description = "Auto-start FiestaPanel on user logon"
+        $AutoShortcut.Save()
+
+        # Also register in HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "FiestaPanel" -Value "`"$StartBat`"" -Force -ErrorAction SilentlyContinue
+
+        Write-Host "[✓] Auto-Start on Windows logon enabled (Startup folder & Run registry)" -ForegroundColor Green
     }
 } catch {
     # Non-critical, ignore if COM fails
@@ -203,6 +234,7 @@ Write-Host "  Location:   $InstallDir" -ForegroundColor White
 Write-Host "  Portal URL: http://localhost:8080" -ForegroundColor Yellow
 Write-Host "  Admin User: admin" -ForegroundColor Yellow
 Write-Host "  Admin Pass: Use the password you created during setup." -ForegroundColor Yellow
+Write-Host "  Auto-Start: $(if ($EnableAutostart) { 'Enabled (Windows Startup & Run Registry)' } else { 'Disabled' })" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Quick Launch:" -ForegroundColor Cyan
 Write-Host "    cd `"$InstallDir`"" -ForegroundColor White
@@ -210,5 +242,7 @@ Write-Host "    .\start.bat" -ForegroundColor White
 Write-Host ""
 Write-Host "  Command Line Management:" -ForegroundColor Cyan
 Write-Host "    .\fiestapanel.bat status" -ForegroundColor White
+Write-Host "    .\fiestapanel.bat autostart enable" -ForegroundColor White
+Write-Host "    .\fiestapanel.bat autostart disable" -ForegroundColor White
 Write-Host "    .\fiestapanel.bat reset-admin" -ForegroundColor White
 Write-Host ""

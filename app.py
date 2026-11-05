@@ -29,6 +29,7 @@ from PIL import Image
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory, Response
 from addon_manager import AddonManager
+import autostart
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("FIESTA_DATA_DIR") or os.environ.get("GATEWAY_DATA_DIR") or BASE_DIR
@@ -71,7 +72,8 @@ def load_server_config():
         "service_name": "fiesta",
         "screen_session": "fiesta",
         "host": "0.0.0.0" if is_docker else "127.0.0.1",
-        "port": 8080
+        "port": 8080,
+        "autostart": True
     }
     target_cfg = CONFIG_FILE
     if not os.path.exists(target_cfg) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "config.json")):
@@ -105,6 +107,9 @@ def load_server_config():
                 cfg["port"] = int(port)
             except ValueError:
                 pass
+        astart = os.environ.get(f"{prefix}AUTOSTART")
+        if astart is not None:
+            cfg["autostart"] = astart.lower() in ("1", "true", "yes", "on")
     return cfg
 
 SERVER_CONFIG = load_server_config()
@@ -1809,6 +1814,23 @@ def api_system_java():
         "recommendation": "Java 21 (Temurin / OpenJDK) recommended for Minecraft 1.20.5 - 1.21.x"
     }
     return jsonify({"success": True, "java": info})
+
+@app.route("/api/system/autostart", methods=["GET", "POST"])
+@login_required
+def api_system_autostart():
+    if request.method == "POST":
+        curr_perms = session.get("permissions", [])
+        if "all" not in curr_perms and session.get("role") != "owner":
+            return jsonify({"success": False, "message": "Permission denied: Owner privileges required to configure auto-start."}), 403
+
+        data = request.get_json(silent=True) or {}
+        enable = bool(data.get("enabled", True))
+        ok, msg = autostart.set_autostart(enable, DATA_DIR)
+        status = autostart.get_autostart_status(DATA_DIR)
+        return jsonify({"success": ok, "message": msg, "autostart": status})
+
+    status = autostart.get_autostart_status(DATA_DIR)
+    return jsonify({"success": True, "autostart": status})
 
 @app.route("/api/branding/icon/upload", methods=["POST"])
 @login_required

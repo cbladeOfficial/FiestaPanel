@@ -50,6 +50,7 @@ fi
 MC_DIR_ARG=""
 PORT_ARG=""
 ADMIN_PASS_ARG=""
+AUTOSTART_ARG=""
 UNATTENDED=false
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 
@@ -74,6 +75,14 @@ while [[ $# -gt 0 ]]; do
         --admin-pass)
             ADMIN_PASS_ARG="$2"
             shift 2
+            ;;
+        --autostart)
+            AUTOSTART_ARG="true"
+            shift
+            ;;
+        --no-autostart|--disable-autostart)
+            AUTOSTART_ARG="false"
+            shift
             ;;
         --unattended|-y)
             UNATTENDED=true
@@ -122,6 +131,12 @@ else
     FINAL_PORT="${USER_PORT:-$DEFAULT_PORT}"
 fi
 
+# Configure Auto-Start
+FINAL_AUTOSTART=true
+if [ "$AUTOSTART_ARG" = "false" ] || [ "${FIESTA_AUTOSTART,,}" = "false" ] || [ "$FIESTA_AUTOSTART" = "0" ]; then
+    FINAL_AUTOSTART=false
+fi
+
 # 4. Owner credentials are initialized after dependencies are installed.
 # --admin-pass remains available for automation; environment input avoids a shell argument.
 if [ -n "$ADMIN_PASS_ARG" ]; then
@@ -160,6 +175,7 @@ if [ -n "$SOURCE_DIR" ] && [ -f "$SOURCE_DIR/app.py" ]; then
     cp -r "$SOURCE_DIR/addon_manager.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/setup_admin.py" "$TARGET_INSTALL_DIR/"
     cp -r "$SOURCE_DIR/addons" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$SOURCE_DIR/autostart.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/fiestapanel" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/fiestapanel.py" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
     cp -r "$SOURCE_DIR/panelctl" "$TARGET_INSTALL_DIR/" 2>/dev/null || true
@@ -191,12 +207,13 @@ SETUP_FLAGS=()
 if [ "$UNATTENDED" = true ]; then SETUP_FLAGS+=(--non-interactive); fi
 "$TARGET_INSTALL_DIR/venv/bin/python3" "$TARGET_INSTALL_DIR/setup_admin.py" --data-dir "$TARGET_INSTALL_DIR" "${SETUP_FLAGS[@]}"
 if [ ! -f "$TARGET_INSTALL_DIR/config.json" ]; then
-    FIESTA_SETUP_MC_DIR="$FINAL_MC_DIR" FIESTA_SETUP_PORT="$FINAL_PORT" \
+    FIESTA_SETUP_MC_DIR="$FINAL_MC_DIR" FIESTA_SETUP_PORT="$FINAL_PORT" FIESTA_SETUP_AUTOSTART="$FINAL_AUTOSTART" \
       "$TARGET_INSTALL_DIR/venv/bin/python3" - "$TARGET_INSTALL_DIR/config.json" <<'PYCONFIG'
 import json, os, sys
 config = {'admin_user': 'admin', 'server_dir': os.environ['FIESTA_SETUP_MC_DIR'],
           'service_name': 'fiestapanel', 'screen_session': 'fiesta',
-          'host': '0.0.0.0', 'port': int(os.environ['FIESTA_SETUP_PORT'])}
+          'host': '0.0.0.0', 'port': int(os.environ['FIESTA_SETUP_PORT']),
+          'autostart': os.environ.get('FIESTA_SETUP_AUTOSTART', 'true').lower() == 'true'}
 with open(sys.argv[1], 'x', encoding='utf-8') as f:
     json.dump(config, f, indent=2)
 PYCONFIG
@@ -232,7 +249,7 @@ if [ -f "$TARGET_INSTALL_DIR/fiestapanel" ]; then
     fi
 fi
 
-# 10. Install & Enable Systemd Service (Linux only)
+# 10. Install & Enable Auto-Start Daemon (Systemd on Linux, LaunchAgent on macOS)
 if [ "$IS_DARWIN" = false ] && command -v systemctl >/dev/null 2>&1; then
     echo -e "${COLOR_CYAN}[6/6] Configuring systemd daemon (fiestapanel.service)...${COLOR_RESET}"
     cat > /etc/systemd/system/fiestapanel.service << EOF
@@ -255,12 +272,51 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    systemctl enable fiestapanel.service >/dev/null 2>&1 || true
+    if [ "$FINAL_AUTOSTART" = true ]; then
+        systemctl enable fiestapanel.service >/dev/null 2>&1 || true
+    else
+        systemctl disable fiestapanel.service >/dev/null 2>&1 || true
+    fi
 
     if [ "$TARGET_INSTALL_DIR" != "/home/ubuntu/fiesta-portal" ]; then
         systemctl restart fiestapanel.service || true
     else
         systemctl restart fiesta-portal.service || true
+    fi
+elif [ "$IS_DARWIN" = true ]; then
+    echo -e "${COLOR_CYAN}[6/6] Configuring macOS launchd auto-start (LaunchAgent)...${COLOR_RESET}"
+    mkdir -p "$HOME/Library/LaunchAgents"
+    cat > "$HOME/Library/LaunchAgents/com.fiestapanel.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.fiestapanel</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$TARGET_INSTALL_DIR/venv/bin/python3</string>
+        <string>$TARGET_INSTALL_DIR/app.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>$TARGET_INSTALL_DIR</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$TARGET_INSTALL_DIR/fiestapanel.log</string>
+    <key>StandardErrorPath</key>
+    <string>$TARGET_INSTALL_DIR/fiestapanel.log</string>
+</dict>
+</plist>
+EOF
+    chmod +x "$TARGET_INSTALL_DIR/start.sh" 2>/dev/null || true
+    if [ "$FINAL_AUTOSTART" = true ]; then
+        launchctl unload "$HOME/Library/LaunchAgents/com.fiestapanel.plist" 2>/dev/null || true
+        launchctl load -w "$HOME/Library/LaunchAgents/com.fiestapanel.plist" 2>/dev/null || true
+    else
+        launchctl unload -w "$HOME/Library/LaunchAgents/com.fiestapanel.plist" 2>/dev/null || true
     fi
 else
     echo -e "${COLOR_CYAN}[6/6] Created start.sh launcher in $TARGET_INSTALL_DIR/start.sh...${COLOR_RESET}"
@@ -281,6 +337,7 @@ echo -e "  • Localhost URL:     ${COLOR_CYAN}http://127.0.0.1:${FINAL_PORT}/${
 echo -e "  • Username:          ${COLOR_BOLD}admin${COLOR_RESET}"
 echo -e "  • Password:          ${COLOR_YELLOW}Your chosen password (existing accounts are preserved)${COLOR_RESET}"
 echo -e "  • Managed Server:    ${COLOR_CYAN}${FINAL_MC_DIR}${COLOR_RESET}"
+echo -e "  • Auto-Start on Boot: ${COLOR_CYAN}$([ "$FINAL_AUTOSTART" = true ] && echo "Enabled ($([ "$IS_DARWIN" = true ] && echo "launchd" || echo "systemd"))" || echo "Disabled")${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_BOLD}CLI Management Commands (fiestapanel):${COLOR_RESET}"
 echo -e "  • Check status:      ${COLOR_CYAN}fiestapanel status${COLOR_RESET}"
@@ -288,6 +345,7 @@ echo -e "  • View live logs:    ${COLOR_CYAN}fiestapanel logs${COLOR_RESET}"
 echo -e "  • Restart panel:     ${COLOR_CYAN}fiestapanel restart${COLOR_RESET}"
 echo -e "  • Reset password:    ${COLOR_CYAN}fiestapanel reset-admin${COLOR_RESET}"
 echo -e "  • Change web port:   ${COLOR_CYAN}fiestapanel set-port [port]${COLOR_RESET}"
+echo -e "  • Toggle auto-start: ${COLOR_CYAN}fiestapanel autostart [enable|disable]${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_GREEN}Thank you for installing FiestaPanel! Enjoy managing your server.${COLOR_RESET}"
 echo ""
