@@ -4788,7 +4788,7 @@ def api_worlds_datapacks():
 
     return jsonify({"success": False, "message": "Unknown action"}), 400
 
-# ── Log Intelligence & 1-Click mclo.gs ───────────────────────────────────────
+# ── Log Intelligence & One-Click mclo.gs ───────────────────────────────────────
 @app.route("/api/logs/share-mclogs", methods=["POST"])
 @login_required
 def api_logs_share_mclogs():

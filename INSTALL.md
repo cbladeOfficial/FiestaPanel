@@ -4,7 +4,7 @@ This guide walks you through deploying **FiestaPanel** across **Linux, macOS, an
 
 > [!TIP]
 > **No Pre-installed Minecraft Server Required!**  
-> You do NOT need to set up or download Minecraft prior to installing FiestaPanel. Once FiestaPanel is installed, you can choose and install **Purpur, Paper, Fabric, NeoForge, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal.
+> You do NOT need to set up or download Minecraft prior to installing FiestaPanel. Once FiestaPanel is installed, you can choose and install **Purpur, Paper, Fabric, NeoForge, Spigot, or Vanilla** in One-Click directly from the web panel without opening SSH or terminal.
 
 ---
 
@@ -81,7 +81,7 @@ irm https://fiesta.debarkak.xyz/install.ps1 | iex
 3. Creates a dedicated Python virtual environment (`venv`).
 4. Installs required Python dependencies (`flask`, `requests`, `psutil`, `Pillow`, `nbtlib`).
 5. Prompts for and confirms the owner password on first setup, then creates `config.json` and the default server storage folder.
-6. Creates a convenient desktop shortcut to launch anytime with 1-click.
+6. Creates a convenient desktop shortcut to launch anytime with One-Click.
 
 ---
 

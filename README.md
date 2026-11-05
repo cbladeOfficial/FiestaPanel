@@ -68,7 +68,7 @@ unset FIESTA_ADMIN_PASS
 Open **`http://localhost:8080`** in your browser. Complete guide & options in [**INSTALL.md**](INSTALL.md#option-4-docker--docker-compose-containerized).
 
 > [!NOTE]
-> **No Pre-installed Server Required**: You do not need to install Minecraft beforehand. You can install and launch **Paper, Purpur, Fabric, NeoForge, Spigot, or Vanilla** in 1-click directly from the web panel without opening SSH or terminal!
+> **No Pre-installed Server Required**: You do not need to install Minecraft beforehand. You can install and launch **Paper, Purpur, Fabric, NeoForge, Spigot, or Vanilla** in One-Click directly from the web panel without opening SSH or terminal!
 
 ---
 
@@ -89,18 +89,18 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 
 | Feature | Highlights |
 |---|---|
-| **Dedicated Worlds Hub** | Download world ZIPs, upload world archives, 1-click Nether & The End dimension resets, world generator wizard, and datapacks manager. |
+| **Dedicated Worlds Hub** | Download world ZIPs, upload world archives, One-Click Nether & The End dimension resets, world generator wizard, and datapacks manager. |
 | **Game Options Switchboard** | Instant toggles for Online Mode (Cracked vs Mojang), PvP, Whitelist, Flight, Command Blocks, Mob Spawning, Hardcore, and Idle Timeout. |
 | **Expanded Parameter Editor** | Direct editing for Paper (`paper-global.yml`, `paper-world-defaults.yml`), Purpur, Spigot, Bukkit, Geyser/Floodgate, and all plugin configs with `.bak` safety snapshots. |
-| **Log Intelligence & 1-Click mclo.gs** | Auto-detects crashes, OOM, port conflicts, and corrupted chunks; 1-click token-sanitized log upload to `mclo.gs`. |
+| **Log Intelligence & One-Click mclo.gs** | Auto-detects crashes, OOM, port conflicts, and corrupted chunks; One-Click token-sanitized log upload to `mclo.gs`. |
 | **Dedicated Banned IPs View** | Blacklisted IP records management, manual IP banning, and instant `/pardon-ip` unban action. |
-| **Bedrock 1-Click & Mobile QR** | `minecraft://?addExternalServer=...` direct join button and scannable camera QR code for Android, iOS, and Bedrock consoles. |
+| **Bedrock One-Click & Mobile QR** | `minecraft://?addExternalServer=...` direct join button and scannable camera QR code for Android, iOS, and Bedrock consoles. |
 | **Resource Pack Host & Auto-SHA1** | In-panel `.zip` resource pack upload, static HTTP hosting, and automated SHA-1 generation synchronized with `server.properties`. |
 | **Automated Tasks Scheduler** | Scheduled daily server restarts, automated daily world backups, and idle server auto-shutdown when empty. |
 | **Full Process Control** | Start, stop, restart, and tail live ANSI logs with top/bottom scroll navigation. |
-| **Web Panel Addon System & Store** | Modular Python & HTML extensions with 1-click in-panel Plugin Store (Discord Webhooks, Dynmap/BlueMap viewer, Cron Schedulers, MOTD Styler, Maintenance Gate). |
+| **Web Panel Addon System & Store** | Modular Python & HTML extensions with One-Click in-panel Plugin Store (Discord Webhooks, Dynmap/BlueMap viewer, Cron Schedulers, MOTD Styler, Maintenance Gate). |
 | **Visual Inventory Inspector** | Real-time armor, offhand, storage & hotbar viewer with authentic 1.21 item textures and giving search tool. |
-| **Game Addons (Plugins & Mods)** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with 1-click Modrinth directory installation. |
+| **Game Addons (Plugins & Mods)** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with One-Click Modrinth directory installation. |
 | **Jailed File Manager** | In-browser code & config editor, directory navigation, and drag-and-drop file uploads with traversal protection. |
 | **Sub-Users & Access Control** | Multi-user roles and scrypt password hashing. |
 | **Windows 7 Aero & Retro Themes** | Authentic 7.css specular glass reflection, TP-Link legacy, Windows 98, Dark Mode, Matrix, and Cyberpunk. |
@@ -122,11 +122,11 @@ Every FiestaPanel addon is a lightweight folder with:
 Refer to the [**Addon Developer Guide**](docs/ADDONS_GUIDE.md) for full specifications and templates.
 
 ### 2. Publishing to the Official In-Panel Store
-To make your plugin discoverable for all FiestaPanel users with 1-click in-panel installation:
+To make your plugin discoverable for all FiestaPanel users with One-Click in-panel installation:
 1. **Fork the Repository**: Fork [`open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) on GitHub.
 2. **Add Your Definition**: Add your addon entry to `addons/repo/repository.json` (and `addon_manager.py:STORE_CATALOG`), including your metadata, settings schema, dependencies, and bundled files (`main.py`, `tab.html`, `README.md`).
 3. **Open a Pull Request**: Submit a PR titled `feat(addon): add <your_addon_name>`.
-4. **Instant Distribution**: Once merged into `main`, your addon is immediately indexed in the official catalog (`/api/panel-addons/store`) and available for 1-click install in every FiestaPanel installation under **Panel Extensions / Store -> Plugin Store**.
+4. **Instant Distribution**: Once merged into `main`, your addon is immediately indexed in the official catalog (`/api/panel-addons/store`) and available for One-Click install in every FiestaPanel installation under **Panel Extensions / Store -> Plugin Store**.
 
 ### 3. Direct Community Distribution (.zip or URL)
 You do not need to wait for a Pull Request to share your plugins with the community:
@@ -134,7 +134,7 @@ You do not need to wait for a Pull Request to share your plugins with the commun
   ```bash
   zip -r my_plugin.zip addon.json main.py tab.html README.md
   ```
-- **1-Click Installation by Users**:
+- **One-Click Installation by Users**:
   - **Upload in Web UI**: Users navigate to **Panel Extensions / Store -> Upload Package (.jar / .zip)** in their dashboard and upload the archive.
   - **Install from URL**: Paste any direct download link (e.g., GitHub Releases asset).
   - **Direct Folder**: Drop the folder directly into the server's `addons/<my_plugin>/` directory and click **[ Reload Addons ]**.
@@ -197,7 +197,7 @@ fiestapanel version       # FiestaPanel Software Suite v2.1.0
 ## Acknowledgements & Credits
 
 - [**7.css**](https://github.com/khang-nd/7.css) by **Khang NT** ([@khang-nd](https://github.com/khang-nd)) — Powers the authentic Windows 7 Aero Glass styling, glossy specular highlights, and window control buttons (MIT License).
-- [**Modrinth API**](https://modrinth.com) — Powers the built-in online Mod & Plugin search engine and 1-click installations.
+- [**Modrinth API**](https://modrinth.com) — Powers the built-in online Mod & Plugin search engine and One-Click installations.
 - [**PaperMC API**](https://papermc.io) — Real-time upstream server software version detection and binary downloads.
 
 ---

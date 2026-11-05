@@ -15,7 +15,7 @@ The main status view delivers real-time health metrics:
   - Server process uptime in hours and minutes.
 - **Network & Domain**:
   - Displays primary server domain and port.
-  - **1-Click Copy**: Copies server address directly to clipboard for sharing with players.
+  - **One-Click Copy**: Copies server address directly to clipboard for sharing with players.
 - **World Management Shortcut**:
   - **"Flush & Save World (/save-all)"**: Issues immediate disk synchronization to prevent data loss before maintenance.
 
@@ -61,10 +61,10 @@ A comprehensive toolset for moderating players and viewing their gear:
 
 ## 4. Modrinth Plugin Manager
 
-FiestaPanel features built-in search and 1-click installation from Modrinth:
+FiestaPanel features built-in search and One-Click installation from Modrinth:
 - **Online Catalog Search**: Search thousands of plugins and mods directly from Modrinth's official repository.
 - **Compatibility Filtering**: Automatically filters for plugins and mods compatible with your server version and engine (Paper, Purpur, Spigot plugins, or NeoForge, Fabric, Forge mods).
-- **1-Click Installation**: Downloads and places JAR files directly into `plugins/` or `mods/` directory.
+- **One-Click Installation**: Downloads and places JAR files directly into `plugins/` or `mods/` directory.
 - **Local Plugin Management**:
   - View installed plugins with file size and active status.
   - Enable or disable plugins (renaming `.jar` to `.jar.disabled`).
@@ -140,13 +140,13 @@ Personalize the panel for your server community:
 
 ---
 
-## 10. Dedicated Worlds Hub & 1-Click Dimension Resets (Aternos Worlds)
+## 10. Dedicated Worlds Hub & One-Click Dimension Resets (Aternos Worlds)
 
 Complete world lifecycle management:
 - **World Dimensions Overview**:
   - Live inspection of `world` (Overworld), `world_nether` (Nether), `world_the_end` (The End), and custom worlds.
   - Displays total disk size, region count (`.mca` files), world terrain seed, and last modification date.
-- **1-Click Dimension Resets**:
+- **One-Click Dimension Resets**:
   - **Reset Nether (DIM-1)**: Safely creates an automated snapshot backup, clears region chunks, fortress data, and entity state while leaving the Overworld pristine.
   - **Reset The End (DIM1)**: Resets End cities, dragon fight state, and islands, generating a fresh Ender Dragon battle.
 - **World Archive Upload & Download**:
@@ -194,10 +194,10 @@ Deep multi-file configuration editor for server engine and plugin parameters:
 
 ---
 
-## 13. Log Intelligence & 1-Click mclo.gs Diagnostic Sharing
+## 13. Log Intelligence & One-Click mclo.gs Diagnostic Sharing
 
 Intelligent diagnostics and sharing for server logs:
-- **1-Click Share to mclo.gs**: Uploads server log directly to the official `mclo.gs` paste API for easy support sharing.
+- **One-Click Share to mclo.gs**: Uploads server log directly to the official `mclo.gs` paste API for easy support sharing.
 - **Zero-Exposure Sanitization**: Automatically scrubs and redacts all IPv4/IPv6 addresses, Discord webhook tokens, RCON passwords, database credentials, and secret keys before upload.
 - **Automated Crash & Error Intelligence**:
   - Scans `logs/latest.log` for Java OutOfMemoryError (OOM), port binding conflicts, corrupted region chunks, tick loop overload, and plugin load failures.
@@ -210,15 +210,15 @@ Intelligent diagnostics and sharing for server logs:
 Dedicated interface for managing IP bans:
 - Inspect active IP bans stored in `/banned-ips.json`.
 - Displays banned IP, associated player username, created date, and ban reason.
-- 1-click **Pardon IP** action that executes native `/pardon-ip` and synchronizes the blacklist.
+- One-Click **Pardon IP** action that executes native `/pardon-ip` and synchronizes the blacklist.
 - Ban new IP addresses directly from the panel.
 
 ---
 
-## 15. Bedrock 1-Click Join URL & Scannable Mobile QR Code
+## 15. Bedrock One-Click Join URL & Scannable Mobile QR Code
 
 Frictionless cross-play connection for mobile and tablet players:
-- **1-Click Bedrock Link**: `minecraft://?addExternalServer=...` link opens Minecraft Bedrock Edition and pre-fills server connection settings.
+- **One-Click Bedrock Link**: `minecraft://?addExternalServer=...` link opens Minecraft Bedrock Edition and pre-fills server connection settings.
 - **Scannable QR Code**: Point a mobile device camera at the screen to join the server without manually typing hostnames or ports.
 
 ---

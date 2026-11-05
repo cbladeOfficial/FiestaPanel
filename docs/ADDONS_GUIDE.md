@@ -49,7 +49,7 @@ flowchart TD
     Backend -->|ctx.send_command| Screen
     Screen -->|Stuff CLI| MC
     Backend -->|urllib / HTTP| Discord
-    Store -->|1-Click Install| AM
+    Store -->|One-Click Install| AM
     Flask -->|Serves Views & API| UI
 ```
 
@@ -339,7 +339,7 @@ Navigate to **Panel Addons & Extensions -> Installed Addons** in the panel. Clic
 
 ## In-Panel Addon Store Integration
 
-FiestaPanel includes an integrated **Plugin Store** (`/api/panel-addons/store`) featuring 1-click installation:
+FiestaPanel includes an integrated **Plugin Store** (`/api/panel-addons/store`) featuring One-Click installation:
 - **Discord Alerts & Webhook Bridge**: Real-time Discord integration.
 - **Dynmap & BlueMap Live Map Viewer**: Interactive 2D/3D map embed.
 - **Automated Server Scheduler & Cron**: Scheduled reboots, commands, and backups.
@@ -380,7 +380,7 @@ All addon management endpoints require administrator authentication:
 | `/api/panel-addons/<id>/action` | `POST` | Execute custom backend action (`{"action": "...", "payload": {...}}`). |
 | `/api/panel-addons/<id>/view` | `GET` | Render the HTML tab view for this addon. |
 | `/api/panel-addons/store` | `GET` | Fetch the full Plugin Store catalog with install status. |
-| `/api/panel-addons/store/install` | `POST` | 1-click install an addon from the store (`{"addon_id": "..."}`). |
+| `/api/panel-addons/store/install` | `POST` | One-Click install an addon from the store (`{"addon_id": "..."}`). |
 | `/api/panel-addons/upload` | `POST` | Upload and unpack an addon `.zip` archive. |
 | `/api/panel-addons/install-url` | `POST` | Download and install an addon from a ZIP URL (`{"url": "..."}`). |
 | `/api/panel-addons/template/download` | `GET` | Download starter boilerplate zip package for developers. |
