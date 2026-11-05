@@ -3071,6 +3071,115 @@
       color: #ffffff !important;
       border-color: #0369a1 !important;
     }
+
+    /* Aternos Options & Switchboard Grid Styling */
+    .aternos-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .aternos-card {
+      background: var(--input-bg, #ffffff);
+      border: 1px solid var(--input-border, #d1d5db);
+      padding: 10px 14px;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .aternos-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+    }
+    .aternos-card-title {
+      font-weight: bold;
+      font-size: 12px;
+      color: var(--text-color, #1f2937);
+    }
+    .aternos-card-desc {
+      font-size: 10px;
+      color: #6b7280;
+      line-height: 1.3;
+    }
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .switch-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .2s;
+      border-radius: 22px;
+      border: 1px solid #94a3b8;
+    }
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .switch-toggle input:checked + .switch-slider {
+      background-color: #74b21d;
+      border-color: #558a12;
+    }
+    .switch-toggle input:checked + .switch-slider:before {
+      transform: translateX(22px);
+    }
+
+    /* Diagnostics Cards */
+    .diag-issue-card {
+      border: 1px solid #f87171;
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 3px;
+    }
+    .diag-issue-card.warning {
+      border-color: #fcd34d;
+      background: #fffbeb;
+      border-left-color: #f59e0b;
+    }
+    .diag-issue-title {
+      font-weight: bold;
+      font-size: 12px;
+      color: #991b1b;
+      margin-bottom: 3px;
+    }
+    .diag-issue-card.warning .diag-issue-title {
+      color: #92400e;
+    }
+    .diag-issue-desc {
+      font-size: 11px;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+    .diag-issue-sol {
+      font-size: 11px;
+      color: #1e3a8a;
+      font-weight: 600;
+    }
   </style>
 <script>
     (() => {
@@ -3190,6 +3299,8 @@
         <div class="nav-group">
           <div class="nav-parent" onclick="toggleNavGroup('quicksetup', this)">Quick Setup</div>
           <div class="nav-sub-list" id="sub-quicksetup">
+            <div class="nav-sub-item" onclick="selectNavView('options-switches', this)">- Game Options</div>
+            <div class="nav-sub-item" onclick="selectNavView('worlds-hub', this)">- Worlds Hub</div>
             <div class="nav-sub-item" onclick="selectNavView('world-control', this)">- World Controls</div>
             <div class="nav-sub-item" onclick="selectNavView('world-broadcast', this)">- Announcements</div>
             <div class="nav-sub-item" onclick="selectNavView('events-manager', this)" id="nav-sub-events" style="display: flex; justify-content: space-between; align-items: center;">
@@ -3205,6 +3316,7 @@
           <div class="nav-sub-list" id="sub-network">
             <div class="nav-sub-item" onclick="selectNavView('network-props', this)">- Server Properties</div>
             <div class="nav-sub-item" onclick="selectNavView('network-geyser', this)">- Geyser / Bedrock</div>
+            <div class="nav-sub-item" onclick="selectNavView('network-resourcepack', this)">- Resource Pack Host</div>
           </div>
         </div>
 
@@ -3222,6 +3334,7 @@
           <div class="nav-parent" onclick="toggleNavGroup('security', this)">Security</div>
           <div class="nav-sub-list" id="sub-security">
             <div class="nav-sub-item" onclick="selectNavView('security-bans', this)">- Banned Players</div>
+            <div class="nav-sub-item" onclick="selectNavView('security-banned-ips', this)">- Banned IPs</div>
             <div class="nav-sub-item" onclick="selectNavView('security-ops', this)">- Administrators (OP)</div>
             <div class="nav-sub-item" onclick="selectNavView('security-access', this)">- Sub-Users &amp; Access</div>
           </div>
@@ -3265,6 +3378,7 @@
             <div class="nav-sub-item" onclick="selectNavView('sys-software', this)">- Server Software</div>
             <div class="nav-sub-item" onclick="selectNavView('sys-filemanager', this)">- File Manager</div>
             <div class="nav-sub-item" onclick="selectNavView('sys-configs', this)">- Parameter Editor</div>
+            <div class="nav-sub-item" onclick="selectNavView('sys-tasks', this)">- Automated Tasks</div>
             <div class="nav-sub-item" onclick="selectNavView('sys-backups', this)">- Backup &amp; Restore</div>
             <div class="nav-sub-item" onclick="selectNavView('sys-reboot', this)">- Reboot Server</div>
             <div class="nav-sub-item" onclick="selectNavView('sys-branding', this)">- Portal Branding</div>
@@ -3508,6 +3622,378 @@
             <button class="btn-classic" onclick="sendQuickCmd('spark health')">[ Run Spark Health Check ]</button>
             <button class="btn-classic" onclick="triggerAction('gc')">[ Run Garbage Collector ]</button>
           </div>
+        </section>
+
+        <!-- ════ VIEW: ATERNOS OPTIONS SWITCHBOARD ════ -->
+        <section id="view-options-switches" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>Quick Setup - Game Options &amp; Gameplay Switches</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadGameOptions()">[ Refresh ]</button>
+              <button class="btn-satin-green" style="height: 20px; font-size: 10px;" onclick="saveGameOptions()">[ Save Options ]</button>
+            </div>
+          </div>
+
+          <!-- Section 1: Core Multiplayer & Game Rules -->
+          <div class="section-sub-header">Core Multiplayer &amp; Gameplay Rules</div>
+          <div class="aternos-card-grid">
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Online Mode (Cracked / Mojang)</span>
+                <span class="aternos-card-desc">Enabled requires official Mojang accounts. Disabled allows cracked/offline players via AuthMe.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-online-mode">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">PvP Combat</span>
+                <span class="aternos-card-desc">Allow players to attack and engage in combat with each other.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-pvp">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">White List</span>
+                <span class="aternos-card-desc">Only players listed in the white-list.json can connect to the server.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-white-list">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Allow Flight</span>
+                <span class="aternos-card-desc">Permits players in survival mode to fly using mods without being kicked.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-allow-flight">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Command Blocks</span>
+                <span class="aternos-card-desc">Enable execution of commands via redstone command blocks.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-enable-command-block">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Force Gamemode</span>
+                <span class="aternos-card-desc">Forces all joining players to switch to default game mode.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-force-gamemode">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Hardcore Mode</span>
+                <span class="aternos-card-desc">Permanent death: 1 life per player, locked to spectator upon death.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-hardcore">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Nether Dimension</span>
+                <span class="aternos-card-desc">Permits players to travel to the Nether dimension via obsidian portals.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-allow-nether">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 2: Mob & Creature Spawning -->
+          <div class="section-sub-header">Mob &amp; Entity Spawning Switches</div>
+          <div class="aternos-card-grid">
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Spawn Monsters (Hostile)</span>
+                <span class="aternos-card-desc">Enable natural spawning of zombies, skeletons, creepers, and endermen.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-spawn-monsters">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Spawn Animals (Passive)</span>
+                <span class="aternos-card-desc">Enable spawning of cows, sheep, pigs, chickens, and wildlife.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-spawn-animals">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Spawn Villagers &amp; NPCs</span>
+                <span class="aternos-card-desc">Enable village residents, iron golems, and wandering traders.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-spawn-npcs">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="aternos-card">
+              <div class="aternos-card-info">
+                <span class="aternos-card-title">Synchronous Chunk Writes</span>
+                <span class="aternos-card-desc">Flush chunks synchronously to reduce risk of world corruption on crash.</span>
+              </div>
+              <label class="switch-toggle">
+                <input type="checkbox" id="opt-sync-chunk-writes">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 3: Value Controls & Capacities -->
+          <div class="section-sub-header">Game Capacities, Difficulties &amp; Distances</div>
+          <table class="form-layout-table">
+            <tr>
+              <td class="label-col">Player Slots (Capacity):</td>
+              <td class="val-col">
+                <input type="number" id="opt-max-players" min="1" max="1000" style="width: 80px;" value="20">
+                <span class="inline-hint">(Maximum simultaneous players allowed on server)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Default Gamemode:</td>
+              <td class="val-col">
+                <select id="opt-gamemode" style="width: 180px; font-weight: bold;">
+                  <option value="survival">Survival</option>
+                  <option value="creative">Creative</option>
+                  <option value="adventure">Adventure</option>
+                  <option value="spectator">Spectator</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Game Difficulty:</td>
+              <td class="val-col">
+                <select id="opt-difficulty" style="width: 140px; font-weight: bold;">
+                  <option value="peaceful">Peaceful</option>
+                  <option value="easy">Easy</option>
+                  <option value="normal">Normal</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Spawn Protection:</td>
+              <td class="val-col">
+                <input type="number" id="opt-spawn-protection" min="0" max="500" style="width: 80px;" value="16"> blocks
+                <span class="inline-hint">(Radius around world spawn protected from non-OP edits; 0 to disable)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">View Distance:</td>
+              <td class="val-col">
+                <input type="number" id="opt-view-distance" min="3" max="32" style="width: 80px;" value="10"> chunks
+                <span class="inline-hint">(Radius of chunks rendered around each player)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Simulation Distance:</td>
+              <td class="val-col">
+                <input type="number" id="opt-simulation-distance" min="3" max="32" style="width: 80px;" value="8"> chunks
+                <span class="inline-hint">(Radius of chunks actively ticking entities, mobs, and redstone)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Idle Kick Timeout:</td>
+              <td class="val-col">
+                <input type="number" id="opt-player-idle-timeout" min="0" max="1440" style="width: 80px;" value="0"> minutes
+                <span class="inline-hint">(Disconnect AFK players after X minutes; 0 to disable)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Require Resource Pack:</td>
+              <td class="val-col">
+                <select id="opt-require-resource-pack" style="width: 160px;">
+                  <option value="false">Optional (Prompt player)</option>
+                  <option value="true">Required (Kick if declined)</option>
+                </select>
+              </td>
+            </tr>
+          </table>
+
+          <div class="btn-row" style="margin-top: 14px;">
+            <button class="btn-satin-green" style="height: 28px; padding: 0 20px;" onclick="saveGameOptions()">[ Save Game Options ]</button>
+            <button class="btn-classic" style="height: 28px;" onclick="saveGameOptions(true)">[ ⟳ Save &amp; Reboot Server ]</button>
+          </div>
+        </section>
+
+        <!-- ════ VIEW: DEDICATED WORLDS HUB ════ -->
+        <section id="view-worlds-hub" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>Quick Setup - Dedicated Worlds Hub</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadWorldsHub()">[ Refresh Worlds ]</button>
+            </div>
+          </div>
+
+          <!-- Active World Dimensions Table -->
+          <div class="section-sub-header">Active World Dimensions &amp; Save Folders</div>
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th>World Name</th>
+                <th>Dimension</th>
+                <th>Disk Size</th>
+                <th>Region Files</th>
+                <th>Datapacks</th>
+                <th>Last Modified</th>
+                <th style="width: 190px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="worlds-table-body">
+              <tr><td colspan="7" style="text-align: center; color: #888; padding: 14px;">Loading world dimensions...</td></tr>
+            </tbody>
+          </table>
+
+          <!-- 1-Click Dimension Resets (Signature Aternos Feature) -->
+          <div class="section-sub-header" style="margin-top: 18px;">1-Click Dimension Resets &amp; World Optimization</div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <!-- Reset Nether -->
+            <div style="border: 1px solid var(--input-border); background: var(--input-bg); padding: 12px; border-radius: 3px;">
+              <div style="font-weight: bold; font-size: 12px; color: #b91c1c; margin-bottom: 4px;">Reset Nether Dimension (DIM-1)</div>
+              <div style="font-size: 11px; color: #6b7280; margin-bottom: 10px;">
+                Safely creates a snapshot backup, clears nether chunks, fortress caches, and entity data. Overworld structures remain untouched.
+              </div>
+              <button class="btn-classic" style="color: #b91c1c; font-weight: bold;" onclick="confirmResetDimension('nether')">[ ⟳ Reset Nether Dimension ]</button>
+            </div>
+
+            <!-- Reset The End -->
+            <div style="border: 1px solid var(--input-border); background: var(--input-bg); padding: 12px; border-radius: 3px;">
+              <div style="font-weight: bold; font-size: 12px; color: #7c2d12; margin-bottom: 4px;">Reset The End Dimension (DIM1)</div>
+              <div style="font-size: 11px; color: #6b7280; margin-bottom: 10px;">
+                Safely backs up and resets End cities, dragon fight state, and outer islands, regenerating a pristine dragon arena.
+              </div>
+              <button class="btn-classic" style="color: #7c2d12; font-weight: bold;" onclick="confirmResetDimension('the_end')">[ ⟳ Reset The End Dimension ]</button>
+            </div>
+
+            <!-- Optimize World Chunks -->
+            <div style="border: 1px solid var(--input-border); background: var(--input-bg); padding: 12px; border-radius: 3px;">
+              <div style="font-weight: bold; font-size: 12px; color: #047857; margin-bottom: 4px;">World Chunk Optimizer</div>
+              <div style="font-size: 11px; color: #6b7280; margin-bottom: 10px;">
+                Flush all world chunks to disk and prepare server for --forceUpgrade --eraseCache chunk conversion.
+              </div>
+              <button class="btn-classic" style="color: #047857; font-weight: bold;" onclick="optimizeWorldChunks()">[ Optimize World Chunks ]</button>
+            </div>
+          </div>
+
+          <!-- World Upload Modal / Box -->
+          <div class="section-sub-header">Upload World Archive (.zip)</div>
+          <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 12px; margin-bottom: 16px;">
+            <p class="inline-hint" style="margin-bottom: 8px;">Upload a zipped Minecraft world folder. FiestaPanel will automatically create a backup of your existing world, verify level.dat, and unpack the new terrain.</p>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <span>Target World:
+                <select id="world-upload-target" style="width: 140px; font-weight: bold;">
+                  <option value="world">world (Overworld)</option>
+                  <option value="world_nether">world_nether</option>
+                  <option value="world_the_end">world_the_end</option>
+                </select>
+              </span>
+              <input type="file" id="world-upload-input" accept=".zip">
+              <button class="btn-satin-green" onclick="handleWorldUpload()">[ Upload World ZIP ]</button>
+            </div>
+            <div id="world-upload-status" style="margin-top: 6px; font-size: 11px; font-weight: bold; color: #006622;"></div>
+          </div>
+
+          <!-- Generate Brand New World -->
+          <div class="section-sub-header">Generate New World &amp; Seed</div>
+          <table class="form-layout-table">
+            <tr>
+              <td class="label-col">World Folder Name:</td>
+              <td class="val-col"><input type="text" id="world-gen-name" value="world" style="width: 180px;"></td>
+            </tr>
+            <tr>
+              <td class="label-col">Seed:</td>
+              <td class="val-col">
+                <input type="text" id="world-gen-seed" style="width: 240px; font-family: monospace;" placeholder="Leave empty for random seed">
+                <button class="btn-classic" onclick="document.getElementById('world-gen-seed').value = Math.floor(Math.random() * 9007199254740991) * (Math.random() > 0.5 ? 1 : -1)">[ Randomize ]</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">World Generator Type:</td>
+              <td class="val-col">
+                <select id="world-gen-type" style="width: 200px;">
+                  <option value="minecraft:normal">Default (Normal Terrain)</option>
+                  <option value="minecraft:flat">Superflat</option>
+                  <option value="minecraft:large_biomes">Large Biomes</option>
+                  <option value="minecraft:amplified">Amplified</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Generate Structures:</td>
+              <td class="val-col">
+                <label style="cursor: pointer;"><input type="checkbox" id="world-gen-structures" checked> Villages, temples, mineshafts, dungeons</label>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Hardcore Mode:</td>
+              <td class="val-col">
+                <label style="cursor: pointer;"><input type="checkbox" id="world-gen-hardcore"> Permanent 1-life spectator lock</label>
+              </td>
+            </tr>
+          </table>
+          <div class="btn-row">
+            <button class="btn-classic" style="color: #b91c1c; font-weight: bold;" onclick="confirmGenerateWorld()">[ ⟳ Generate New World ]</button>
+          </div>
+
+          <!-- Datapacks Management Section -->
+          <div class="section-sub-header" style="margin-top: 18px;">World Datapacks Management (/world/datapacks/)</div>
+          <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span>Upload Datapack (.zip):</span>
+              <input type="file" id="datapack-upload-input" accept=".zip">
+              <button class="btn-satin-green" onclick="handleDatapackUpload()">[ Upload Datapack ]</button>
+            </div>
+            <button class="btn-classic" onclick="loadDatapacks()">[ Refresh Datapacks ]</button>
+          </div>
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th>Datapack Name</th>
+                <th>Description</th>
+                <th>Format</th>
+                <th>Size</th>
+                <th style="width: 160px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="datapacks-table-body">
+              <tr><td colspan="5" style="text-align: center; color: #888; padding: 12px;">Loading installed datapacks...</td></tr>
+            </tbody>
+          </table>
         </section>
 
         <!-- ════ VIEW 3: WORLD CONTROLS ════ -->
@@ -3760,6 +4246,79 @@
           <div class="btn-row">
             <button class="btn-classic" onclick="triggerAction('reload_plugin', 'geyser')">[ Reload Geyser-Spigot ]</button>
           </div>
+
+          <div class="section-sub-header" style="margin-top: 18px;">Bedrock 1-Click Join &amp; Mobile QR Code</div>
+          <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+            <div id="bedrock-qr-container" style="text-align: center;">
+              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3DFiestaSMP%7C127.0.0.1%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
+              <div class="inline-hint" style="margin-top: 4px; font-size: 10px;">Scan with Camera</div>
+            </div>
+            <div style="flex: 1; min-width: 240px;">
+              <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">Instant Mobile &amp; Tablet Connection</div>
+              <p class="inline-hint" style="margin-bottom: 10px;">
+                Players on Android, iOS, Windows Bedrock, or Nintendo Switch can join directly with one tap without manually entering hostnames or ports.
+              </p>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <a id="bedrock-direct-link" href="minecraft://?addExternalServer=FiestaSMP|127.0.0.1:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ 1-Click Bedrock Connect ]</a>
+                <button class="btn-classic" onclick="copyBedrockLink()">[ Copy Bedrock Link ]</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ════ VIEW: RESOURCE PACK HOST ════ -->
+        <section id="view-network-resourcepack" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>Network - Server Resource Pack Host &amp; Auto-SHA1 Generator</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadResourcePackInfo()">[ Refresh ]</button>
+            </div>
+          </div>
+
+          <div class="section-sub-header">Upload &amp; Host Custom Server Resource Pack (.zip)</div>
+          <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; margin-bottom: 16px;">
+            <p class="inline-hint" style="margin-bottom: 12px;">
+              Upload your server's custom textures, models, or music pack (.zip). FiestaPanel will host the pack directly on this server port, compute the exact cryptographic SHA-1 hash, and automatically configure <code>server.properties</code>.
+            </p>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="file" id="rp-upload-input" accept=".zip">
+              <button class="btn-satin-green" onclick="handleResourcePackUpload()">[ Upload &amp; Generate SHA-1 ]</button>
+            </div>
+            <div id="rp-upload-status" style="margin-top: 8px; font-size: 11px; font-weight: bold; color: #006622;"></div>
+          </div>
+
+          <div class="section-sub-header">Active Hosted Resource Pack Details</div>
+          <table class="form-layout-table">
+            <tr>
+              <td class="label-col">Download URL:</td>
+              <td class="val-col">
+                <input type="text" id="rp-display-url" style="width: 380px; font-family: monospace;" readonly placeholder="No resource pack hosted yet">
+                <button class="btn-classic" onclick="copyRpUrl()">[ Copy URL ]</button>
+                <a id="rp-test-download-link" href="#" target="_blank" class="btn-classic" style="display: none; padding: 2px 8px; text-decoration: none; font-size: 11px;">[ Test Download ]</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">SHA-1 Checksum:</td>
+              <td class="val-col">
+                <input type="text" id="rp-display-sha1" style="width: 380px; font-family: monospace;" readonly placeholder="Not computed">
+                <button class="btn-classic" onclick="copyRpSha1()">[ Copy Hash ]</button>
+                <span class="inline-hint">(Required by Minecraft client to verify pack integrity without re-downloading)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Enforce Resource Pack:</td>
+              <td class="val-col">
+                <select id="rp-enforce-select" style="width: 220px;">
+                  <option value="false">Optional (Prompt player to accept)</option>
+                  <option value="true">Mandatory (Disconnect players who decline)</option>
+                </select>
+              </td>
+            </tr>
+          </table>
+          <div class="btn-row" style="margin-top: 12px;">
+            <button class="btn-satin-green" onclick="applyResourcePackToProps()">[ Apply Settings to server.properties ]</button>
+            <button class="btn-classic" onclick="confirmServerPower('restart')">[ ⟳ Reboot Server to Apply ]</button>
+          </div>
         </section>
 
         <!-- ════ VIEW 7: PLAYERS MANAGEMENT ════ -->
@@ -3888,6 +4447,53 @@
             </thead>
             <tbody id="ip-bans-table-body">
               <tr><td colspan="6" style="text-align: center; color: #888;">No IP addresses currently banned.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ════ VIEW: DEDICATED BANNED IPS ════ -->
+        <section id="view-security-banned-ips" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>Security - Blacklisted IP Addresses</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadDedicatedBannedIps()">[ Refresh IP List ]</button>
+            </div>
+          </div>
+
+          <table class="form-layout-table">
+            <tr>
+              <td class="label-col">Ban IP Address:</td>
+              <td class="val-col">
+                <input type="text" id="dedicated-ban-ip" placeholder="e.g. 192.168.1.100..." style="width: 170px; font-family: monospace;">
+                <input type="text" id="dedicated-ban-reason" placeholder="Ban reason..." style="width: 220px;">
+                <button class="btn-danger-red" onclick="executeDedicatedIpBan()">[ Ban IP Address ]</button>
+              </td>
+            </tr>
+          </table>
+
+          <div style="margin: 10px 0 8px 0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>Filter Blacklisted IPs:</span>
+              <input type="text" id="dedicated-ip-filter" placeholder="Filter by IP, player, or reason..." oninput="filterDedicatedIpTable()" style="width: 240px; height: 22px; font-size: 11px;">
+              <button type="button" class="btn-classic" style="height: 22px; font-size: 10px; padding: 0 6px;" onclick="document.getElementById('dedicated-ip-filter').value=''; filterDedicatedIpTable();">[ Clear ]</button>
+            </div>
+            <span id="dedicated-ip-count-badge" class="badge-status offline" style="font-size: 10px;">0 IPs Banned</span>
+          </div>
+
+          <div class="section-sub-header">Active Blacklisted IP Records (/banned-ips.json)</div>
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th>IP Address</th>
+                <th>Associated Player</th>
+                <th>Created</th>
+                <th>Banned By</th>
+                <th>Reason</th>
+                <th style="width: 120px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="dedicated-ip-table-body">
+              <tr><td colspan="6" style="text-align: center; color: #888; padding: 14px;">Loading banned IP addresses...</td></tr>
             </tbody>
           </table>
         </section>
@@ -4098,11 +4704,15 @@
         <section id="view-diag-console" class="view-panel" style="display:none;">
           <div class="section-title-bar">
             <span>Diagnostics - System Log &amp; Terminal Console</span>
-            <div>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <button class="btn-satin-green" style="height: 20px; font-size: 10px; font-weight: bold;" onclick="shareConsoleLogMclogs()">[ ⟳ Share with mclo.gs ]</button>
               <a href="/api/log/download" id="console-download-btn" class="btn-classic" style="height: 20px; font-size: 10px;">[ Download Log ]</a>
               <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="clearConsoleView()">[ Clear View ]</button>
             </div>
           </div>
+
+          <!-- Crash Intelligence & Error Diagnostics Box -->
+          <div id="console-diag-container" style="display: none; margin-bottom: 10px;"></div>
 
           <!-- Uninstalled Server Alert in Console -->
           <div class="uninstalled-server-banner" style="display: none; background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border: 2px solid #38bdf8; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px; color: #ffffff;">
@@ -4615,6 +5225,89 @@
               </div>
             </div>
             <textarea id="config-editor-area" style="width: 100%; height: 440px; border: 1px solid var(--input-border); padding: 8px; box-sizing: border-box; background: var(--input-bg); color: var(--input-text); font-family: 'Courier New', Courier, monospace;" spellcheck="false"></textarea>
+          </div>
+        </section>
+
+        <!-- ════ VIEW: AUTOMATED TASKS & SCHEDULER ════ -->
+        <section id="view-sys-tasks" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>System Tools - Automated Lifecycle &amp; Scheduled Tasks</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadAutomatedTasks()">[ Refresh Tasks ]</button>
+            </div>
+          </div>
+
+          <p class="inline-hint" style="margin-bottom: 14px;">
+            Configure hands-off autonomous server routines. FiestaPanel daemon executes scheduled daily reboots, automated world snapshot backups, and dynamic idle power saving.
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px;">
+            <!-- Task 1: Daily Restart -->
+            <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; border-radius: 3px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <strong style="font-size: 13px; color: #0284c7;">Scheduled Daily Restart</strong>
+                <label class="switch-toggle">
+                  <input type="checkbox" id="task-daily-restart-enable">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+              <p class="inline-hint" style="margin-bottom: 10px;">
+                Broadcasts a 15-second in-game warning, flushes world data safely with /save-all, and restarts the Minecraft engine to refresh RAM.
+              </p>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-weight: bold; font-size: 11px;">Time (24h):</span>
+                <input type="time" id="task-daily-restart-time" value="04:00" style="padding: 2px 6px; font-weight: bold;">
+                <span id="task-restart-last" class="inline-hint" style="margin-left: auto;"></span>
+              </div>
+            </div>
+
+            <!-- Task 2: Daily World Backup -->
+            <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; border-radius: 3px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <strong style="font-size: 13px; color: #16a34a;">Automated Daily World Backup</strong>
+                <label class="switch-toggle">
+                  <input type="checkbox" id="task-daily-backup-enable">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+              <p class="inline-hint" style="margin-bottom: 10px;">
+                Generates a clean timestamped ZIP snapshot archive of all world data and stores it in /home/ubuntu/backups/ automatically.
+              </p>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-weight: bold; font-size: 11px;">Time (24h):</span>
+                <input type="time" id="task-daily-backup-time" value="05:00" style="padding: 2px 6px; font-weight: bold;">
+                <span id="task-backup-last" class="inline-hint" style="margin-left: auto;"></span>
+              </div>
+            </div>
+
+            <!-- Task 3: Idle Auto-Stop -->
+            <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; border-radius: 3px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <strong style="font-size: 13px; color: #ea580c;">Idle Server Auto-Shutdown</strong>
+                <label class="switch-toggle">
+                  <input type="checkbox" id="task-idle-stop-enable">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+              <p class="inline-hint" style="margin-bottom: 10px;">
+                Monitors connected player count. When 0 players are online continuously for the duration, safely stops the server to eliminate idle CPU and memory consumption.
+              </p>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-weight: bold; font-size: 11px;">Idle Limit:</span>
+                <select id="task-idle-timeout-select" style="padding: 2px 6px;">
+                  <option value="15">15 minutes</option>
+                  <option value="30" selected>30 minutes</option>
+                  <option value="45">45 minutes</option>
+                  <option value="60">60 minutes (1 hour)</option>
+                  <option value="120">120 minutes (2 hours)</option>
+                </select>
+                <span id="task-idle-status" class="inline-hint" style="margin-left: auto;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-satin-green" style="height: 28px; padding: 0 20px;" onclick="saveAutomatedTasks()">[ Save Automated Tasks ]</button>
           </div>
         </section>
 
@@ -5843,6 +6536,45 @@ def on_action(ctx, action_name, payload):
 
     // Contextual Help Definitions
     const HELP_DOCS = {
+      'options-switches': {
+        title: 'Game Options Help',
+        body: `
+          <div class="help-sub">Aternos Gameplay Switches</div>
+          <p class="help-text">Instant switchboard for server-wide gameplay rules: Online Mode (Cracked vs Mojang), PvP, Flight, Command Blocks, and Mob Spawning.</p>
+          <div class="help-sub">Difficulties &amp; Gamemodes</div>
+          <p class="help-text">Sets default game mode (Survival, Creative, Adventure, Spectator) and global world difficulty (Peaceful to Hard).</p>
+        `
+      },
+      'worlds-hub': {
+        title: 'Worlds Hub Help',
+        body: `
+          <div class="help-sub">World Dimension Management</div>
+          <p class="help-text">Download world folders as compressed ZIP archives, upload new worlds, and perform 1-click dimension resets for the Nether or The End.</p>
+          <div class="help-sub">Datapacks</div>
+          <p class="help-text">Install and toggle world datapacks located inside <code>world/datapacks/</code>.</p>
+        `
+      },
+      'security-banned-ips': {
+        title: 'Banned IPs Help',
+        body: `
+          <div class="help-sub">IP Address Blacklist</div>
+          <p class="help-text">Prevents targeted IP addresses from establishing network connections to the Minecraft port. Dispatches native pardon-ip commands on unban.</p>
+        `
+      },
+      'network-resourcepack': {
+        title: 'Resource Pack Host Help',
+        body: `
+          <div class="help-sub">Direct Static Hosting</div>
+          <p class="help-text">Uploads custom resource packs (.zip), generates precise SHA-1 cryptographic hashes, and updates server.properties automatically.</p>
+        `
+      },
+      'sys-tasks': {
+        title: 'Automated Tasks Help',
+        body: `
+          <div class="help-sub">Autonomous Lifecycle</div>
+          <p class="help-text">Schedule daily automatic server restarts, scheduled world backups, and automatic server shutdown when idle with 0 online players.</p>
+        `
+      },
       'status-overview': {
         title: 'Status Help',
         body: `
@@ -6148,10 +6880,13 @@ def on_action(ctx, action_name, payload):
       document.getElementById('help-content').innerHTML = doc.body;
 
       // Lazy load view data
+      if (viewId === 'options-switches') loadGameOptions();
+      if (viewId === 'worlds-hub') loadWorldsHub();
       if (viewId === 'events-manager') loadEvents();
       if (viewId === 'players-list') loadPlayers();
       if (viewId === 'players-whitelist') loadWhitelist();
       if (viewId === 'security-bans') loadBans();
+      if (viewId === 'security-banned-ips') loadDedicatedBannedIps();
       if (viewId === 'security-ops') loadOps();
       if (viewId === 'security-access') loadSubusers();
       if (viewId === 'plugins-active') loadCurrentAddons();
@@ -6159,14 +6894,17 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'plugins-disabled') loadCurrentDisabledAddons();
       if (viewId === 'plugins-upload') updateUploadTargetDisplay();
       if (viewId === 'network-props') loadServerProps();
+      if (viewId === 'network-geyser') renderBedrockConnectAndQr();
+      if (viewId === 'network-resourcepack') loadResourcePackInfo();
       if (viewId === 'sys-software') loadSoftwareInfo();
       if (viewId === 'sys-filemanager') loadFileManager();
       if (viewId === 'sys-configs') { loadServerProps(); loadConfigsDropdown(); }
+      if (viewId === 'sys-tasks') loadAutomatedTasks();
       if (viewId === 'sys-backups') loadBackups();
       if (viewId === 'sys-branding') loadBrandingForm();
       if (viewId === 'sys-themes') loadThemeStudio();
       if (viewId === 'sys-info') loadAutoStartInfo();
-      if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); }
+      if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); loadConsoleDiagnostics(); }
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
       if (viewId === 'panel-addons-store') loadPanelAddonStore();
@@ -9280,6 +10018,651 @@ def on_action(ctx, action_name, payload):
       } catch (e) {
         statusEl.textContent = 'Save failed.';
         showBannerAlert('Save error.', true);
+      }
+    }
+
+    // ── Aternos Options Switchboard ──────────────────────────────
+    async function loadGameOptions() {
+      try {
+        const res = await fetch('/api/options');
+        if (!res.ok) return;
+        const d = await res.json();
+        const o = d.options || {};
+
+        const boolMap = {
+          'opt-online-mode': o['online-mode'] === 'true',
+          'opt-pvp': o['pvp'] !== 'false',
+          'opt-white-list': o['white-list'] === 'true',
+          'opt-allow-flight': o['allow-flight'] === 'true',
+          'opt-enable-command-block': o['enable-command-block'] === 'true',
+          'opt-force-gamemode': o['force-gamemode'] === 'true',
+          'opt-hardcore': o['hardcore'] === 'true',
+          'opt-allow-nether': o['allow-nether'] !== 'false',
+          'opt-spawn-monsters': o['spawn-monsters'] !== 'false',
+          'opt-spawn-animals': o['spawn-animals'] !== 'false',
+          'opt-spawn-npcs': o['spawn-npcs'] !== 'false',
+          'opt-sync-chunk-writes': o['sync-chunk-writes'] !== 'false'
+        };
+
+        for (const [id, val] of Object.entries(boolMap)) {
+          const el = document.getElementById(id);
+          if (el) el.checked = val;
+        }
+
+        if (document.getElementById('opt-max-players')) document.getElementById('opt-max-players').value = o['max-players'] || '20';
+        if (document.getElementById('opt-gamemode')) document.getElementById('opt-gamemode').value = (o['gamemode'] || 'survival').toLowerCase();
+        if (document.getElementById('opt-difficulty')) document.getElementById('opt-difficulty').value = (o['difficulty'] || 'normal').toLowerCase();
+        if (document.getElementById('opt-spawn-protection')) document.getElementById('opt-spawn-protection').value = o['spawn-protection'] || '16';
+        if (document.getElementById('opt-view-distance')) document.getElementById('opt-view-distance').value = o['view-distance'] || '10';
+        if (document.getElementById('opt-simulation-distance')) document.getElementById('opt-simulation-distance').value = o['simulation-distance'] || '8';
+        if (document.getElementById('opt-player-idle-timeout')) document.getElementById('opt-player-idle-timeout').value = o['player-idle-timeout'] || '0';
+        if (document.getElementById('opt-require-resource-pack')) document.getElementById('opt-require-resource-pack').value = (o['require-resource-pack'] || 'false').toLowerCase();
+      } catch (e) {
+        showBannerAlert('Failed to load game options.', true);
+      }
+    }
+
+    async function saveGameOptions(rebootAfter = false) {
+      const updates = {
+        'online-mode': document.getElementById('opt-online-mode').checked ? 'true' : 'false',
+        'pvp': document.getElementById('opt-pvp').checked ? 'true' : 'false',
+        'white-list': document.getElementById('opt-white-list').checked ? 'true' : 'false',
+        'allow-flight': document.getElementById('opt-allow-flight').checked ? 'true' : 'false',
+        'enable-command-block': document.getElementById('opt-enable-command-block').checked ? 'true' : 'false',
+        'force-gamemode': document.getElementById('opt-force-gamemode').checked ? 'true' : 'false',
+        'hardcore': document.getElementById('opt-hardcore').checked ? 'true' : 'false',
+        'allow-nether': document.getElementById('opt-allow-nether').checked ? 'true' : 'false',
+        'spawn-monsters': document.getElementById('opt-spawn-monsters').checked ? 'true' : 'false',
+        'spawn-animals': document.getElementById('opt-spawn-animals').checked ? 'true' : 'false',
+        'spawn-npcs': document.getElementById('opt-spawn-npcs').checked ? 'true' : 'false',
+        'sync-chunk-writes': document.getElementById('opt-sync-chunk-writes').checked ? 'true' : 'false',
+        'max-players': document.getElementById('opt-max-players').value.trim(),
+        'gamemode': document.getElementById('opt-gamemode').value,
+        'difficulty': document.getElementById('opt-difficulty').value,
+        'spawn-protection': document.getElementById('opt-spawn-protection').value.trim(),
+        'view-distance': document.getElementById('opt-view-distance').value.trim(),
+        'simulation-distance': document.getElementById('opt-simulation-distance').value.trim(),
+        'player-idle-timeout': document.getElementById('opt-player-idle-timeout').value.trim(),
+        'require-resource-pack': document.getElementById('opt-require-resource-pack').value
+      };
+
+      try {
+        const res = await fetch('/api/options', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(updates)
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        if (d.success && rebootAfter) {
+          confirmServerPower('restart');
+        }
+      } catch (e) {
+        showBannerAlert('Network error saving game options.', true);
+      }
+    }
+
+    // ── Dedicated Worlds Hub ─────────────────────────────────────
+    let loadedWorldsList = [];
+
+    async function loadWorldsHub() {
+      const tbody = document.getElementById('worlds-table-body');
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #888; padding: 14px;">Reading world dimensions from disk...</td></tr>';
+      try {
+        const res = await fetch('/api/worlds');
+        const d = await res.json();
+        if (!d.success) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #c00; padding: 14px;">${escapeHtml(d.message)}</td></tr>`;
+          return;
+        }
+        loadedWorldsList = d.worlds || [];
+        renderWorldsTable(loadedWorldsList);
+        loadDatapacks();
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #c00; padding: 14px;">Failed to load worlds.</td></tr>';
+      }
+    }
+
+    function renderWorldsTable(worlds) {
+      const tbody = document.getElementById('worlds-table-body');
+      if (!worlds.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #888; padding: 14px;">No worlds detected.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = worlds.map(w => {
+        let typeBadge = '<span class="badge-status online" style="font-size: 9px; padding: 1px 5px;">Overworld</span>';
+        if (w.type === 'Nether') typeBadge = '<span class="badge-status" style="background: #b91c1c; color: #fff; font-size: 9px; padding: 1px 5px;">Nether</span>';
+        if (w.type === 'The End') typeBadge = '<span class="badge-status" style="background: #7c2d12; color: #fff; font-size: 9px; padding: 1px 5px;">The End</span>';
+
+        return `
+          <tr>
+            <td style="font-weight: bold; font-family: monospace;">${escapeHtml(w.name)}</td>
+            <td>${typeBadge}</td>
+            <td><strong>${escapeHtml(w.size_formatted)}</strong></td>
+            <td>${w.region_files} region files</td>
+            <td>${w.datapack_count} active</td>
+            <td>${escapeHtml(w.last_modified)}</td>
+            <td>
+              <div style="display: flex; gap: 4px;">
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="downloadWorldZip('${escapeHtml(w.name)}')">[ Download ZIP ]</button>
+                ${w.type === 'Nether' ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #b91c1c;" onclick="confirmResetDimension('nether')">[ Reset ]</button>` : ''}
+                ${w.type === 'The End' ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #7c2d12;" onclick="confirmResetDimension('the_end')">[ Reset ]</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function downloadWorldZip(worldName) {
+      showBannerAlert(`Preparing ${worldName}.zip download... Snapshot creation in progress.`);
+      window.location.href = `/api/worlds/download?world=${encodeURIComponent(worldName)}`;
+    }
+
+    async function handleWorldUpload() {
+      const fileInput = document.getElementById('world-upload-input');
+      const targetWorld = document.getElementById('world-upload-target').value;
+      const statusEl = document.getElementById('world-upload-status');
+
+      if (!fileInput.files.length) {
+        showBannerAlert('Please select a .zip world archive first.', true);
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (!confirm(`Warning: Uploading this world will replace the current '${targetWorld}' directory. An automated pre-upload snapshot backup will be created in /home/ubuntu/backups/. Continue?`)) {
+        return;
+      }
+
+      statusEl.textContent = `Uploading and extracting ${file.name}...`;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('world', targetWorld);
+
+      try {
+        const res = await fetch('/api/worlds/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const d = await res.json();
+        statusEl.textContent = d.message;
+        showBannerAlert(d.message, !d.success);
+        if (d.success) {
+          fileInput.value = '';
+          loadWorldsHub();
+        }
+      } catch (e) {
+        statusEl.textContent = 'Network error uploading world.';
+        showBannerAlert('Network error uploading world.', true);
+      }
+    }
+
+    async function confirmResetDimension(dim) {
+      const label = dim === 'nether' ? 'Nether (world_nether / DIM-1)' : (dim === 'the_end' ? 'The End (world_the_end / DIM1)' : 'Overworld');
+      if (!confirm(`Are you sure you want to reset the ${label}? All chunk modifications and structures in this dimension will be cleared. An automatic snapshot backup will be saved first.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/worlds/reset-dimension', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ dimension: dim })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadWorldsHub();
+      } catch (e) {
+        showBannerAlert('Error resetting dimension.', true);
+      }
+    }
+
+    async function confirmGenerateWorld() {
+      const name = document.getElementById('world-gen-name').value.trim() || 'world';
+      const seed = document.getElementById('world-gen-seed').value.trim();
+      const type = document.getElementById('world-gen-type').value;
+      const structures = document.getElementById('world-gen-structures').checked;
+      const hardcore = document.getElementById('world-gen-hardcore').checked;
+
+      if (!confirm(`Generate brand new world '${name}'? This will backup and delete the existing '${name}' folder. On next restart, Minecraft will generate brand new terrain with seed '${seed || 'random'}'. Proceed?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/worlds/generate', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name, seed, type, structures, hardcore })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadWorldsHub();
+      } catch (e) {
+        showBannerAlert('Failed to generate world configuration.', true);
+      }
+    }
+
+    async function optimizeWorldChunks() {
+      try {
+        const res = await fetch('/api/worlds/optimize', { method: 'POST' });
+        const d = await res.json();
+        showBannerAlert(d.message);
+      } catch (e) {
+        showBannerAlert('Optimization command dispatch error.', true);
+      }
+    }
+
+    async function loadDatapacks() {
+      const tbody = document.getElementById('datapacks-table-body');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/worlds/datapacks');
+        const d = await res.json();
+        if (!d.success || !d.datapacks || !d.datapacks.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888; padding: 12px;">No custom datapacks installed in /world/datapacks/.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = d.datapacks.map(dp => `
+          <tr>
+            <td style="font-weight: bold; font-family: monospace;">${escapeHtml(dp.name)}</td>
+            <td>${escapeHtml(dp.description)}</td>
+            <td>Format ${escapeHtml(String(dp.format))}</td>
+            <td>${escapeHtml(dp.size_formatted)}</td>
+            <td>
+              <div style="display: flex; gap: 4px;">
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="toggleDatapack('${escapeHtml(dp.name)}', 'enable')">[ Enable ]</button>
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="toggleDatapack('${escapeHtml(dp.name)}', 'disable')">[ Disable ]</button>
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #b91c1c;" onclick="deleteDatapack('${escapeHtml(dp.name)}')">[ Delete ]</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #c00; padding: 12px;">Failed to load datapacks.</td></tr>';
+      }
+    }
+
+    async function handleDatapackUpload() {
+      const fileInput = document.getElementById('datapack-upload-input');
+      if (!fileInput.files.length) {
+        showBannerAlert('Select a .zip datapack archive first.', true);
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('action', 'upload');
+
+      try {
+        const res = await fetch('/api/worlds/datapacks', { method: 'POST', body: formData });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        fileInput.value = '';
+        loadDatapacks();
+      } catch (e) {
+        showBannerAlert('Error uploading datapack.', true);
+      }
+    }
+
+    async function deleteDatapack(name) {
+      if (!confirm(`Delete datapack '${name}' from server?`)) return;
+      try {
+        const res = await fetch('/api/worlds/datapacks', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ action: 'delete', name })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadDatapacks();
+      } catch (e) {
+        showBannerAlert('Error deleting datapack.', true);
+      }
+    }
+
+    async function toggleDatapack(name, mode) {
+      try {
+        const res = await fetch('/api/worlds/datapacks', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ action: 'toggle', name, mode })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+      } catch (e) {
+        showBannerAlert('Failed to dispatch datapack command.', true);
+      }
+    }
+
+    // ── Dedicated Banned IPs GUI ─────────────────────────────────
+    let allDedicatedBannedIps = [];
+
+    async function loadDedicatedBannedIps() {
+      const tbody = document.getElementById('dedicated-ip-table-body');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888; padding: 14px;">Loading banned IP addresses...</td></tr>';
+
+      try {
+        const res = await fetch('/api/banned-ips');
+        const d = await res.json();
+        allDedicatedBannedIps = d.ip_bans || [];
+        renderDedicatedIpTable(allDedicatedBannedIps);
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #c00; padding: 14px;">Failed to load banned IPs.</td></tr>';
+      }
+    }
+
+    function renderDedicatedIpTable(list) {
+      const tbody = document.getElementById('dedicated-ip-table-body');
+      const badge = document.getElementById('dedicated-ip-count-badge');
+      if (badge) badge.textContent = `${list.length} IPs Banned`;
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888; padding: 14px;">No IP addresses currently blacklisted.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(b => `
+        <tr>
+          <td style="font-weight: bold; font-family: monospace; color: #c00;">${escapeHtml(b.ip)}</td>
+          <td>${escapeHtml(b.player || 'Unknown')}</td>
+          <td>${escapeHtml(b.created || 'N/A')}</td>
+          <td>${escapeHtml(b.source || 'Console')}</td>
+          <td>${escapeHtml(b.reason || 'None specified')}</td>
+          <td>
+            <button class="btn-classic" style="padding: 1px 8px; font-size: 10px; height: 21px; color: #008822;" onclick="unbanDedicatedIp('${escapeHtml(b.ip)}')">[ Pardon IP ]</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterDedicatedIpTable() {
+      const q = (document.getElementById('dedicated-ip-filter').value || '').toLowerCase().trim();
+      if (!q) {
+        renderDedicatedIpTable(allDedicatedBannedIps);
+        return;
+      }
+      const filtered = allDedicatedBannedIps.filter(b => 
+        (b.ip && b.ip.toLowerCase().includes(q)) ||
+        (b.player && b.player.toLowerCase().includes(q)) ||
+        (b.reason && b.reason.toLowerCase().includes(q))
+      );
+      renderDedicatedIpTable(filtered);
+    }
+
+    async function executeDedicatedIpBan() {
+      const ip = document.getElementById('dedicated-ban-ip').value.trim();
+      const reason = document.getElementById('dedicated-ban-reason').value.trim() || 'Banned by administrator';
+      if (!ip) {
+        showBannerAlert('Please enter an IP address to ban.', true);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/banned-ips', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ ip, reason })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        document.getElementById('dedicated-ban-ip').value = '';
+        document.getElementById('dedicated-ban-reason').value = '';
+        loadDedicatedBannedIps();
+      } catch (e) {
+        showBannerAlert('Network error banning IP.', true);
+      }
+    }
+
+    async function unbanDedicatedIp(ip) {
+      if (!confirm(`Are you sure you want to pardon IP address '${ip}'?`)) return;
+      try {
+        const res = await fetch('/api/banned-ips', {
+          method: 'DELETE',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ ip })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadDedicatedBannedIps();
+      } catch (e) {
+        showBannerAlert('Network error pardoning IP.', true);
+      }
+    }
+
+    // ── Log Intelligence & 1-Click mclo.gs ────────────────────────
+    async function shareConsoleLogMclogs() {
+      showBannerAlert('Sanitizing sensitive tokens/IPs & uploading log to mclo.gs...');
+      try {
+        const res = await fetch('/api/logs/share-mclogs', { method: 'POST' });
+        const d = await res.json();
+        if (d.success && d.url) {
+          navigator.clipboard.writeText(d.url);
+          showBannerAlert(`Log uploaded! URL copied to clipboard: ${d.url}`);
+          window.open(d.url, '_blank');
+        } else {
+          showBannerAlert(`Upload failed: ${d.message || 'Error'}`, true);
+        }
+      } catch (e) {
+        showBannerAlert('Network error connecting to mclo.gs API.', true);
+      }
+    }
+
+    async function loadConsoleDiagnostics() {
+      const box = document.getElementById('console-diag-container');
+      if (!box) return;
+      try {
+        const res = await fetch('/api/logs/analyze');
+        const d = await res.json();
+        if (!d.success || !d.findings || !d.findings.length) {
+          box.style.display = 'block';
+          box.innerHTML = `
+            <div style="background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 6px 12px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; border-radius: 3px;">
+              <span><i class="fa-solid fa-circle-check" style="color: #16a34a; margin-right: 6px;"></i><strong>Log Intelligence:</strong> No crash reports, OutOfMemory errors, or corrupted chunks detected.</span>
+              <button class="btn-classic" style="height: 18px; font-size: 9px;" onclick="document.getElementById('console-diag-container').style.display='none'">[ Hide ]</button>
+            </div>
+          `;
+          return;
+        }
+
+        box.style.display = 'block';
+        box.innerHTML = `
+          <div style="margin-bottom: 6px; font-weight: bold; font-size: 11px; color: #991b1b; display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="fa-solid fa-triangle-exclamation" style="margin-right: 5px;"></i>Log Intelligence: ${d.findings.length} Issue(s) Detected in latest.log</span>
+            <button class="btn-classic" style="height: 18px; font-size: 9px;" onclick="document.getElementById('console-diag-container').style.display='none'">[ Dismiss ]</button>
+          </div>
+          ${d.findings.map(f => `
+            <div class="diag-issue-card ${f.severity === 'warning' ? 'warning' : ''}">
+              <div class="diag-issue-title">${escapeHtml(f.title)}</div>
+              <div class="diag-issue-desc">${escapeHtml(f.description)}</div>
+              <div class="diag-issue-sol"><i class="fa-solid fa-wrench" style="margin-right: 4px;"></i><strong>Fix:</strong> ${escapeHtml(f.solution)}</div>
+            </div>
+          `).join('')}
+        `;
+      } catch (e) {}
+    }
+
+    // ── Bedrock Connect & Mobile QR ──────────────────────────────
+    function renderBedrockConnectAndQr() {
+      const host = window.location.hostname || '127.0.0.1';
+      const port = '19132';
+      const connectUrl = `minecraft://?addExternalServer=FiestaSMP|${host}:${port}`;
+
+      const linkEl = document.getElementById('bedrock-direct-link');
+      if (linkEl) linkEl.href = connectUrl;
+
+      const qrImg = document.getElementById('bedrock-qr-img');
+      if (qrImg) {
+        qrImg.src = `/api/connect/qr.png?data=${encodeURIComponent(connectUrl)}&t=${Date.now()}`;
+      }
+    }
+
+    function copyBedrockLink() {
+      const host = window.location.hostname || '127.0.0.1';
+      const connectUrl = `minecraft://?addExternalServer=FiestaSMP|${host}:19132`;
+      navigator.clipboard.writeText(connectUrl);
+      showBannerAlert('Bedrock 1-Click Connect URL copied to clipboard!');
+    }
+
+    // ── Resource Pack Host & Auto-SHA1 ───────────────────────────
+    async function loadResourcePackInfo() {
+      try {
+        const res = await fetch('/api/options');
+        const d = await res.json();
+        const o = d.options || {};
+        const urlInput = document.getElementById('rp-display-url');
+        const sha1Input = document.getElementById('rp-display-sha1');
+        const reqSelect = document.getElementById('rp-enforce-select');
+        const dlBtn = document.getElementById('rp-test-download-link');
+
+        if (urlInput) urlInput.value = o['resource-pack'] || '';
+        if (sha1Input) sha1Input.value = o['resource-pack-sha1'] || '';
+        if (reqSelect) reqSelect.value = (o['require-resource-pack'] || 'false').toLowerCase();
+
+        if (dlBtn && o['resource-pack']) {
+          dlBtn.href = o['resource-pack'];
+          dlBtn.style.display = 'inline-block';
+        }
+      } catch (e) {}
+    }
+
+    async function handleResourcePackUpload() {
+      const fileInput = document.getElementById('rp-upload-input');
+      const statusEl = document.getElementById('rp-upload-status');
+      if (!fileInput.files.length) {
+        showBannerAlert('Please choose a .zip resource pack file.', true);
+        return;
+      }
+
+      const file = fileInput.files[0];
+      statusEl.textContent = `Uploading and hashing ${file.name}...`;
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/resourcepack/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const d = await res.json();
+        statusEl.textContent = d.message;
+        showBannerAlert(d.message, !d.success);
+        if (d.success) {
+          if (document.getElementById('rp-display-url')) document.getElementById('rp-display-url').value = d.url;
+          if (document.getElementById('rp-display-sha1')) document.getElementById('rp-display-sha1').value = d.sha1;
+          const dlBtn = document.getElementById('rp-test-download-link');
+          if (dlBtn) {
+            dlBtn.href = d.url;
+            dlBtn.style.display = 'inline-block';
+          }
+          fileInput.value = '';
+        }
+      } catch (e) {
+        statusEl.textContent = 'Network error uploading resource pack.';
+        showBannerAlert('Resource pack upload failed.', true);
+      }
+    }
+
+    function copyRpUrl() {
+      const val = document.getElementById('rp-display-url').value;
+      if (!val) return showBannerAlert('No resource pack URL configured.', true);
+      navigator.clipboard.writeText(val);
+      showBannerAlert('Resource pack URL copied!');
+    }
+
+    function copyRpSha1() {
+      const val = document.getElementById('rp-display-sha1').value;
+      if (!val) return showBannerAlert('No SHA-1 checksum available.', true);
+      navigator.clipboard.writeText(val);
+      showBannerAlert('SHA-1 hash copied!');
+    }
+
+    async function applyResourcePackToProps() {
+      const url = document.getElementById('rp-display-url').value.trim();
+      const sha1 = document.getElementById('rp-display-sha1').value.trim();
+      const required = document.getElementById('rp-enforce-select').value;
+
+      try {
+        const res = await fetch('/api/options', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            'resource-pack': url,
+            'resource-pack-sha1': sha1,
+            'require-resource-pack': required
+          })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+      } catch (e) {
+        showBannerAlert('Error applying resource pack settings.', true);
+      }
+    }
+
+    // ── Automated Tasks Scheduler ────────────────────────────────
+    async function loadAutomatedTasks() {
+      try {
+        const res = await fetch('/api/tasks');
+        const d = await res.json();
+        const t = d.tasks || {};
+
+        if (document.getElementById('task-daily-restart-enable')) {
+          document.getElementById('task-daily-restart-enable').checked = Boolean(t.daily_restart && t.daily_restart.enabled);
+        }
+        if (document.getElementById('task-daily-restart-time') && t.daily_restart) {
+          document.getElementById('task-daily-restart-time').value = t.daily_restart.time || '04:00';
+        }
+        if (document.getElementById('task-restart-last') && t.daily_restart) {
+          document.getElementById('task-restart-last').textContent = t.daily_restart.last_run ? `Last executed: ${t.daily_restart.last_run}` : 'Never executed';
+        }
+
+        if (document.getElementById('task-daily-backup-enable')) {
+          document.getElementById('task-daily-backup-enable').checked = Boolean(t.daily_backup && t.daily_backup.enabled);
+        }
+        if (document.getElementById('task-daily-backup-time') && t.daily_backup) {
+          document.getElementById('task-daily-backup-time').value = t.daily_backup.time || '05:00';
+        }
+        if (document.getElementById('task-backup-last') && t.daily_backup) {
+          document.getElementById('task-backup-last').textContent = t.daily_backup.last_run ? `Last executed: ${t.daily_backup.last_run}` : 'Never executed';
+        }
+
+        if (document.getElementById('task-idle-stop-enable')) {
+          document.getElementById('task-idle-stop-enable').checked = Boolean(t.idle_auto_stop && t.idle_auto_stop.enabled);
+        }
+        if (document.getElementById('task-idle-timeout-select') && t.idle_auto_stop) {
+          document.getElementById('task-idle-timeout-select').value = String(t.idle_auto_stop.timeout_minutes || 30);
+        }
+      } catch (e) {
+        showBannerAlert('Failed to load automated tasks.', true);
+      }
+    }
+
+    async function saveAutomatedTasks() {
+      const payload = {
+        daily_restart: {
+          enabled: document.getElementById('task-daily-restart-enable').checked,
+          time: document.getElementById('task-daily-restart-time').value
+        },
+        daily_backup: {
+          enabled: document.getElementById('task-daily-backup-enable').checked,
+          time: document.getElementById('task-daily-backup-time').value
+        },
+        idle_auto_stop: {
+          enabled: document.getElementById('task-idle-stop-enable').checked,
+          timeout_minutes: parseInt(document.getElementById('task-idle-timeout-select').value, 10)
+        }
+      };
+
+      try {
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+      } catch (e) {
+        showBannerAlert('Error saving automated tasks.', true);
       }
     }
 

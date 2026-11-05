@@ -1,4 +1,4 @@
-# 🚀 FiestaPanel Installation & Setup Guide
+# FiestaPanel Installation & Setup Guide
 
 This guide walks you through deploying **FiestaPanel** across **Linux, macOS, and Windows**.
 
@@ -8,7 +8,7 @@ This guide walks you through deploying **FiestaPanel** across **Linux, macOS, an
 
 ---
 
-## 📋 System Requirements
+## System Requirements
 
 | Requirement | Minimum | Recommended |
 |---|---|---|
@@ -22,7 +22,7 @@ This guide walks you through deploying **FiestaPanel** across **Linux, macOS, an
 
 ---
 
-## 🐧 Option 1: Linux & macOS (1-Line Quick Install)
+## Option 1: Linux & macOS (1-Line Quick Install)
 
 Run the automated installer directly from GitHub via your terminal:
 
@@ -53,7 +53,7 @@ For unattended installation, provide `FIESTA_ADMIN_PASS` (at least 12 characters
 
 ---
 
-## 🪟 Option 2: Windows Installation (10 / 11 / Server)
+## Option 2: Windows Installation (10 / 11 / Server)
 
 FiestaPanel natively supports Windows without requiring WSL or Docker! First setup asks for and confirms an owner password of at least 12 characters; it stores a scrypt hash and preserves existing accounts on subsequent runs.
 
@@ -114,7 +114,7 @@ irm https://fiesta.debarkak.xyz/install.ps1 | iex
 
 ---
 
-## 🍎 Option 3: macOS Installation
+## Option 3: macOS Installation
 
 1. **Clone the repository**:
    ```bash
@@ -135,7 +135,7 @@ irm https://fiesta.debarkak.xyz/install.ps1 | iex
 
 ---
 
-## 🐳 Option 4: Docker & Docker Compose (Containerized)
+## Option 4: Docker & Docker Compose (Containerized)
 
 FiestaPanel includes first-class Docker support with a pre-configured Java 21 LTS runtime, isolated dependencies, and persistent volume mounts.
 
@@ -202,14 +202,14 @@ unset FIESTA_ADMIN_PASS
 
 ---
 
-### 📦 Container Configuration & Persistent Volumes
+### Container Configuration & Persistent Volumes
 
 | Mount Path | Host Target | Purpose |
 |---|---|---|
 | `/server` | `./minecraft_server` | Complete Minecraft server directory (`server.jar`, worlds, `plugins/`, `mods/`, logs) |
 | `/app/data` | `./data` | Panel persistence (`users.json`, `branding.json`, `config.json`, uploads) |
 
-### ⚙️ Container Environment Variables
+### ⚙ Container Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
@@ -222,7 +222,7 @@ unset FIESTA_ADMIN_PASS
 
 Docker environment variables are visible to users with access to container configuration. Restrict Docker access. Existing accounts are preserved on restart; changing the environment variable does not reset their passwords. For interactive installations without a container, run `python setup_admin.py` if initializing an owner manually.
 
-### 🧰 Running `fiestapanel` Inside Container
+### Running `fiestapanel` Inside Container
 
 You can use the built-in management CLI inside your running container:
 
@@ -234,43 +234,43 @@ docker exec -it fiestapanel fiestapanel logs
 
 ---
 
-## 🎮 Installing Minecraft Server Software from Web Panel
+## Installing Minecraft Server Software from Web Panel
 
 Once logged into FiestaPanel:
 
 1. If no Minecraft server is installed yet, you will see a prominent banner:
-   **"🚀 Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet"**
-2. Click **[ ⚡ Install Paper 26.3 ]** or navigate to **System Tools ➔ Software**.
+   **"Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet"**
+2. Click **[  Install Paper 26.3 ]** or navigate to **System Tools -> Software**.
 3. Select your engine:
-   - 🦅 **Purpur** (High-performance Paper fork with extensive customization)
-   - 📄 **Paper** (Industry standard high-performance engine)
-   - 🧵 **Fabric** (Modular modern modding loader)
-   - 🦊 **NeoForge** (Modern modded Minecraft server platform & Forge successor)
-   - 🧊 **Vanilla** (Official Mojang server)
-   - ⚡ **Spigot** (Classic plugin platform)
+   - **Purpur** (High-performance Paper fork with extensive customization)
+   - **Paper** (Industry standard high-performance engine)
+   - **Fabric** (Modular modern modding loader)
+   - **NeoForge** (Modern modded Minecraft server platform & Forge successor)
+   - **Vanilla** (Official Mojang server)
+   -  **Spigot** (Classic plugin platform)
 4. Choose your Minecraft game version (e.g. 1.21.4, 1.21.1, 1.20.4, 1.19.4).
 5. Select allocated RAM (e.g. 4 GB).
 6. Check **Accept Mojang EULA automatically** and **Auto-Start**.
-7. Click **[ 🔄 Install & Switch Software ]**.
+7. Click **[ Install & Switch Software ]**.
 
 FiestaPanel will download the JAR, create `eula.txt=true`, generate default `server.properties`, and start the server process. **Zero SSH commands required!**
 
 ---
 
-## 🎨 Uploading Local Branding Icons & Logos
+## Uploading Local Branding Icons & Logos
 
 You can customize the logo in the header and login screen using local image files:
 
-1. Go to **System Tools ➔ Portal Branding**.
+1. Go to **System Tools -> Portal Branding**.
 2. Under **Header Brand Icon & Logo**, find **Upload Local Logo**.
-3. Click **[ 📁 Choose Local Image / SVG ]**.
+3. Click **[ Choose Local Image / SVG ]**.
 4. Select any `.png`, `.svg`, `.jpg`, `.webp`, or `.ico` file from your device.
 5. FiestaPanel will upload the logo to `static/uploads/`, immediately update the live preview, and apply it server-wide.
-6. Click **[ 💾 Save & Apply Branding ]**.
+6. Click **[ Save & Apply Branding ]**.
 
 ---
 
-## 🌐 Setting Up a Reverse Proxy (Production & HTTPS)
+## Setting Up a Reverse Proxy (Production & HTTPS)
 
 To access FiestaPanel securely via domain name with SSL encryption (e.g., `https://panel.yourdomain.com`):
 
@@ -308,7 +308,7 @@ sudo certbot --nginx -d panel.yourdomain.com
 
 ---
 
-## 🧰 CLI Management (`fiestapanel`)
+## CLI Management (`fiestapanel`)
 
 | Command | Description |
 |---|---|
@@ -328,7 +328,7 @@ sudo certbot --nginx -d panel.yourdomain.com
 
 ---
 
-## ⚙️ Cross-Platform Auto-Start on Boot / Reboot
+## ⚙ Cross-Platform Auto-Start on Boot / Reboot
 
 FiestaPanel supports automatic startup on system boot or user logon across all supported platforms.
 
@@ -354,7 +354,7 @@ fiestapanel autostart disable
 *(On Windows: `.\fiestapanel.bat autostart enable` / `disable`)*
 
 #### 2. Via Web UI:
-Navigate to **System Tools ➔ System Information** in your browser. Under the **Auto-Start on Reboot** row, click **[ Enable Auto-Start ]** or **[ Disable Auto-Start ]** to toggle the configuration with one click.
+Navigate to **System Tools -> System Information** in your browser. Under the **Auto-Start on Reboot** row, click **[ Enable Auto-Start ]** or **[ Disable Auto-Start ]** to toggle the configuration with one click.
 
 #### 3. Via Configuration File (`config.json`):
 Set `"autostart": true` or `"autostart": false` in `config.json`:
@@ -380,7 +380,7 @@ Set `"autostart": true` or `"autostart": false` in `config.json`:
 
 ---
 
-## 🔄 Updating FiestaPanel
+## Updating FiestaPanel
 
 ```bash
 cd /opt/fiestapanel  # or C:\FiestaPanel on Windows

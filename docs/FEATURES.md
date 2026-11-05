@@ -1,10 +1,10 @@
-# 🌟 FiestaPanel Feature Guide
+# FiestaPanel Feature Guide
 
 This guide covers all capabilities, controls, and workflows in **FiestaPanel**.
 
 ---
 
-## 📊 1. System Status & Telemetry
+## 1. System Status & Telemetry
 
 The main status view delivers real-time health metrics:
 - **Server Health Status**: Live indication whether the Minecraft server process is `ONLINE`, `STARTING`, or `STOPPED`.
@@ -21,7 +21,7 @@ The main status view delivers real-time health metrics:
 
 ---
 
-## 💻 2. Server Console & Terminal
+## 2. Server Console & Terminal
 
 The retro terminal emulation provides deep inspection and control:
 - **Real-Time Log Stream**: Displays colorized ANSI logs straight from the server output.
@@ -37,7 +37,7 @@ The retro terminal emulation provides deep inspection and control:
 
 ---
 
-## 🎒 3. Player Management & Visual Inventory Inspector
+## 3. Player Management & Visual Inventory Inspector
 
 A comprehensive toolset for moderating players and viewing their gear:
 - **All Players Table**:
@@ -59,7 +59,7 @@ A comprehensive toolset for moderating players and viewing their gear:
 
 ---
 
-## 🔌 4. Modrinth Plugin Manager
+## 4. Modrinth Plugin Manager
 
 FiestaPanel features built-in search and 1-click installation from Modrinth:
 - **Online Catalog Search**: Search thousands of plugins and mods directly from Modrinth's official repository.
@@ -72,7 +72,7 @@ FiestaPanel features built-in search and 1-click installation from Modrinth:
 
 ---
 
-## 🌍 5. World Controls & Weather
+## 5. World Controls & Weather
 
 Control the in-game environment on the fly:
 - **Time Controls**:
@@ -85,7 +85,7 @@ Control the in-game environment on the fly:
 
 ---
 
-## ⚙️ 6. Parameter & Configuration Editor
+## ⚙ 6. Parameter & Configuration Editor
 
 Edit `server.properties` through both a graphical GUI and raw text mode:
 - **Dual Mode**:
@@ -98,7 +98,7 @@ Edit `server.properties` through both a graphical GUI and raw text mode:
 
 ---
 
-## 📁 7. File Manager
+## 7. File Manager
 
 A full-fledged web file manager isolated to the server root:
 - **Directory Navigation**: Browse folders with breadcrumb navigation.
@@ -109,7 +109,7 @@ A full-fledged web file manager isolated to the server root:
 
 ---
 
-## 👥 8. Sub-Users & Multi-User Access (Like Aternos)
+## 8. Sub-Users & Multi-User Access (Like Aternos)
 
 Delegate management tasks to staff members with granular permissions:
 - **Admin**: Full access to all panel controls, files, settings, and user management.
@@ -119,7 +119,7 @@ Delegate management tasks to staff members with granular permissions:
 
 ---
 
-## 🎨 9. Branding Engine & Theme Studio
+## 9. Branding Engine & Theme Studio
 
 Personalize the panel for your server community:
 - **Custom Branding**:
@@ -140,7 +140,109 @@ Personalize the panel for your server community:
 
 ---
 
-## 🙏 Credits & Acknowledgements
+## 10. Dedicated Worlds Hub & 1-Click Dimension Resets (Aternos Worlds)
+
+Complete world lifecycle management:
+- **World Dimensions Overview**:
+  - Live inspection of `world` (Overworld), `world_nether` (Nether), `world_the_end` (The End), and custom worlds.
+  - Displays total disk size, region count (`.mca` files), world terrain seed, and last modification date.
+- **1-Click Dimension Resets**:
+  - **Reset Nether (DIM-1)**: Safely creates an automated snapshot backup, clears region chunks, fortress data, and entity state while leaving the Overworld pristine.
+  - **Reset The End (DIM1)**: Resets End cities, dragon fight state, and islands, generating a fresh Ender Dragon battle.
+- **World Archive Upload & Download**:
+  - Download any world folder as a compressed `.zip` archive.
+  - Upload `.zip` world archives with pre-upload safety snapshot backups and automated `level.dat` discovery.
+- **World Generation Wizard**:
+  - Configure World Name, Seed (with randomize button), World Type (`minecraft:normal`, `minecraft:flat`, `minecraft:large_biomes`, `minecraft:amplified`), Structures, and Hardcore mode.
+- **World Chunk Optimizer**:
+  - Flush all chunks to disk and prepare server for `--forceUpgrade --eraseCache` conversion.
+- **Datapacks Manager**:
+  - Manage installed datapacks in `/world/datapacks/`.
+  - Upload `.zip` datapack packages with automatic inspection of `pack.mcmeta` description and format.
+  - Enable, disable, and delete datapacks.
+
+---
+
+## 11. Game Options & Gameplay Switchboard (Aternos Options)
+
+A responsive switchboard for all Minecraft server gameplay flags:
+- **Online Mode Toggle**: Switch between official Mojang account authentication and offline/cracked mode supported via AuthMe.
+- **Player vs Player (PvP)**: Enable or disable combat between players.
+- **White List**: Enforce whitelist access with 1 click.
+- **Flight & Command Blocks**: Allow creative flight without kick warnings, and toggle command block automation.
+- **Mob Spawning Controls**: Individual toggle switches for hostile monsters, passive animals, and villagers/NPCs.
+- **Nether Dimension**: Enable or disable Nether portals.
+- **Hardcore & Gamemode**: Configure permadeath and default join game modes.
+- **Distances & Protection**: Fine-tune spawn protection radius, view distance, simulation distance, player slot capacities, and idle kick timeout.
+
+---
+
+## 12. Expanded Parameter Configuration Editor
+
+Deep multi-file configuration editor for server engine and plugin parameters:
+- **Supported Engines & Configs**:
+  - `server.properties`
+  - `paper-global.yml` & `paper-world-defaults.yml`
+  - `purpur.yml`, `spigot.yml`, `bukkit.yml`
+  - `commands.yml`, `permissions.yml`, `help.yml`
+  - Geyser Bedrock bridge (`Geyser-Spigot/config.yml`, `floodgate/config.yml`)
+  - Permissions, rollbacks, and utilities (`LuckPerms`, `CoreProtect`, `Chunky`, `WorldEdit`, `ViaVersion`, `ViaBackwards`, `ViaRewind`, `Vault`)
+  - Essentials suite (`config.yml`, `spawn.yml`, `kits.yml`, `custom_items.yml`, `worth.yml`)
+  - Security, authentication, and gameplay plugins (`AuthMe`, `TAB`, `DeluxeMenus`, `GriefPreventionData`, `UltimateAntiBot`, `ChestShop`, `SkinsRestorer`, `DecentHolograms`, `EzAuction`, `PlaceholderAPI`)
+- **Dynamic Config Discovery**: Auto-scans all plugin directories for `.yml`, `.yaml`, `.properties`, and `.json` configuration files.
+- **Automated `.bak` Snapshots**: Creates a timestamped `.bak` snapshot before every save.
+
+---
+
+## 13. Log Intelligence & 1-Click mclo.gs Diagnostic Sharing
+
+Intelligent diagnostics and sharing for server logs:
+- **1-Click Share to mclo.gs**: Uploads server log directly to the official `mclo.gs` paste API for easy support sharing.
+- **Zero-Exposure Sanitization**: Automatically scrubs and redacts all IPv4/IPv6 addresses, Discord webhook tokens, RCON passwords, database credentials, and secret keys before upload.
+- **Automated Crash & Error Intelligence**:
+  - Scans `logs/latest.log` for Java OutOfMemoryError (OOM), port binding conflicts, corrupted region chunks, tick loop overload, and plugin load failures.
+  - Highlights exact error descriptions and recommended fixes.
+
+---
+
+## 14. Dedicated Banned IPs Blacklist View
+
+Dedicated interface for managing IP bans:
+- Inspect active IP bans stored in `/banned-ips.json`.
+- Displays banned IP, associated player username, created date, and ban reason.
+- 1-click **Pardon IP** action that executes native `/pardon-ip` and synchronizes the blacklist.
+- Ban new IP addresses directly from the panel.
+
+---
+
+## 15. Bedrock 1-Click Join URL & Scannable Mobile QR Code
+
+Frictionless cross-play connection for mobile and tablet players:
+- **1-Click Bedrock Link**: `minecraft://?addExternalServer=...` link opens Minecraft Bedrock Edition and pre-fills server connection settings.
+- **Scannable QR Code**: Point a mobile device camera at the screen to join the server without manually typing hostnames or ports.
+
+---
+
+## 16. Resource Pack Host & Auto-SHA1 Generator
+
+Effortless server-wide texture and resource pack deployment:
+- Upload any `.zip` resource pack directly into FiestaPanel.
+- Panel hosts the pack statically via internal HTTP endpoints.
+- Automatically calculates cryptographic SHA-1 hash (`hashlib.sha1`).
+- Directly updates `resource-pack`, `resource-pack-sha1`, and `require-resource-pack` in `server.properties`.
+
+---
+
+## 17. Automated Tasks & Autonomous Lifecycle Scheduler
+
+Autonomous server routines running in a background daemon thread:
+- **Scheduled Daily Restart**: Configurable 24-hour time (e.g. `04:00` AM) with in-game countdown broadcast, `/save-all flush`, and graceful restart.
+- **Automated Daily World Backup**: Configurable time (e.g. `05:00` AM) to snapshot all world data into `/home/ubuntu/backups/`.
+- **Idle Server Auto-Shutdown**: Monitors online player counts and safely stops the server after a configurable idle period (15m to 120m) with 0 players to conserve host resources.
+
+---
+
+## Credits & Acknowledgements
 
 - **7.css** by [Khang NT](https://github.com/khang-nd) ([@khang-nd/7.css](https://github.com/khang-nd/7.css)) - Authentic design system and styles for Windows 7 Aero Glass components and controls.
 - **Modrinth** ([modrinth.com](https://modrinth.com)) - Public open-source Minecraft mod and plugin repository API.

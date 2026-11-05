@@ -1,10 +1,10 @@
-# 📡 FiestaPanel REST API Reference
+# FiestaPanel REST API Reference
 
 All API routes communicate using JSON payloads and responses unless otherwise specified. Authentication is managed via secure HTTP cookies or session tokens.
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
 ### `POST /login`
 Authenticate into FiestaPanel.
@@ -30,7 +30,7 @@ Clears user session cookie and redirects to `/login`.
 
 ---
 
-## 📊 Status & Telemetry
+## Status & Telemetry
 
 ### `GET /api/status`
 Retrieves live server telemetry and resource usage.
@@ -53,7 +53,7 @@ Retrieves live server telemetry and resource usage.
 
 ---
 
-## 💻 Console & Service Control
+## Console & Service Control
 
 ### `GET /api/console/logs`
 Fetches recent terminal output lines.
@@ -107,7 +107,7 @@ Executes server lifecycle actions (`start`, `stop`, `restart`).
 
 ---
 
-## 🎒 Player Management & Inventory
+## Player Management & Inventory
 
 ### `GET /api/players`
 Fetches list of online and registered players.
@@ -169,7 +169,7 @@ Executes moderation actions on a target player.
 
 ---
 
-## 🔌 Modrinth Plugin Manager
+## Modrinth Plugin Manager
 
 ### `GET /api/plugins/search`
 Queries Modrinth API for Minecraft plugins.
@@ -206,7 +206,7 @@ Installs a chosen plugin from Modrinth directly into `plugins/`.
 
 ---
 
-## 📁 File Manager API
+## File Manager API
 
 ### `GET /api/files/list`
 Lists directory contents within server root.
@@ -241,7 +241,7 @@ Uploads files (multipart/form-data) into specified directory path.
 
 ---
 
-## 🎨 Branding & Settings API
+## Branding & Settings API
 
 ### `GET /api/branding`
 Fetches current branding configuration.

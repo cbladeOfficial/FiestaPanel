@@ -1,10 +1,10 @@
-# 🏗️ FiestaPanel Architecture & Technical Design
+#  FiestaPanel Architecture & Technical Design
 
 This document details the architectural design, internal components, process model, and data flow of **FiestaPanel**.
 
 ---
 
-## 🏛️ System Overview
+##  System Overview
 
 FiestaPanel is designed as a lightweight, zero-overhead management suite tailored for Minecraft Java Edition servers. It blends a nostalgic, responsive UI (TP-Link Legacy, Windows 7 Aero, Windows 98, Cyberpunk) with a modern backend built on Python, Flask, systemd, and direct process interfaces.
 
@@ -48,7 +48,7 @@ FiestaPanel is designed as a lightweight, zero-overhead management suite tailore
 
 ---
 
-## 🧩 Core Subsystems
+## Core Subsystems
 
 ### 1. Process & Daemon Management
 - **Interaction Model**: FiestaPanel controls the underlying Minecraft server using `systemctl` commands via Linux subprocessing, allowing non-blocking starts, stops, and restarts.
@@ -94,7 +94,7 @@ FiestaPanel is designed as a lightweight, zero-overhead management suite tailore
 
 ---
 
-## 🎨 Theming & Branding Engine
+## Theming & Branding Engine
 
 ### Multi-Theme Architecture
 Themes are driven purely by semantic CSS variables defined under `[data-theme="<theme_id>"]` attributes on the root `<html>` element.

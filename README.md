@@ -2,7 +2,7 @@
   <img src="assets/banner.png" alt="FiestaPanel Banner" width="100%">
 </p>
 
-<h1 align="center">🌐 FiestaPanel</h1>
+<h1 align="center">FiestaPanel</h1>
 
 <p align="center">
   <strong>The Modern & Retro Minecraft Server Management Suite</strong><br>
@@ -22,17 +22,17 @@
 <img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/d291e8bd-0571-44f4-b81b-5b013db7c885" />
 <img width="1920" height="880" alt="image" src="https://github.com/user-attachments/assets/f5d5116c-5ef6-4491-b8c3-4e6de4af9bb1" />
 
-## ⚡ Quick Start
+##  Quick Start
 
 On first installation, enter and confirm an admin password of at least **12 characters** when prompted. The input is hidden, the owner username is `admin`, and there is no preset password. All installers and standalone launchers use the same setup: a scrypt hash is stored in `users.json`, and existing accounts are preserved. The owner can change passwords under **Security → Sub-Users & Access**. For unattended setup, set `FIESTA_ADMIN_PASS` instead of using an interactive prompt.
 
-### 🐧 Linux & 🍎 macOS (1-Line Install)
+### Linux & macOS (1-Line Install)
 ```bash
 curl -sSL https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.sh | sudo bash
 ```
 *(Or via short mirror: `curl -sSL https://fiesta.debarkak.xyz/install.sh | sudo bash`)*
 
-### 🪟 Windows 10 / 11 / Server (1-Line PowerShell Install)
+### Windows 10 / 11 / Server (1-Line PowerShell Install)
 Open PowerShell (as regular user or Administrator) and run:
 ```powershell
 irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps1 | iex
@@ -41,7 +41,7 @@ irm https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/install.ps
 *(Or via short mirror: `irm https://fiesta.debarkak.xyz/install.ps1 | iex`)*  
 *(Manual install: Clone repo and run `install.bat` or double-click `start.bat`)*
 
-### 🐳 Docker & Docker Compose (Container Install)
+### Docker & Docker Compose (Container Install)
 Deploy FiestaPanel and your Minecraft server in an isolated container with Java 21 LTS pre-installed:
 
 ```bash
@@ -72,36 +72,43 @@ Open **`http://localhost:8080`** in your browser. Complete guide & options in [*
 
 ---
 
-## 📚 Documentation Index
+## Documentation Index
 
 | Guide | Description |
 |---|---|
-| 🚀 [**Installation Guide**](INSTALL.md) | Complete step-by-step setup, 1-line Windows/Linux/macOS installers, systemd, and Nginx SSL setup |
-| 🧩 [**Addon Developer Guide**](docs/ADDONS_GUIDE.md) | How to build custom FiestaPanel extensions, UI tabs, Discord webhooks, and submit to the Plugin Store |
-| 🏗️ [**Architecture & Design**](docs/ARCHITECTURE.md) | Deep-dive into process model, daemon control, texture atlas, and data flow |
-| 🌟 [**Feature Tour**](docs/FEATURES.md) | Exhaustive guide covering console, inventory inspector, Modrinth, world controls, etc. |
-| 📡 [**REST API Reference**](docs/API.md) | Full JSON API specification for headless integrations and automation |
-| 🛡️ [**Security & Best Practices**](docs/SECURITY.md) | scrypt hashing, path traversal defenses, role-based access control, firewall setup |
+| [**Installation Guide**](INSTALL.md) | Complete step-by-step setup, 1-line Windows/Linux/macOS installers, systemd, and Nginx SSL setup |
+| [**Addon Developer Guide**](docs/ADDONS_GUIDE.md) | How to build custom FiestaPanel extensions, UI tabs, Discord webhooks, and submit to the Plugin Store |
+|  [**Architecture & Design**](docs/ARCHITECTURE.md) | Deep-dive into process model, daemon control, texture atlas, and data flow |
+| [**Feature Tour**](docs/FEATURES.md) | Exhaustive guide covering console, inventory inspector, Modrinth, world controls, etc. |
+| [**REST API Reference**](docs/API.md) | Full JSON API specification for headless integrations and automation |
+|  [**Security & Best Practices**](docs/SECURITY.md) | scrypt hashing, path traversal defenses, role-based access control, firewall setup |
 
 ---
 
-## ✨ Features at a Glance
+## Features at a Glance
 
 | Feature | Highlights |
 |---|---|
-| 🎮 **Full Process Control** | Start, stop, restart, and tail live ANSI logs with top/bottom scroll navigation. |
-| 🧩 **Web Panel Addon System & Store** | Modular Python & HTML extensions with 1-click in-panel Plugin Store (Discord Webhooks, Dynmap/BlueMap viewer, Cron Schedulers, MOTD Styler, Maintenance Gate). |
-| 🎒 **Visual Inventory Inspector** | Real-time armor, offhand, storage & hotbar viewer with authentic 1.21 item textures and giving search tool. |
-| 🔌 **Game Addons (Plugins & Mods)** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with 1-click Modrinth directory installation. |
-| 📁 **Jailed File Manager** | In-browser code & config editor, directory navigation, and drag-and-drop file uploads with traversal protection. |
-| 🌍 **World & Weather Controls** | Day/Noon/Night cycles, weather clear/rain/thunder toggles, and safe world flushing (`/save-all`). |
-| 👥 **Sub-Users & Access Control** | Multi-user roles and scrypt password hashing. |
-| 🎨 **Windows 7 Aero & Retro Themes** | Authentic 7.css specular glass reflection, TP-Link legacy, Windows 98, Dark Mode, Matrix, and Cyberpunk. |
-| 🏷️ **Complete Brand Customization** | Header icon picker (12 themed presets + local file upload + custom URL/SVG), custom title, hardware model number, and tagline. |
+| **Dedicated Worlds Hub** | Download world ZIPs, upload world archives, 1-click Nether & The End dimension resets, world generator wizard, and datapacks manager. |
+| **Game Options Switchboard** | Instant toggles for Online Mode (Cracked vs Mojang), PvP, Whitelist, Flight, Command Blocks, Mob Spawning, Hardcore, and Idle Timeout. |
+| **Expanded Parameter Editor** | Direct editing for Paper (`paper-global.yml`, `paper-world-defaults.yml`), Purpur, Spigot, Bukkit, Geyser/Floodgate, and all plugin configs with `.bak` safety snapshots. |
+| **Log Intelligence & 1-Click mclo.gs** | Auto-detects crashes, OOM, port conflicts, and corrupted chunks; 1-click token-sanitized log upload to `mclo.gs`. |
+| **Dedicated Banned IPs View** | Blacklisted IP records management, manual IP banning, and instant `/pardon-ip` unban action. |
+| **Bedrock 1-Click & Mobile QR** | `minecraft://?addExternalServer=...` direct join button and scannable camera QR code for Android, iOS, and Bedrock consoles. |
+| **Resource Pack Host & Auto-SHA1** | In-panel `.zip` resource pack upload, static HTTP hosting, and automated SHA-1 generation synchronized with `server.properties`. |
+| **Automated Tasks Scheduler** | Scheduled daily server restarts, automated daily world backups, and idle server auto-shutdown when empty. |
+| **Full Process Control** | Start, stop, restart, and tail live ANSI logs with top/bottom scroll navigation. |
+| **Web Panel Addon System & Store** | Modular Python & HTML extensions with 1-click in-panel Plugin Store (Discord Webhooks, Dynmap/BlueMap viewer, Cron Schedulers, MOTD Styler, Maintenance Gate). |
+| **Visual Inventory Inspector** | Real-time armor, offhand, storage & hotbar viewer with authentic 1.21 item textures and giving search tool. |
+| **Game Addons (Plugins & Mods)** | Context-aware manager for Bukkit/Spigot/Paper plugins and Fabric/Forge/NeoForge mods with 1-click Modrinth directory installation. |
+| **Jailed File Manager** | In-browser code & config editor, directory navigation, and drag-and-drop file uploads with traversal protection. |
+| **Sub-Users & Access Control** | Multi-user roles and scrypt password hashing. |
+| **Windows 7 Aero & Retro Themes** | Authentic 7.css specular glass reflection, TP-Link legacy, Windows 98, Dark Mode, Matrix, and Cyberpunk. |
+| **Complete Brand Customization** | Header icon picker (12 themed presets + local file upload + custom URL/SVG), custom title, hardware model number, and tagline. |
 
 ---
 
-## 🧩 Publishing Plugins & Extensions to the Store
+## Publishing Plugins & Extensions to the Store
 
 FiestaPanel features an open and modular **Addon & Plugin System** where developers can build and publish custom integrations, tools, dashboards, and visual controls.
 
@@ -119,7 +126,7 @@ To make your plugin discoverable for all FiestaPanel users with 1-click in-panel
 1. **Fork the Repository**: Fork [`open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) on GitHub.
 2. **Add Your Definition**: Add your addon entry to `addons/repo/repository.json` (and `addon_manager.py:STORE_CATALOG`), including your metadata, settings schema, dependencies, and bundled files (`main.py`, `tab.html`, `README.md`).
 3. **Open a Pull Request**: Submit a PR titled `feat(addon): add <your_addon_name>`.
-4. **Instant Distribution**: Once merged into `main`, your addon is immediately indexed in the official catalog (`/api/panel-addons/store`) and available for 1-click install in every FiestaPanel installation under **Panel Extensions / Store ➔ Plugin Store**.
+4. **Instant Distribution**: Once merged into `main`, your addon is immediately indexed in the official catalog (`/api/panel-addons/store`) and available for 1-click install in every FiestaPanel installation under **Panel Extensions / Store -> Plugin Store**.
 
 ### 3. Direct Community Distribution (.zip or URL)
 You do not need to wait for a Pull Request to share your plugins with the community:
@@ -128,13 +135,13 @@ You do not need to wait for a Pull Request to share your plugins with the commun
   zip -r my_plugin.zip addon.json main.py tab.html README.md
   ```
 - **1-Click Installation by Users**:
-  - **Upload in Web UI**: Users navigate to **Panel Extensions / Store ➔ Upload Package (.jar / .zip)** in their dashboard and upload the archive.
+  - **Upload in Web UI**: Users navigate to **Panel Extensions / Store -> Upload Package (.jar / .zip)** in their dashboard and upload the archive.
   - **Install from URL**: Paste any direct download link (e.g., GitHub Releases asset).
   - **Direct Folder**: Drop the folder directly into the server's `addons/<my_plugin>/` directory and click **[ Reload Addons ]**.
 
 ---
 
-## 🔑 Forgotten passwords and account recovery
+## Forgotten passwords and account recovery
 
 ### Owner (`admin`) password
 
@@ -156,7 +163,7 @@ If the owner has also forgotten their password, recover the owner account first 
 
 ---
 
-## 🧰 The `fiestapanel` CLI
+## The `fiestapanel` CLI
 
 FiestaPanel installs a system management CLI accessible anywhere:
 
@@ -176,7 +183,7 @@ fiestapanel version       # FiestaPanel Software Suite v2.1.0
 
 ---
 
-## 🖼️ Themes Supported
+##  Themes Supported
 
 - **Windows 7 Aero**: Authentic design powered by [**7.css**](https://github.com/khang-nd/7.css) by Khang NT. Vibrant electric azure Aero Glass frames, specular glass reflection buttons, interactive titlebar controls (minimize/maximize/close), and Segoe UI typography.
 - **TP-Link Classic**: Retro 2000s router web interface.
@@ -187,7 +194,7 @@ fiestapanel version       # FiestaPanel Software Suite v2.1.0
 
 ---
 
-## 🙏 Acknowledgements & Credits
+## Acknowledgements & Credits
 
 - [**7.css**](https://github.com/khang-nd/7.css) by **Khang NT** ([@khang-nd](https://github.com/khang-nd)) — Powers the authentic Windows 7 Aero Glass styling, glossy specular highlights, and window control buttons (MIT License).
 - [**Modrinth API**](https://modrinth.com) — Powers the built-in online Mod & Plugin search engine and 1-click installations.
@@ -195,7 +202,7 @@ fiestapanel version       # FiestaPanel Software Suite v2.1.0
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).  
 Copyright (c) 2026 FiestaPanel Contributors & Fiesta Team.

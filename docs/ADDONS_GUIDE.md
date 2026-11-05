@@ -1,11 +1,11 @@
-# 🧩 FiestaPanel Web Panel Addon Developer Guide
+# FiestaPanel Web Panel Addon Developer Guide
 
 Welcome to the **FiestaPanel Addon & Plugin Extension Guide**!  
 FiestaPanel features a modular, event-driven web panel addon system that allows server administrators and developers to extend the web interface, register custom navigation views, automate server routines, inject custom themes and styles, and integrate external services (such as Discord, Dynmap, and Cloud Backups).
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 1. [Architecture Overview](#-architecture-overview)
 2. [Addon Folder Structure](#-addon-folder-structure)
 3. [The `addon.json` Manifest](#-the-addonjson-manifest)
@@ -18,7 +18,7 @@ FiestaPanel features a modular, event-driven web panel addon system that allows 
 
 ---
 
-## 🏛️ Architecture Overview
+##  Architecture Overview
 
 FiestaPanel addons run within the panel process and seamlessly interface with both the Flask web server and the underlying Minecraft server session.
 
@@ -62,7 +62,7 @@ flowchart TD
 
 ---
 
-## 📁 Addon Folder Structure
+## Addon Folder Structure
 
 Addons reside in the `addons/` directory (e.g. `/opt/fiestapanel/addons/<addon_id>/` or `./addons/<addon_id>/`):
 
@@ -79,7 +79,7 @@ addons/
 
 ---
 
-## 📜 The `addon.json` Manifest
+## The `addon.json` Manifest
 
 Every addon **must** contain an `addon.json` file in its root directory. Here is a complete reference:
 
@@ -140,7 +140,7 @@ Every addon **must** contain an `addon.json` file in its root directory. Here is
 
 ---
 
-## 🐍 Backend Python Module (`main.py`)
+## Backend Python Module (`main.py`)
 
 If specified by the `"entrypoint"` property, FiestaPanel will load your Python file and provide it with an `AddonContext`.
 
@@ -196,7 +196,7 @@ def on_action(ctx, action_name, payload):
 
 ---
 
-## 🖥️ Frontend UI Slots & Templates (`tab.html`)
+##  Frontend UI Slots & Templates (`tab.html`)
 
 When `"ui_slots": { "tab": { ... } }` is defined, FiestaPanel automatically adds your addon into the navigation bar and renders `tab.html` in the center workspace.
 
@@ -218,7 +218,7 @@ When `"ui_slots": { "tab": { ... } }` is defined, FiestaPanel automatically adds
         <input type="text" id="my-addon-msg" class="ctrl-input" style="width:75%;" 
                placeholder="Enter announcement text...">
         <button class="btn-classic" style="font-weight:bold;margin-left:6px;" onclick="sendAnnouncementNow()">
-          [ 📢 Broadcast Now ]
+          [ Broadcast Now ]
         </button>
       </td>
     </tr>
@@ -261,7 +261,7 @@ function sendAnnouncementNow() {
 
 ---
 
-## 🚀 Step-by-Step Tutorial: Building Your First Addon
+## Step-by-Step Tutorial: Building Your First Addon
 
 ### Step 1: Create the Addon Directory
 In your FiestaPanel directory, create a new folder:
@@ -312,7 +312,7 @@ def on_action(ctx, action_name, payload):
   <div class="section-title-bar"><span>Quick Heal &amp; Feed</span></div>
   <p class="inline-hint">Instantly restores health and hunger bars for all currently connected members.</p>
   <button class="btn-classic" style="padding:6px 20px;font-weight:bold;color:#008800;" onclick="triggerQuickHeal()">
-    [ ❤️ Heal &amp; Feed All Players ]
+    [ ❤ Heal &amp; Feed All Players ]
   </button>
   <div id="heal-result" style="margin-top:10px;font-weight:bold;"></div>
 </div>
@@ -337,7 +337,7 @@ Navigate to **Panel Addons & Extensions -> Installed Addons** in the panel. Clic
 
 ---
 
-## 🛒 In-Panel Addon Store Integration
+## In-Panel Addon Store Integration
 
 FiestaPanel includes an integrated **Plugin Store** (`/api/panel-addons/store`) featuring 1-click installation:
 - **Discord Alerts & Webhook Bridge**: Real-time Discord integration.
@@ -355,7 +355,7 @@ To submit your community addon to the official catalog:
 
 ---
 
-## 📦 Packaging & Distribution
+## Packaging & Distribution
 
 To share your addon with others:
 1. Ensure all files (`addon.json`, `main.py`, `tab.html`) are in the root of your zip file (or inside a single root folder).
@@ -367,7 +367,7 @@ To share your addon with others:
 
 ---
 
-## 🔌 REST API Reference
+## REST API Reference
 
 All addon management endpoints require administrator authentication:
 

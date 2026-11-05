@@ -10,6 +10,7 @@ static/*.zip
 
 config.json
 addon_stats.json
+automated_tasks.json
 .secret_key
 
 # Dynamically generated Minecraft inventory icon assets & catalog

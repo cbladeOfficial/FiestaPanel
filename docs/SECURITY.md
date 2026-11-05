@@ -1,10 +1,10 @@
-# 🛡️ FiestaPanel Security Architecture & Best Practices
+#  FiestaPanel Security Architecture & Best Practices
 
 FiestaPanel is built with security, isolation, and defense-in-depth principles in mind. This document outlines the security controls implemented within FiestaPanel and recommended deployment configurations.
 
 ---
 
-## 🔒 Built-in Security Controls
+## Built-in Security Controls
 
 ### 1. Password Hashing & Key Derivation
 - All user passwords stored in `users.json` are hashed using **scrypt** using unique cryptographic salts generated via `werkzeug.security.generate_password_hash`.
@@ -26,7 +26,7 @@ FiestaPanel is built with security, isolation, and defense-in-depth principles i
 
 ---
 
-## 🛡️ Recommended Production Deployment
+##  Recommended Production Deployment
 
 ### 1. Run Under a Dedicated System User
 While FiestaPanel can run as root, running under an unprivileged user (e.g. `minecraft` or `gateway`) provides stronger defense-in-depth:

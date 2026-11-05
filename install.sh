@@ -328,7 +328,7 @@ PUBLIC_IP=$(curl -s -m 3 https://api.ipify.org 2>/dev/null || hostname -I 2>/dev
 
 echo ""
 echo -e "${COLOR_GREEN}╔═══════════════════════════════════════════════════════════════════════╗${COLOR_RESET}"
-echo -e "${COLOR_GREEN}║             🎉 FIESTAPANEL INSTALLED SUCCESSFULLY!                  ║${COLOR_RESET}"
+echo -e "${COLOR_GREEN}║             FIESTAPANEL INSTALLED SUCCESSFULLY!                  ║${COLOR_RESET}"
 echo -e "${COLOR_GREEN}╚═══════════════════════════════════════════════════════════════════════╝${COLOR_RESET}"
 echo ""
 echo -e "${COLOR_BOLD}Access Credentials & URLs:${COLOR_RESET}"

@@ -533,12 +533,38 @@ ALLOWED_CONFIGS = {
     "bukkit.yml": os.path.join(SERVER_DIR, "bukkit.yml"),
     "spigot.yml": os.path.join(SERVER_DIR, "spigot.yml"),
     "purpur.yml": os.path.join(SERVER_DIR, "purpur.yml"),
+    "paper-global.yml": os.path.join(SERVER_DIR, "config", "paper-global.yml"),
+    "paper-world-defaults.yml": os.path.join(SERVER_DIR, "config", "paper-world-defaults.yml"),
+    "commands.yml": os.path.join(SERVER_DIR, "commands.yml"),
+    "permissions.yml": os.path.join(SERVER_DIR, "permissions.yml"),
+    "help.yml": os.path.join(SERVER_DIR, "help.yml"),
+    "floodgate/config.yml": os.path.join(SERVER_DIR, "plugins", "floodgate", "config.yml"),
+    "Geyser-Spigot/config.yml": os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
+    "LuckPerms/config.yml": os.path.join(SERVER_DIR, "plugins", "LuckPerms", "config.yml"),
+    "CoreProtect/config.yml": os.path.join(SERVER_DIR, "plugins", "CoreProtect", "config.yml"),
+    "Chunky/config.yml": os.path.join(SERVER_DIR, "plugins", "Chunky", "config.yml"),
+    "WorldEdit/config.yml": os.path.join(SERVER_DIR, "plugins", "WorldEdit", "config.yml"),
+    "ViaVersion/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaVersion", "config.yml"),
+    "ViaBackwards/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaBackwards", "config.yml"),
+    "ViaRewind/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaRewind", "config.yml"),
+    "Vault/config.yml": os.path.join(SERVER_DIR, "plugins", "Vault", "config.yml"),
     "Essentials/config.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "config.yml"),
     "Essentials/spawn.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "spawn.yml"),
+    "Essentials/kits.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "kits.yml"),
+    "Essentials/custom_items.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "custom_items.yml"),
+    "Essentials/worth.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "worth.yml"),
     "AuthMe/config.yml": os.path.join(SERVER_DIR, "plugins", "AuthMe", "config.yml"),
-    "Geyser-Spigot/config.yml": os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
+    "AuthMe/spawn.yml": os.path.join(SERVER_DIR, "plugins", "AuthMe", "spawn.yml"),
     "TAB/config.yml": os.path.join(SERVER_DIR, "plugins", "TAB", "config.yml"),
-    "DeluxeMenus/main_menu.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "gui_menus", "main_menu.yml")
+    "DeluxeMenus/config.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "config.yml"),
+    "DeluxeMenus/main_menu.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "gui_menus", "main_menu.yml"),
+    "GriefPrevention/config.yml": os.path.join(SERVER_DIR, "plugins", "GriefPreventionData", "config.yml"),
+    "UltimateAntiBot/config.yml": os.path.join(SERVER_DIR, "plugins", "UltimateAntiBot", "config.yml"),
+    "ChestShop/config.yml": os.path.join(SERVER_DIR, "plugins", "ChestShop", "config.yml"),
+    "SkinsRestorer/config.yml": os.path.join(SERVER_DIR, "plugins", "SkinsRestorer", "config.yml"),
+    "DecentHolograms/config.yml": os.path.join(SERVER_DIR, "plugins", "DecentHolograms", "config.yml"),
+    "EzAuction/auction.yml": os.path.join(SERVER_DIR, "plugins", "EzAuction", "auction.yml"),
+    "PlaceholderAPI/config.yml": os.path.join(SERVER_DIR, "plugins", "PlaceholderAPI", "config.yml")
 }
 
 def login_required(f):
@@ -4197,16 +4223,43 @@ def api_files_download():
 @app.route("/api/configs")
 @login_required
 def api_list_configs():
-    return jsonify({"configs": list(ALLOWED_CONFIGS.keys())})
+    found_configs = []
+    # 1. Existing allowed configs
+    for k, p in ALLOWED_CONFIGS.items():
+        if os.path.exists(p):
+            found_configs.append(k)
+
+    # 2. Dynamic discovery of plugins configs
+    plugins_dir = os.path.join(SERVER_DIR, "plugins")
+    if os.path.isdir(plugins_dir):
+        for root, dirs, files in os.walk(plugins_dir):
+            rel_dir = os.path.relpath(root, plugins_dir)
+            if rel_dir == "." or rel_dir.startswith("."):
+                continue
+            for f in files:
+                if f.endswith((".yml", ".yaml", ".properties", ".json")) and not f.startswith("."):
+                    rel_p = os.path.join("plugins", rel_dir, f).replace("\\", "/")
+                    if rel_p not in found_configs and len(rel_p) < 120:
+                        found_configs.append(rel_p)
+
+    return jsonify({"configs": found_configs})
 
 @app.route("/api/config/read")
 @login_required
 def api_read_config():
-    name = request.args.get("name")
-    if name not in ALLOWED_CONFIGS or not os.path.exists(ALLOWED_CONFIGS[name]):
+    name = request.args.get("name", "").strip()
+    target_path = None
+    if name in ALLOWED_CONFIGS and os.path.exists(ALLOWED_CONFIGS[name]):
+        target_path = ALLOWED_CONFIGS[name]
+    else:
+        abs_p = safe_fiesta_path(name)
+        if abs_p and os.path.isfile(abs_p) and abs_p.endswith((".yml", ".yaml", ".properties", ".json", ".conf", ".txt")):
+            target_path = abs_p
+
+    if not target_path or not os.path.exists(target_path):
         return jsonify({"success": False, "message": "Config not found"}), 404
     try:
-        with open(ALLOWED_CONFIGS[name], "r", encoding="utf-8", errors="ignore") as f:
+        with open(target_path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
         return jsonify({"success": True, "name": name, "content": content})
     except Exception as e:
@@ -4220,13 +4273,20 @@ def api_save_config():
         return jsonify({"success": False, "message": "Permission denied: Parameter editor permission required."}), 403
 
     data = request.get_json() or {}
-    name = data.get("name")
+    name = data.get("name", "").strip()
     content = data.get("content", "")
 
-    if name not in ALLOWED_CONFIGS:
+    target_path = None
+    if name in ALLOWED_CONFIGS:
+        target_path = ALLOWED_CONFIGS[name]
+    else:
+        abs_p = safe_fiesta_path(name)
+        if abs_p and abs_p.endswith((".yml", ".yaml", ".properties", ".json", ".conf", ".txt")):
+            target_path = abs_p
+
+    if not target_path:
         return jsonify({"success": False, "message": "Unauthorized file target"}), 403
 
-    target_path = ALLOWED_CONFIGS[name]
     try:
         backup_path = target_path + ".bak"
         if os.path.exists(target_path):
@@ -4236,9 +4296,764 @@ def api_save_config():
 
         with open(target_path, "w", encoding="utf-8") as f:
             f.write(content)
-        return jsonify({"success": True, "message": f"Saved {name} successfully (snapshot {name}.bak created)!"})
+        return jsonify({"success": True, "message": f"Saved {name} successfully (snapshot {os.path.basename(name)}.bak created)!"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+
+# ── Connect QR Code Generator ────────────────────────────────────────────────
+@app.route("/api/connect/qr.png")
+def api_connect_qr():
+    data = request.args.get("data", "").strip()
+    if not data:
+        data = request.host_url
+    try:
+        import qrcode
+        img = qrcode.make(data)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        return send_file(buf, mimetype="image/png")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ── Banned IPs Dedicated Endpoints ───────────────────────────────────────────
+@app.route("/api/banned-ips", methods=["GET", "POST", "DELETE"])
+@login_required
+def api_banned_ips_route():
+    ip_ban_file = os.path.join(SERVER_DIR, "banned-ips.json")
+    if request.method == "GET":
+        ip_bans = []
+        if os.path.exists(ip_ban_file):
+            try:
+                with open(ip_ban_file, "r", encoding="utf-8", errors="ignore") as f:
+                    ip_bans = json.load(f)
+            except Exception:
+                pass
+        _, reverse_map = get_all_player_ips()
+        for ib in ip_bans:
+            cur_ip = (ib.get("ip") or "").strip()
+            ib["player"] = reverse_map.get(cur_ip, "Unknown")
+        return jsonify({"success": True, "ip_bans": ip_bans, "total": len(ip_bans)})
+
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "security" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied"}), 403
+
+    if request.method == "POST":
+        data = request.get_json() or {}
+        ip = data.get("ip", "").strip()
+        reason = data.get("reason", "").strip() or "Banned by administrator"
+        if not ip:
+            return jsonify({"success": False, "message": "IP address is required"}), 400
+        success, msg = execute_ip_ban(ip, reason)
+        return jsonify({"success": success, "message": msg})
+
+    if request.method == "DELETE":
+        data = request.get_json() or {}
+        ip = data.get("ip", "").strip()
+        if not ip:
+            return jsonify({"success": False, "message": "IP address is required"}), 400
+        success, msg = execute_ip_pardon(ip)
+        return jsonify({"success": success, "message": msg})
+
+# ── Aternos Options Tab Switchboard API ──────────────────────────────────────
+@app.route("/api/options", methods=["GET", "POST"])
+@login_required
+def api_game_options():
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    if not os.path.exists(props_path):
+        return jsonify({"success": False, "message": "server.properties not found"}), 404
+
+    if request.method == "GET":
+        props = {}
+        try:
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        props[k.strip()] = v.strip()
+            return jsonify({"success": True, "options": props})
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e)}), 500
+
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied"}), 403
+
+    updates = request.get_json() or {}
+    if not updates:
+        return jsonify({"success": False, "message": "No settings to update"}), 400
+
+    try:
+        shutil.copy2(props_path, props_path + ".bak")
+        lines = []
+        seen = set()
+        with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#") and "=" in stripped:
+                    k = stripped.split("=", 1)[0].strip()
+                    if k in updates:
+                        lines.append(f"{k}={updates[k]}\n")
+                        seen.add(k)
+                    else:
+                        lines.append(line)
+                else:
+                    lines.append(line)
+        for k, v in updates.items():
+            if k not in seen:
+                lines.append(f"{k}={v}\n")
+        with open(props_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+        return jsonify({"success": True, "message": "Game options saved successfully!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# ── Worlds Hub Endpoints ─────────────────────────────────────────────────────
+@app.route("/api/worlds", methods=["GET"])
+@login_required
+def api_worlds_list():
+    worlds = []
+    known_dims = ["world", "world_nether", "world_the_end", "maintenance"]
+
+    seed = ""
+    level_type = "minecraft:normal"
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    if os.path.exists(props_path):
+        try:
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("level-seed="):
+                        seed = line.split("=", 1)[1].strip()
+                    elif line.startswith("level-type="):
+                        level_type = line.split("=", 1)[1].strip()
+        except Exception:
+            pass
+
+    for item in os.listdir(SERVER_DIR):
+        item_path = os.path.join(SERVER_DIR, item)
+        if not os.path.isdir(item_path):
+            continue
+        has_level = os.path.exists(os.path.join(item_path, "level.dat"))
+        has_region = os.path.exists(os.path.join(item_path, "region")) or os.path.exists(os.path.join(item_path, "DIM-1")) or os.path.exists(os.path.join(item_path, "DIM1"))
+        if has_level or has_region or item in known_dims:
+            total_size = 0
+            region_count = 0
+            last_mtime = 0
+            for root, dirs, files in os.walk(item_path):
+                for f in files:
+                    fp = os.path.join(root, f)
+                    try:
+                        st = os.stat(fp)
+                        total_size += st.st_size
+                        if st.st_mtime > last_mtime:
+                            last_mtime = st.st_mtime
+                        if f.endswith(".mca"):
+                            region_count += 1
+                    except Exception:
+                        pass
+
+            dim_type = "Overworld"
+            if "nether" in item.lower():
+                dim_type = "Nether"
+            elif "end" in item.lower():
+                dim_type = "The End"
+
+            datapack_count = 0
+            dp_dir = os.path.join(item_path, "datapacks")
+            if os.path.isdir(dp_dir):
+                datapack_count = len([x for x in os.listdir(dp_dir) if not x.startswith(".")])
+
+            worlds.append({
+                "name": item,
+                "type": dim_type,
+                "size_bytes": total_size,
+                "size_formatted": format_file_size(total_size),
+                "region_files": region_count,
+                "datapack_count": datapack_count,
+                "seed": seed,
+                "level_type": level_type,
+                "last_modified": datetime.datetime.fromtimestamp(last_mtime).strftime("%Y-%m-%d %H:%M") if last_mtime else "N/A"
+            })
+    return jsonify({"success": True, "worlds": worlds})
+
+@app.route("/api/worlds/download")
+@login_required
+def api_worlds_download():
+    world_name = request.args.get("world", "").strip()
+    if not world_name:
+        return jsonify({"success": False, "message": "World name required"}), 400
+    abs_path = safe_fiesta_path(world_name)
+    if not abs_path or not os.path.isdir(abs_path):
+        return jsonify({"success": False, "message": "World directory not found"}), 404
+
+    backup_dir = "/home/ubuntu/backups"
+    os.makedirs(backup_dir, exist_ok=True)
+    zip_filename = f"{world_name}_{int(time.time())}.zip"
+    zip_path = os.path.join(backup_dir, zip_filename)
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(abs_path):
+            for file in files:
+                if file.endswith(".lock") or file == "session.lock":
+                    continue
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, abs_path)
+                try:
+                    zf.write(full_path, os.path.join(world_name, rel_path))
+                except Exception:
+                    pass
+
+    return send_file(zip_path, as_attachment=True, download_name=f"{world_name}.zip")
+
+@app.route("/api/worlds/upload", methods=["POST"])
+@login_required
+def api_worlds_upload():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Owner permission required for world upload"}), 403
+
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": "No file uploaded"}), 400
+    file = request.files["file"]
+    if not file.filename.endswith(".zip"):
+        return jsonify({"success": False, "message": "Only .zip world archives are supported"}), 400
+
+    target_world = request.form.get("world", "world").strip()
+    abs_world = safe_fiesta_path(target_world)
+    if not abs_world:
+        return jsonify({"success": False, "message": "Invalid world target"}), 400
+
+    # Auto-snapshot before replacing
+    backup_dir = "/home/ubuntu/backups"
+    os.makedirs(backup_dir, exist_ok=True)
+    if os.path.exists(abs_world):
+        snap_path = os.path.join(backup_dir, f"pre_upload_{target_world}_{int(time.time())}.zip")
+        try:
+            with zipfile.ZipFile(snap_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for root, dirs, files in os.walk(abs_world):
+                    for f in files:
+                        if not f.endswith(".lock"):
+                            fp = os.path.join(root, f)
+                            zf.write(fp, os.path.relpath(fp, abs_world))
+        except Exception:
+            pass
+
+    # Extract safely
+    temp_zip = os.path.join(backup_dir, f"temp_{int(time.time())}.zip")
+    file.save(temp_zip)
+    try:
+        with zipfile.ZipFile(temp_zip, "r") as zf:
+            for member in zf.namelist():
+                if ".." in member or member.startswith("/"):
+                    return jsonify({"success": False, "message": "Malicious zip archive detected"}), 400
+
+            namelist = zf.namelist()
+            root_prefix = ""
+            for name in namelist:
+                if name.endswith("level.dat"):
+                    root_prefix = os.path.dirname(name)
+                    break
+
+            os.makedirs(abs_world, exist_ok=True)
+            for member in zf.infolist():
+                if member.is_dir():
+                    continue
+                orig_name = member.filename
+                if root_prefix and orig_name.startswith(root_prefix + "/"):
+                    rel = orig_name[len(root_prefix) + 1:]
+                elif root_prefix and orig_name == root_prefix:
+                    continue
+                else:
+                    rel = orig_name
+                if not rel or rel.endswith(".lock"):
+                    continue
+                dest_file = os.path.join(abs_world, rel)
+                os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+                with zf.open(member) as src, open(dest_file, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+
+        return jsonify({"success": True, "message": f"World '{target_world}' uploaded and installed successfully! Reboot server to load."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        if os.path.exists(temp_zip):
+            os.remove(temp_zip)
+
+@app.route("/api/worlds/reset-dimension", methods=["POST"])
+@login_required
+def api_worlds_reset_dimension():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Owner permission required for dimension reset"}), 403
+
+    data = request.get_json() or {}
+    dim = data.get("dimension", "").lower().strip()
+
+    if dim not in ("nether", "the_end", "overworld"):
+        return jsonify({"success": False, "message": "Dimension must be 'nether', 'the_end', or 'overworld'"}), 400
+
+    target_dir_name = "world_nether" if dim == "nether" else ("world_the_end" if dim == "the_end" else "world")
+    abs_dir = os.path.join(SERVER_DIR, target_dir_name)
+
+    backup_dir = "/home/ubuntu/backups"
+    os.makedirs(backup_dir, exist_ok=True)
+    if os.path.exists(abs_dir):
+        snap_path = os.path.join(backup_dir, f"reset_snap_{dim}_{int(time.time())}.zip")
+        try:
+            with zipfile.ZipFile(snap_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for root, dirs, files in os.walk(abs_dir):
+                    for f in files:
+                        if not f.endswith(".lock"):
+                            fp = os.path.join(root, f)
+                            zf.write(fp, os.path.relpath(fp, abs_dir))
+        except Exception:
+            pass
+
+    dirs_to_clean = ["region", "entities", "poi"]
+    for d in dirs_to_clean:
+        dp = os.path.join(abs_dir, d)
+        if os.path.isdir(dp):
+            shutil.rmtree(dp, ignore_errors=True)
+            os.makedirs(dp, exist_ok=True)
+
+    main_world = os.path.join(SERVER_DIR, "world")
+    dim_sub = "DIM-1" if dim == "nether" else ("DIM1" if dim == "the_end" else "")
+    if dim_sub:
+        dim_sub_path = os.path.join(main_world, dim_sub)
+        if os.path.isdir(dim_sub_path):
+            for d in dirs_to_clean:
+                dp = os.path.join(dim_sub_path, d)
+                if os.path.isdir(dp):
+                    shutil.rmtree(dp, ignore_errors=True)
+                    os.makedirs(dp, exist_ok=True)
+
+    label = "Nether" if dim == "nether" else ("The End" if dim == "the_end" else "Overworld")
+    return jsonify({"success": True, "message": f"{label} dimension reset successfully! Pristine new terrain will generate when visited."})
+
+@app.route("/api/worlds/generate", methods=["POST"])
+@login_required
+def api_worlds_generate():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Owner permission required for world generation"}), 403
+
+    data = request.get_json() or {}
+    world_name = data.get("name", "world").strip()
+    seed = data.get("seed", "").strip()
+    level_type = data.get("type", "minecraft:normal").strip()
+    structures = str(data.get("structures", True)).lower()
+    hardcore = str(data.get("hardcore", False)).lower()
+
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    if os.path.exists(props_path):
+        updates = {
+            "level-seed": seed,
+            "level-type": level_type,
+            "generate-structures": structures,
+            "hardcore": hardcore
+        }
+        try:
+            shutil.copy2(props_path, props_path + ".bak")
+            lines = []
+            seen = set()
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith("#") and "=" in stripped:
+                        k = stripped.split("=", 1)[0].strip()
+                        if k in updates:
+                            lines.append(f"{k}={updates[k]}\n")
+                            seen.add(k)
+                        else:
+                            lines.append(line)
+                    else:
+                        lines.append(line)
+            for k, v in updates.items():
+                if k not in seen:
+                    lines.append(f"{k}={v}\n")
+            with open(props_path, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+        except Exception:
+            pass
+
+    abs_world = os.path.join(SERVER_DIR, world_name)
+    if os.path.isdir(abs_world):
+        backup_dir = "/home/ubuntu/backups"
+        os.makedirs(backup_dir, exist_ok=True)
+        snap_path = os.path.join(backup_dir, f"pre_gen_{world_name}_{int(time.time())}.zip")
+        try:
+            with zipfile.ZipFile(snap_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for root, dirs, files in os.walk(abs_world):
+                    for f in files:
+                        if not f.endswith(".lock"):
+                            fp = os.path.join(root, f)
+                            zf.write(fp, os.path.relpath(fp, abs_world))
+        except Exception:
+            pass
+        shutil.rmtree(abs_world, ignore_errors=True)
+
+    return jsonify({"success": True, "message": f"New world configuration generated with seed '{seed or 'random'}'! Start or reboot the server to create terrain."})
+
+@app.route("/api/worlds/optimize", methods=["POST"])
+@login_required
+def api_worlds_optimize():
+    send_mc_command("minecraft:save-all flush")
+    return jsonify({"success": True, "message": "World flushed and saved to disk. To run full force-upgrade, reboot server with '--forceUpgrade --eraseCache'."})
+
+@app.route("/api/worlds/datapacks", methods=["GET", "POST"])
+@login_required
+def api_worlds_datapacks():
+    dp_dir = os.path.join(SERVER_DIR, "world", "datapacks")
+    os.makedirs(dp_dir, exist_ok=True)
+
+    if request.method == "GET":
+        packs = []
+        for item in os.listdir(dp_dir):
+            if item.startswith("."):
+                continue
+            item_path = os.path.join(dp_dir, item)
+            desc = "Datapack"
+            pack_format = "Unknown"
+            size = os.path.getsize(item_path) if os.path.isfile(item_path) else 0
+
+            if os.path.isdir(item_path):
+                mcmeta_path = os.path.join(item_path, "pack.mcmeta")
+                if os.path.exists(mcmeta_path):
+                    try:
+                        with open(mcmeta_path, "r", encoding="utf-8", errors="ignore") as f:
+                            meta = json.load(f)
+                            desc = meta.get("pack", {}).get("description", desc)
+                            pack_format = meta.get("pack", {}).get("pack_format", pack_format)
+                    except Exception:
+                        pass
+                for root, dirs, files in os.walk(item_path):
+                    for f in files:
+                        try:
+                            size += os.path.getsize(os.path.join(root, f))
+                        except Exception:
+                            pass
+            elif item.endswith(".zip"):
+                try:
+                    with zipfile.ZipFile(item_path, "r") as zf:
+                        if "pack.mcmeta" in zf.namelist():
+                            with zf.open("pack.mcmeta") as mf:
+                                meta = json.load(mf)
+                                desc = meta.get("pack", {}).get("description", desc)
+                                pack_format = meta.get("pack", {}).get("pack_format", pack_format)
+                except Exception:
+                    pass
+
+            packs.append({
+                "name": item,
+                "description": desc if isinstance(desc, str) else json.dumps(desc),
+                "format": pack_format,
+                "size_formatted": format_file_size(size),
+                "is_dir": os.path.isdir(item_path)
+            })
+        return jsonify({"success": True, "datapacks": packs})
+
+    action = request.form.get("action") or (request.get_json(silent=True) or {}).get("action")
+    if action == "upload":
+        if "file" not in request.files:
+            return jsonify({"success": False, "message": "No file uploaded"}), 400
+        file = request.files["file"]
+        safe_name = os.path.basename(file.filename)
+        dest = os.path.join(dp_dir, safe_name)
+        file.save(dest)
+        send_mc_command("datapack list")
+        return jsonify({"success": True, "message": f"Datapack '{safe_name}' uploaded successfully!"})
+
+    if action == "delete":
+        name = request.form.get("name") or (request.get_json(silent=True) or {}).get("name")
+        safe_name = os.path.basename(name or "")
+        target = os.path.join(dp_dir, safe_name)
+        if os.path.exists(target):
+            if os.path.isdir(target):
+                shutil.rmtree(target)
+            else:
+                os.remove(target)
+            return jsonify({"success": True, "message": f"Datapack '{safe_name}' removed."})
+        return jsonify({"success": False, "message": "Datapack not found"}), 404
+
+    if action == "toggle":
+        name = request.form.get("name") or (request.get_json(silent=True) or {}).get("name")
+        mode = request.form.get("mode") or (request.get_json(silent=True) or {}).get("mode")
+        safe_name = os.path.basename(name or "")
+        cmd = f"datapack {mode} \"file/{safe_name}\""
+        success, msg = send_mc_command(cmd)
+        return jsonify({"success": success, "message": f"Dispatched: {cmd}"})
+
+    return jsonify({"success": False, "message": "Unknown action"}), 400
+
+# ── Log Intelligence & 1-Click mclo.gs ───────────────────────────────────────
+@app.route("/api/logs/share-mclogs", methods=["POST"])
+@login_required
+def api_logs_share_mclogs():
+    log_path = os.path.join(SERVER_DIR, "logs", "latest.log")
+    if not os.path.exists(log_path):
+        return jsonify({"success": False, "message": "latest.log not found"}), 404
+
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()[-6000:]
+        raw_text = "".join(lines)
+
+        sanitized = re.sub(r"\b(?!127\.0\.0\.1|0\.0\.0\.0)(?:\d{1,3}\.){3}\d{1,3}\b", "[IP REDACTED]", raw_text)
+        sanitized = re.sub(r"https://discord(?:app)?\.com/api/webhooks/[a-zA-Z0-9_\-\/]+", "https://discord.com/api/webhooks/[REDACTED]", sanitized)
+        sanitized = re.sub(r"(rcon\.password\s*=\s*)[^\n\r]+", r"\1[REDACTED]", sanitized)
+        sanitized = re.sub(r"(password\s*:\s*)[^\n\r]+", r"\1[REDACTED]", sanitized)
+
+        data = urllib.parse.urlencode({"content": sanitized}).encode("utf-8")
+        req = urllib.request.Request("https://api.mclo.gs/1/log", data=data, headers={"User-Agent": "FiestaPanel/2.5.0"})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            res_data = json.loads(resp.read().decode("utf-8"))
+
+        if res_data.get("success"):
+            return jsonify({
+                "success": True,
+                "url": res_data.get("url"),
+                "raw": res_data.get("raw"),
+                "message": "Log uploaded securely to mclo.gs!"
+            })
+        return jsonify({"success": False, "message": res_data.get("error", "mclo.gs upload error")}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Upload failed: {str(e)}"}), 500
+
+@app.route("/api/logs/analyze", methods=["GET"])
+@login_required
+def api_logs_analyze():
+    log_path = os.path.join(SERVER_DIR, "logs", "latest.log")
+    findings = []
+    if os.path.exists(log_path):
+        try:
+            with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                lines = f.readlines()[-3000:]
+            text = "".join(lines)
+
+            if "OutOfMemoryError" in text:
+                findings.append({
+                    "severity": "critical",
+                    "title": "Out of Memory Error (OOM)",
+                    "description": "Java Virtual Machine exhausted heap memory limit.",
+                    "solution": "Increase memory (-Xmx) or remove heavy entity/chunk loaders."
+                })
+            if "FAILED TO BIND TO PORT" in text or "Address already in use" in text:
+                findings.append({
+                    "severity": "critical",
+                    "title": "Port Binding Conflict",
+                    "description": "Port 25565 is already occupied by another running server instance.",
+                    "solution": "Kill lingering Java instances or adjust server-port in server.properties."
+                })
+            if "Corrupt chunk" in text or "RegionFileException" in text:
+                findings.append({
+                    "severity": "critical",
+                    "title": "Corrupted Chunk Region",
+                    "description": "Damaged world chunk detected during chunk load.",
+                    "solution": "Prune corrupted MCA region files or restore from backup."
+                })
+            if "Could not load" in text:
+                failed = re.findall(r"Could not load [\'\"]plugins/([^\'\"]+)", text)
+                if failed:
+                    findings.append({
+                        "severity": "warning",
+                        "title": f"Plugin Load Failure ({len(failed)})",
+                        "description": f"Failed plugins: {', '.join(failed[:3])}",
+                        "solution": "Verify plugin dependencies and Java 21 compatibility."
+                    })
+            if "Can't keep up! Is the server overloaded?" in text:
+                findings.append({
+                    "severity": "warning",
+                    "title": "Tick Loop Overload",
+                    "description": "Server fell behind real time by several ticks.",
+                    "solution": "Check /spark health, lower simulation distance, or run /gc."
+                })
+        except Exception:
+            pass
+    return jsonify({"success": True, "findings": findings, "healthy": len(findings) == 0})
+
+# ── Resource Pack Host & Auto-SHA1 ───────────────────────────────────────────
+@app.route("/api/resourcepack/upload", methods=["POST"])
+@login_required
+def api_resourcepack_upload():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied"}), 403
+
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": "No file uploaded"}), 400
+    file = request.files["file"]
+    if not file.filename.endswith(".zip"):
+        return jsonify({"success": False, "message": "Resource pack must be a .zip file"}), 400
+
+    static_dir = os.path.join(BASE_DIR, "static")
+    os.makedirs(static_dir, exist_ok=True)
+    target_path = os.path.join(static_dir, "resourcepack.zip")
+    file.save(target_path)
+
+    sha1 = hashlib.sha1()
+    with open(target_path, "rb") as f:
+        while chunk := f.read(65536):
+            sha1.update(chunk)
+    pack_hash = sha1.hexdigest()
+    pack_size = os.path.getsize(target_path)
+
+    host = request.host
+    dl_url = f"http://{host}/static/resourcepack.zip"
+
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    if os.path.exists(props_path):
+        try:
+            updates = {
+                "resource-pack": dl_url,
+                "resource-pack-sha1": pack_hash
+            }
+            lines = []
+            seen = set()
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith("#") and "=" in stripped:
+                        k = stripped.split("=", 1)[0].strip()
+                        if k in updates:
+                            lines.append(f"{k}={updates[k]}\n")
+                            seen.add(k)
+                        else:
+                            lines.append(line)
+                    else:
+                        lines.append(line)
+            for k, v in updates.items():
+                if k not in seen:
+                    lines.append(f"{k}={v}\n")
+            with open(props_path, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": True,
+        "url": dl_url,
+        "sha1": pack_hash,
+        "size_formatted": format_file_size(pack_size),
+        "message": "Resource pack uploaded, SHA-1 generated, and server.properties updated!"
+    })
+
+# ── Automated Tasks & Lifecycle Scheduler ───────────────────────────────────
+TASKS_CONFIG_FILE = os.path.join(DATA_DIR, "automated_tasks.json")
+
+def load_automated_tasks():
+    default_tasks = {
+        "daily_restart": {"enabled": False, "time": "04:00", "last_run": None},
+        "daily_backup": {"enabled": False, "time": "05:00", "last_run": None},
+        "idle_auto_stop": {"enabled": False, "timeout_minutes": 30, "idle_since": None}
+    }
+    if os.path.isfile(TASKS_CONFIG_FILE):
+        try:
+            with open(TASKS_CONFIG_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                default_tasks.update(data)
+                return default_tasks
+        except Exception:
+            pass
+    return default_tasks
+
+def save_automated_tasks(tasks):
+    with open(TASKS_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(tasks, f, indent=2)
+
+def _automated_tasks_worker():
+    while True:
+        try:
+            time.sleep(30)
+            tasks = load_automated_tasks()
+            now = datetime.datetime.now()
+            today_str = now.strftime("%Y-%m-%d")
+            current_hm = now.strftime("%H:%M")
+            modified = False
+
+            # 1. Daily Restart
+            dr = tasks.get("daily_restart", {})
+            if dr.get("enabled") and dr.get("time") == current_hm:
+                if dr.get("last_run") != today_str:
+                    dr["last_run"] = today_str
+                    modified = True
+                    send_mc_command("say [FiestaPanel] Scheduled daily restart initiated in 15 seconds...")
+                    time.sleep(15)
+                    send_mc_command("minecraft:save-all flush")
+                    time.sleep(3)
+                    subprocess.run(["sudo", "systemctl", "restart", "fiesta"])
+
+            # 2. Daily Backup
+            db = tasks.get("daily_backup", {})
+            if db.get("enabled") and db.get("time") == current_hm:
+                if db.get("last_run") != today_str:
+                    db["last_run"] = today_str
+                    modified = True
+                    backup_dir = "/home/ubuntu/backups"
+                    os.makedirs(backup_dir, exist_ok=True)
+                    zf_path = os.path.join(backup_dir, f"auto_daily_{int(time.time())}.zip")
+                    try:
+                        with zipfile.ZipFile(zf_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                            for root, dirs, files in os.walk(os.path.join(SERVER_DIR, "world")):
+                                for f in files:
+                                    if not f.endswith(".lock"):
+                                        fp = os.path.join(root, f)
+                                        zf.write(fp, os.path.relpath(fp, SERVER_DIR))
+                    except Exception:
+                        pass
+
+            # 3. Idle Auto-Stop
+            ias = tasks.get("idle_auto_stop", {})
+            if ias.get("enabled"):
+                is_online, p_count, _, _ = ping_mc()
+                if is_online:
+                    if p_count == 0:
+                        if not ias.get("idle_since"):
+                            ias["idle_since"] = time.time()
+                            modified = True
+                        else:
+                            idle_mins = (time.time() - ias["idle_since"]) / 60
+                            limit = int(ias.get("timeout_minutes", 30))
+                            if idle_mins >= limit:
+                                ias["idle_since"] = None
+                                modified = True
+                                send_mc_command("say [FiestaPanel] Server has been idle with 0 players. Shutting down to conserve resources...")
+                                time.sleep(5)
+                                subprocess.run(["sudo", "systemctl", "stop", "fiesta"])
+                    else:
+                        if ias.get("idle_since") is not None:
+                            ias["idle_since"] = None
+                            modified = True
+
+            if modified:
+                save_automated_tasks(tasks)
+        except Exception:
+            pass
+
+threading.Thread(target=_automated_tasks_worker, daemon=True).start()
+
+@app.route("/api/tasks", methods=["GET", "POST"])
+@login_required
+def api_tasks_route():
+    if request.method == "GET":
+        return jsonify({"success": True, "tasks": load_automated_tasks()})
+
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Owner permission required for automated tasks"}), 403
+
+    data = request.get_json() or {}
+    tasks = load_automated_tasks()
+    if "daily_restart" in data:
+        tasks["daily_restart"].update(data["daily_restart"])
+    if "daily_backup" in data:
+        tasks["daily_backup"].update(data["daily_backup"])
+    if "idle_auto_stop" in data:
+        tasks["idle_auto_stop"].update(data["idle_auto_stop"])
+    save_automated_tasks(tasks)
+    return jsonify({"success": True, "message": "Automated task schedules updated successfully!", "tasks": tasks})
 
 # ── Quick Actions ────────────────────────────────────────────────────────────
 @app.route("/api/action", methods=["POST"])
