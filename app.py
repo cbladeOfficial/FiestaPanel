@@ -4560,16 +4560,32 @@ def api_panel_addons_template_download():
 # ── Fiesta Team Official Addon Publisher Studio & Repository API ────────────
 
 def get_fiesta_dev_key():
-    return os.environ.get("FIESTA_DEV_KEY") or SERVER_CONFIG.get("fiesta_dev_key") or "fiesta-core-dev-2026"
+    env_key = os.environ.get("FIESTA_DEV_KEY", "").strip()
+    if env_key:
+        return env_key
+    cfg_key = str(SERVER_CONFIG.get("fiesta_dev_key", "")).strip()
+    if cfg_key:
+        return cfg_key
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                c = json.load(f)
+                return str(c.get("fiesta_dev_key", "")).strip()
+    except Exception:
+        pass
+    return ""
 
 def check_fiesta_dev_auth():
     """Verify owner role and Fiesta developer key authentication."""
     if session.get("role") != "owner" and "all" not in session.get("permissions", []):
         return False
+    dev_key = get_fiesta_dev_key()
+    if not dev_key:
+        return False
     if session.get("fiesta_dev_authenticated") is True:
         return True
     header_key = request.headers.get("X-Fiesta-Dev-Key")
-    if header_key and hmac.compare_digest(header_key.strip(), get_fiesta_dev_key()):
+    if header_key and hmac.compare_digest(header_key.strip(), dev_key):
         return True
     return False
 
@@ -4581,11 +4597,14 @@ def admin_addons_publisher_page():
         return render_template("login.html", error="Access Denied: Owner privileges required for Developer Studio.", branding=load_branding()), 403
 
     branding = load_branding()
-    is_unlocked = bool(session.get("fiesta_dev_authenticated"))
+    dev_key = get_fiesta_dev_key()
+    dev_key_configured = bool(dev_key)
+    is_unlocked = bool(session.get("fiesta_dev_authenticated")) and dev_key_configured
     return render_template(
         "admin_addon_publisher.html",
         branding=branding,
         is_unlocked=is_unlocked,
+        dev_key_configured=dev_key_configured,
         csrf_token=session.get("csrf_token", "")
     )
 
@@ -4599,6 +4618,12 @@ def api_admin_addons_unlock():
     key = str(data.get("dev_key") or data.get("key") or "").strip()
 
     expected = get_fiesta_dev_key()
+    if not expected:
+        return jsonify({
+            "success": False,
+            "error": "Developer Publishing is disabled on this server instance. The Fiesta Developer Key must be configured via environment variable FIESTA_DEV_KEY or config.json."
+        }), 403
+
     if not key or not hmac.compare_digest(key, expected):
         return jsonify({
             "success": False,

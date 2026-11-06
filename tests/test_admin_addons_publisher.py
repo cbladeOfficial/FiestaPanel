@@ -123,6 +123,26 @@ class AdminAddonsPublisherTests(unittest.TestCase):
         self.assertIn("Fiesta Team Developer Gateway Locked", html)
         self.assertIn("Enter Fiesta Developer Secret Key", html)
 
+    def test_publisher_disabled_when_no_key_configured(self):
+        self._login()
+        # Remove key configuration
+        portal_app.SERVER_CONFIG.pop("fiesta_dev_key", None)
+        with open(self.temp_config, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+
+        # 1. Page shows disabled warning
+        res = self.client.get('/admin/addons-publisher')
+        self.assertEqual(res.status_code, 200)
+        html = res.get_data(as_text=True)
+        self.assertIn("Developer Publishing Disabled", html)
+        self.assertNotIn("Enter Fiesta Developer Secret Key", html)
+
+        # 2. Old hardcoded key is rejected and unlock is 403
+        res_old = self._post('/api/admin/addons-publisher/unlock', {"key": "fiesta-core-dev-2026"})
+        self.assertEqual(res_old.status_code, 403)
+        self.assertFalse(res_old.get_json().get("success"))
+        self.assertIn("disabled on this server instance", res_old.get_json().get("error", ""))
+
     def test_unlock_with_invalid_key_fails(self):
         self._login()
         res = self._post('/api/admin/addons-publisher/unlock', {"key": "wrong_key"})
