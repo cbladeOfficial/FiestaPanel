@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ branding.brand_name }} | Fiesta Developer Addon Studio</title>
+  <link rel="icon" id="portal-favicon" href="{{ get_portal_favicon_url(branding) }}">
+  <link rel="stylesheet" href="/static/7.scoped.css">
+  <style>
+    :root, [data-theme="classic"] {
+      --bg-page: #e8e8e8;
+      --bg-frame: #ffffff;
+      --border-frame: #707070;
+      --header-grad-1: #2ea35b;
+      --header-grad-2: #006622;
+      --header-grad-3: #176a3b;
+      --header-bot-border: #74b21d;
+      --sec-bar-bg: #74b21d;
+      --sec-bar-border: #5a9412;
+      --text-main: #333333;
+      --text-sub: #555555;
+      --text-bold: #000000;
+      --input-bg: #ffffff;
+      --input-border: #999999;
+      --input-text: #000000;
+      --table-border: #cbd5e1;
+      --table-alt: #f8fafc;
+      --btn-classic-bg: #f3f4f6;
+      --btn-classic-border: #9ca3af;
+      --btn-satin-green: #16a34a;
+      --btn-satin-green-hover: #15803d;
+    }
+
+    [data-theme="dark"] {
+      --bg-page: #0f172a;
+      --bg-frame: #1e293b;
+      --border-frame: #334155;
+      --header-grad-1: #1e3a8a;
+      --header-grad-2: #0f172a;
+      --header-grad-3: #1e293b;
+      --header-bot-border: #0284c7;
+      --sec-bar-bg: #0284c7;
+      --sec-bar-border: #0369a1;
+      --text-main: #e2e8f0;
+      --text-sub: #94a3b8;
+      --text-bold: #f8fafc;
+      --input-bg: #0f172a;
+      --input-border: #475569;
+      --input-text: #f8fafc;
+      --table-border: #334155;
+      --table-alt: #1e293b;
+      --btn-classic-bg: #334155;
+      --btn-classic-border: #475569;
+      --btn-satin-green: #059669;
+      --btn-satin-green-hover: #047857;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-family: Arial, Tahoma, Helvetica, sans-serif;
+      font-size: 12px;
+    }
+
+    .studio-container {
+      max-width: 1100px;
+      margin: 20px auto;
+      background: var(--bg-frame);
+      border: 1px solid var(--border-frame);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+    }
+
+    /* Header */
+    .studio-header {
+      background: linear-gradient(to bottom, var(--header-grad-1), var(--header-grad-2) 65%, var(--header-grad-3));
+      border-bottom: 2px solid var(--header-bot-border);
+      color: #ffffff;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .studio-title {
+      font-size: 17px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+    .studio-subtitle {
+      font-size: 11px;
+      opacity: 0.88;
+      margin-top: 2px;
+    }
+
+    /* Cards and Panels */
+    .panel-box {
+      border: 1px solid var(--table-border);
+      background: var(--bg-frame);
+      margin: 16px;
+      padding: 0;
+    }
+
+    .section-title-bar {
+      background: linear-gradient(to bottom, #f1f5f9, #e2e8f0);
+      border-bottom: 1px solid var(--table-border);
+      padding: 7px 12px;
+      font-size: 11.5px;
+      font-weight: bold;
+      color: var(--text-bold);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    [data-theme="dark"] .section-title-bar {
+      background: linear-gradient(to bottom, #334155, #1e293b);
+      color: #f8fafc;
+    }
+
+    .panel-body {
+      padding: 14px 16px;
+    }
+
+    /* Buttons */
+    .btn-classic {
+      background: var(--btn-classic-bg);
+      border: 1px solid var(--btn-classic-border);
+      color: var(--text-main);
+      padding: 2px 10px;
+      font-size: 11px;
+      border-radius: 2px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    .btn-classic:hover {
+      filter: brightness(0.95);
+    }
+
+    .btn-satin-green {
+      background: var(--btn-satin-green);
+      border: 1px solid #0f766e;
+      color: #ffffff;
+      padding: 3px 12px;
+      font-size: 11px;
+      border-radius: 2px;
+      cursor: pointer;
+      font-weight: bold;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    .btn-satin-green:hover {
+      background: var(--btn-satin-green-hover);
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      border: 1px solid #b91c1c;
+      color: #ffffff;
+      padding: 2px 8px;
+      font-size: 10.5px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .data-table th {
+      background: var(--table-alt);
+      border-bottom: 2px solid var(--table-border);
+      padding: 6px 8px;
+      text-align: left;
+      font-weight: bold;
+      color: var(--text-bold);
+    }
+    .data-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--table-border);
+      vertical-align: middle;
+    }
+
+    /* Inputs */
+    .ctrl-input {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--input-text);
+      padding: 3px 6px;
+      font-size: 11.5px;
+      border-radius: 2px;
+      box-sizing: border-box;
+    }
+    .ctrl-input:focus {
+      outline: none;
+      border-color: #0284c7;
+    }
+
+    .inline-badge {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 2px;
+      font-size: 9.5px;
+      font-weight: bold;
+    }
+
+    /* Modal Overlays */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      background: var(--bg-frame);
+      border: 1px solid var(--sec-bar-bg);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      max-width: 95vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-container">
+    <!-- Header Bar -->
+    <div class="studio-header">
+      <div>
+        <div class="studio-title">{{ branding.brand_name }} • Fiesta Developer Studio</div>
+        <div class="studio-subtitle">Official Addon Publisher &amp; Plugin Store Repository Studio (FiestaSMP Core Team)</div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <span id="dev-status-badge" class="inline-badge" style="background: {% if is_unlocked %}#16a34a{% else %}#dc2626{% endif %}; color: #fff;">
+          {% if is_unlocked %}● Publisher Unlocked{% else %}🔒 Locked{% endif %}
+        </span>
+        <button type="button" id="btn-toggle-lock" class="btn-classic" style="background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: #fff; font-weight: bold;" onclick="toggleLockState()">
+          {% if is_unlocked %}[ Lock Session ]{% else %}[ Unlock ]{% endif %}
+        </button>
+        <a href="/" class="btn-classic" style="background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: #fff; font-weight: bold;">[ &larr; Return to Dashboard ]</a>
+      </div>
+    </div>
+
+    <!-- Alert Banner -->
+    <div id="studio-alert" style="display: none; margin: 12px 16px 0 16px; padding: 8px 12px; border-radius: 2px; font-size: 11.5px; font-weight: bold;"></div>
+
+    <!-- ══ LOCKED GATE SCREEN (When developer key is not active) ══ -->
+    <div id="locked-gate-panel" style="display: {% if is_unlocked %}none{% else %}block{% endif %}; padding: 24px 16px;">
+      <div class="panel-box" style="max-width: 680px; margin: 0 auto; border: 2px solid #0284c7;">
+        <div class="section-title-bar" style="background: #0284c7; color: #fff; font-size: 12.5px;">
+          <span>[ 🔒 Fiesta Team Developer Gateway Locked ]</span>
+        </div>
+        <div class="panel-body">
+          <div style="font-size: 12px; line-height: 1.5; margin-bottom: 14px; color: var(--text-main);">
+            <strong>Access Restricted:</strong> This console directly mutates and deploys extensions into the official FiestaPanel Addon Store catalog (<code>addons/repo/repository.json</code>).
+            <br><br>
+            Direct repository mutation is reserved strictly for the <strong>FiestaSMP core maintainers</strong>. Administrators of other servers cannot publish directly to the official Fiesta plugin store.
+          </div>
+
+          <!-- Unlock Form for Fiesta Team -->
+          <div style="background: var(--table-alt); border: 1px solid var(--table-border); padding: 14px; margin-bottom: 16px;">
+            <div style="font-weight: bold; margin-bottom: 6px;">FiestaSMP Core Team Unlock:</div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <input type="password" id="input-dev-key" class="ctrl-input" style="flex: 1; min-width: 240px; height: 26px;" placeholder="Enter Fiesta Developer Secret Key...">
+              <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 14px;" onclick="unlockDeveloperPublisher()">[ Unlock Publisher Privileges ]</button>
+            </div>
+            <div id="unlock-feedback" style="font-size: 11px; margin-top: 6px; font-weight: bold;"></div>
+          </div>
+
+          <!-- Pull Request Notice for Third-Party Administrators -->
+          <div style="border-left: 3px solid #16a34a; background: rgba(22, 163, 74, 0.08); padding: 10px 14px; font-size: 11px; line-height: 1.45;">
+            <strong>Notice for External Server Administrators:</strong>
+            <br>
+            If you have built a community addon or extension for FiestaPanel and would like to have it verified and published to the official store, please export your addon package from your server and submit a <strong>Pull Request</strong> to our open-source GitHub repository:
+            <br>
+            <a href="https://github.com/open-fiestasmp/FiestaPanel" target="_blank" rel="noopener noreferrer" style="color: #0284c7; font-weight: bold; text-decoration: underline;">
+              https://github.com/open-fiestasmp/FiestaPanel &nearr;
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ UNLOCKED DEVELOPER PUBLISHER STUDIO ══ -->
+    <div id="unlocked-studio-panel" style="display: {% if is_unlocked %}block{% else %}none{% endif %};">
+
+      <!-- Card 1: FiestaSMP Community Discord Server Link & Broadcast Presets -->
+      <div class="panel-box">
+        <div class="section-title-bar">
+          <span>FiestaSMP Official Community Discord Link &amp; Broadcast Presets</span>
+          <span style="font-size: 10px; color: #64748b;">Syncs into official addon broadcasts &amp; repository metadata</span>
+        </div>
+        <div class="panel-body">
+          <p style="margin: 0 0 10px 0; font-size: 11px; color: var(--text-sub);">
+            Configure your official Discord server invite link. This link is automatically used in official community broadcast tasks (e.g. <code>/say ✦ Join our community Discord! ✦</code>), Discord notifier presets, and store documentation.
+          </p>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label style="font-weight: bold; font-size: 11px;">Official Discord Server URL:</label>
+            <input type="text" id="fiesta-discord-url" class="ctrl-input" style="width: 380px; height: 26px;" placeholder="https://discord.gg/fiestasmp">
+            <button type="button" class="btn-satin-green" style="height: 26px;" onclick="saveCommunityDiscordLink()">[ Save Discord Link &amp; Sync Presets ]</button>
+            <button type="button" class="btn-classic" style="height: 26px;" onclick="testDiscordLink()">[ Test Link &nearr; ]</button>
+            <span id="discord-save-status" style="font-size: 11px; font-weight: bold;"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Official Plugin Store Catalog (repository.json) -->
+      <div class="panel-box">
+        <div class="section-title-bar">
+          <span>Official Plugin Store Catalog (<code>addons/repo/repository.json</code>)</span>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn-satin-green" style="height: 22px; font-size: 10px;" onclick="openCreateAddonModal()">[ + Create New Official Addon ]</button>
+            <button type="button" class="btn-classic" style="height: 22px; font-size: 10px;" onclick="document.getElementById('bundle-upload-input').click()">[ Upload Addon Bundle (.zip) ]</button>
+            <button type="button" class="btn-classic" style="height: 22px; font-size: 10px;" onclick="loadPublisherRepository()">[ Reload Store Catalog ]</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <!-- Hidden Bundle Upload Input -->
+          <input type="file" id="bundle-upload-input" accept=".zip" style="display: none;" onchange="handleBundleUpload(this)">
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="catalog-search" class="ctrl-input" style="width: 260px;" placeholder="Filter published addons..." oninput="filterCatalogTable()">
+              <span id="catalog-count-badge" class="inline-hint" style="font-weight: bold;">Loading catalog...</span>
+            </div>
+            <div style="font-size: 10.5px; color: var(--text-sub);">
+              Repository: <strong id="repo-name-display">--</strong> • Last Updated: <code id="repo-time-display">--</code>
+            </div>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 28px;"></th>
+                <th>Addon ID</th>
+                <th>Display Name</th>
+                <th>Version</th>
+                <th>Category</th>
+                <th>Author</th>
+                <th>Featured</th>
+                <th>Source Files</th>
+                <th style="text-align: right; min-width: 250px;">Publisher Actions</th>
+              </tr>
+            </thead>
+            <tbody id="catalog-tbody">
+              <tr>
+                <td colspan="9" style="text-align: center; color: #888; padding: 20px;">Loading official addon repository catalog...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Card 3: Security & Developer Key Management -->
+      <div class="panel-box">
+        <div class="section-title-bar">
+          <span>Fiesta Developer Security &amp; Key Rotation</span>
+        </div>
+        <div class="panel-body">
+          <p style="margin: 0 0 10px 0; font-size: 11px; color: var(--text-sub);">
+            Rotate your secret Fiesta Developer Master Key stored in <code>config.json</code>. You can also set this via the <code>FIESTA_DEV_KEY</code> environment variable.
+          </p>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label style="font-weight: bold; font-size: 11px;">New Developer Key:</label>
+            <input type="password" id="input-new-dev-key" class="ctrl-input" style="width: 260px; height: 24px;" placeholder="Min 8 characters...">
+            <button type="button" class="btn-classic" style="height: 24px;" onclick="rotateDeveloperKey()">[ Rotate Developer Key ]</button>
+            <button type="button" class="btn-classic" style="height: 24px; color: #dc2626;" onclick="lockPublisherSession()">[ Lock Publisher Session Now ]</button>
+            <span id="key-rotate-status" style="font-size: 11px; font-weight: bold;"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════ MODAL: CREATE / EDIT ADDON METADATA & SCHEMA ════ -->
+  <div id="modal-edit-addon" class="modal-overlay">
+    <div class="modal-box" style="width: 720px;">
+      <div class="section-title-bar">
+        <span id="modal-addon-title">Edit Official Addon Metadata</span>
+        <button type="button" class="btn-classic" style="height: 18px; line-height: 14px;" onclick="closeModal('modal-edit-addon')">[ X ]</button>
+      </div>
+      <div style="padding: 14px 16px; overflow-y: auto; max-height: 75vh;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <tr>
+            <td style="width: 130px; font-weight: bold; padding: 5px;">Addon ID (Slug):</td>
+            <td style="padding: 5px;">
+              <input type="text" id="edit-addon-id" class="ctrl-input" style="width: 220px;" placeholder="e.g. discord_alerts">
+              <span class="inline-hint">(Unique lowercase alphanumeric slug)</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">Display Name:</td>
+            <td style="padding: 5px;">
+              <input type="text" id="edit-addon-name" class="ctrl-input" style="width: 320px;" placeholder="e.g. Discord Alerts &amp; Webhook Bridge">
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">Version:</td>
+            <td style="padding: 5px;">
+              <input type="text" id="edit-addon-version" class="ctrl-input" style="width: 120px;" value="1.0.0">
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">Author:</td>
+            <td style="padding: 5px;">
+              <input type="text" id="edit-addon-author" class="ctrl-input" style="width: 260px;" value="FiestaSMP Team">
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">Category:</td>
+            <td style="padding: 5px;">
+              <select id="edit-addon-category" class="ctrl-input" style="width: 180px;">
+                <option value="Integration">Integration</option>
+                <option value="Automation">Automation</option>
+                <option value="Tools">Tools</option>
+                <option value="Cosmetic">Cosmetic</option>
+                <option value="Security">Security</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">FontAwesome Icon:</td>
+            <td style="padding: 5px;">
+              <input type="text" id="edit-addon-icon" class="ctrl-input" style="width: 200px;" value="fas fa-cube">
+              <span class="inline-hint">(e.g. <code>fab fa-discord</code>, <code>fas fa-clock</code>, <code>fas fa-map</code>)</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">Featured on Store:</td>
+            <td style="padding: 5px;">
+              <label style="cursor: pointer;">
+                <input type="checkbox" id="edit-addon-featured"> Display in Featured Banner carousel
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px;">Short Summary:</td>
+            <td style="padding: 5px;">
+              <input type="text" id="edit-addon-summary" class="ctrl-input" style="width: 100%;" placeholder="One-line summary for store cards">
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px; vertical-align: top;">Description:</td>
+            <td style="padding: 5px;">
+              <textarea id="edit-addon-description" class="ctrl-input" style="width: 100%; height: 60px; font-family: inherit;" placeholder="Overview of features..."></textarea>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-weight: bold; padding: 5px; vertical-align: top;">Default Settings (JSON):</td>
+            <td style="padding: 5px;">
+              <textarea id="edit-addon-settings" class="ctrl-input" style="width: 100%; height: 90px; font-family: monospace; font-size: 11px;" placeholder="{}"></textarea>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div style="background: var(--table-alt); padding: 8px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--table-border);">
+        <button type="button" class="btn-satin-green" onclick="submitSaveAddon()">[ Save Addon Details ]</button>
+        <button type="button" class="btn-classic" onclick="closeModal('modal-edit-addon')">[ Cancel ]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MODAL: EDIT README MARKDOWN DOCUMENTATION ════ -->
+  <div id="modal-edit-docs" class="modal-overlay">
+    <div class="modal-box" style="width: 860px;">
+      <div class="section-title-bar">
+        <span>Edit Official Documentation (README Markdown) &bull; <span id="docs-addon-name">--</span></span>
+        <button type="button" class="btn-classic" style="height: 18px; line-height: 14px;" onclick="closeModal('modal-edit-docs')">[ X ]</button>
+      </div>
+      <div style="padding: 14px 16px;">
+        <div style="font-size: 11px; color: var(--text-sub); margin-bottom: 6px;">
+          This markdown documentation is displayed in the panel's Addon Store inspector when users click on the extension.
+        </div>
+        <textarea id="docs-markdown-input" class="ctrl-input" style="width: 100%; height: 380px; font-family: monospace; font-size: 11.5px; line-height: 1.4; resize: vertical;" placeholder="# Addon Title&#10;&#10;## Features&#10;- Feature 1&#10;&#10;## Setup Guide&#10;..."></textarea>
+      </div>
+      <div style="background: var(--table-alt); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--table-border);">
+        <span style="font-size: 10.5px; color: #64748b;">Supports GitHub-flavored markdown and alerts.</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-satin-green" onclick="submitSaveDocs()">[ Save Documentation ]</button>
+          <button type="button" class="btn-classic" onclick="closeModal('modal-edit-docs')">[ Cancel ]</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ MODAL: EDIT CODE FILES (main.py & tab.html) ════ -->
+  <div id="modal-edit-code" class="modal-overlay">
+    <div class="modal-box" style="width: 900px;">
+      <div class="section-title-bar">
+        <span>Edit Official Source Code &bull; <span id="code-addon-name">--</span></span>
+        <button type="button" class="btn-classic" style="height: 18px; line-height: 14px;" onclick="closeModal('modal-edit-code')">[ X ]</button>
+      </div>
+      <div style="padding: 10px 16px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+          <span style="font-weight: bold; font-size: 11px;">Active File:</span>
+          <button type="button" id="tab-btn-main" class="btn-satin-green" style="height: 22px; font-size: 10.5px;" onclick="switchCodeTab('main.py')">main.py (Backend Hook)</button>
+          <button type="button" id="tab-btn-tab" class="btn-classic" style="height: 22px; font-size: 10.5px;" onclick="switchCodeTab('tab.html')">tab.html (UI Template)</button>
+        </div>
+        <textarea id="code-editor-input" class="ctrl-input" style="width: 100%; height: 420px; font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.4; resize: vertical;" spellcheck="false"></textarea>
+      </div>
+      <div style="background: var(--table-alt); padding: 8px 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--table-border);">
+        <button type="button" class="btn-satin-green" onclick="submitSaveCode()">[ Save Source Code ]</button>
+        <button type="button" class="btn-classic" onclick="closeModal('modal-edit-code')">[ Close ]</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CSRF_TOKEN = {{ csrf_token|tojson }};
+    let currentRepository = null;
+    let editingAddon = null;
+    let activeCodeFile = 'main.py';
+    let codeFilesBuffer = {};
+
+    function showBanner(msg, isError = false) {
+      const banner = document.getElementById('studio-alert');
+      if (!banner) return;
+      banner.textContent = msg;
+      banner.style.display = 'block';
+      banner.style.background = isError ? 'rgba(239, 68, 68, 0.15)' : 'rgba(22, 163, 74, 0.15)';
+      banner.style.border = isError ? '1px solid #ef4444' : '1px solid #16a34a';
+      banner.style.color = isError ? '#dc2626' : '#15803d';
+      setTimeout(() => { banner.style.display = 'none'; }, 5000);
+    }
+
+    // ── Unlock / Lock Flow ─────────────────────────────────────────
+    async function unlockDeveloperPublisher() {
+      const inp = document.getElementById('input-dev-key');
+      const feedback = document.getElementById('unlock-feedback');
+      const key = inp ? inp.value.trim() : '';
+      if (!key) {
+        if (feedback) {
+          feedback.style.color = '#dc2626';
+          feedback.textContent = 'Please enter your Fiesta Developer Secret Key.';
+        }
+        return;
+      }
+
+      if (feedback) {
+        feedback.style.color = '#0284c7';
+        feedback.textContent = 'Verifying key...';
+      }
+
+      try {
+        const res = await fetch('/api/admin/addons-publisher/unlock', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
+          body: JSON.stringify({ dev_key: key })
+        });
+        const d = await res.json();
+        if (d.success) {
+          document.getElementById('locked-gate-panel').style.display = 'none';
+          document.getElementById('unlocked-studio-panel').style.display = 'block';
+          const badge = document.getElementById('dev-status-badge');
+          if (badge) {
+            badge.textContent = '● Publisher Unlocked';
+            badge.style.background = '#16a34a';
+          }
+          const toggleBtn = document.getElementById('btn-toggle-lock');
+          if (toggleBtn) toggleBtn.textContent = '[ Lock Session ]';
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          if (feedback) {
+            feedback.style.color = '#dc2626';
+            feedback.textContent = d.error || 'Authentication failed.';
+          }
+        }
+      } catch (e) {
+        if (feedback) {
+          feedback.style.color = '#dc2626';
+          feedback.textContent = 'Network error verifying key.';
+        }
+      }
+    }
+
+    async function toggleLockState() {
+      const isLocked = document.getElementById('locked-gate-panel').style.display !== 'none';
+      if (isLocked) {
+        unlockDeveloperPublisher();
+      } else {
+        lockPublisherSession();
+      }
+    }
+
+    async function lockPublisherSession() {
+      try {
+        await fetch('/api/admin/addons-publisher/lock', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN}
+        });
+        document.getElementById('unlocked-studio-panel').style.display = 'none';
+        document.getElementById('locked-gate-panel').style.display = 'block';
+        const badge = document.getElementById('dev-status-badge');
+        if (badge) {
+          badge.textContent = '🔒 Locked';
+          badge.style.background = '#dc2626';
+        }
+        const toggleBtn = document.getElementById('btn-toggle-lock');
+        if (toggleBtn) toggleBtn.textContent = '[ Unlock ]';
+        showBanner('Developer publisher session locked.');
+      } catch (e) {}
+    }
+
+    async function rotateDeveloperKey() {
+      const inp = document.getElementById('input-new-dev-key');
+      const statusEl = document.getElementById('key-rotate-status');
+      const key = inp ? inp.value.trim() : '';
+      if (key.length < 8) {
+        if (statusEl) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = 'Key must be at least 8 characters long.';
+        }
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/addons-publisher/key', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
+          body: JSON.stringify({ new_key: key })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (statusEl) {
+            statusEl.style.color = '#16a34a';
+            statusEl.textContent = 'Key rotated successfully!';
+          }
+          if (inp) inp.value = '';
+          showBanner(d.message);
+        } else {
+          if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.textContent = d.error || 'Failed to rotate key.';
+          }
+        }
+      } catch (e) {
+        if (statusEl) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = 'Network error rotating key.';
+        }
+      }
+    }
+
+    // ── Repository Catalog & Discord Sync ──────────────────────────
+    async function loadPublisherRepository() {
+      try {
+        const res = await fetch('/api/admin/addons-publisher/repo');
+        if (res.status === 403 || res.status === 401) {
+          document.getElementById('unlocked-studio-panel').style.display = 'none';
+          document.getElementById('locked-gate-panel').style.display = 'block';
+          return;
+        }
+        const d = await res.json();
+        if (!d.success) return;
+        currentRepository = d.repository;
+
+        // Render header details
+        document.getElementById('repo-name-display').textContent = d.repository.repository_name || 'Official Repository';
+        document.getElementById('repo-time-display').textContent = d.repository.updated_at || 'Just now';
+        const discordInp = document.getElementById('fiesta-discord-url');
+        if (discordInp && d.repository.community_discord) {
+          discordInp.value = d.repository.community_discord;
+        }
+
+        renderCatalogTable(d.repository.addons || []);
+      } catch (e) {
+        console.error('Failed to load publisher repository:', e);
+      }
+    }
+
+    function renderCatalogTable(addons) {
+      const tbody = document.getElementById('catalog-tbody');
+      const countBadge = document.getElementById('catalog-count-badge');
+      if (!tbody) return;
+
+      if (countBadge) countBadge.textContent = `${addons.length} official addons in store`;
+
+      if (addons.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888; padding: 20px;">No addons in repository catalog.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = addons.map(a => {
+        const fileNames = Object.keys(a.files || {});
+        const filesCount = fileNames.length;
+        const isFeatured = !!a.featured;
+        return `
+          <tr>
+            <td style="text-align: center;"><i class="${escapeHtml(a.icon || 'fas fa-cube')}" style="color: #0284c7;"></i></td>
+            <td><code>${escapeHtml(a.id)}</code></td>
+            <td><strong>${escapeHtml(a.name)}</strong></td>
+            <td><span class="inline-badge" style="background: #e2e8f0; color: #334155;">v${escapeHtml(a.version || '1.0.0')}</span></td>
+            <td><span class="inline-badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">${escapeHtml(a.category || 'Tools')}</span></td>
+            <td>${escapeHtml(a.author || 'FiestaSMP Team')}</td>
+            <td>${isFeatured ? '<span class="inline-badge" style="background:#16a34a;color:#fff;">Featured</span>' : '<span style="color:#999;">--</span>'}</td>
+            <td><span class="inline-hint">${filesCount} files</span></td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button type="button" class="btn-classic" style="height: 20px; font-size: 10px; margin-right: 2px;" onclick="openEditAddonModal('${escapeHtml(a.id)}')">[ Details ]</button>
+              <button type="button" class="btn-classic" style="height: 20px; font-size: 10px; margin-right: 2px;" onclick="openEditDocsModal('${escapeHtml(a.id)}')">[ Docs ]</button>
+              <button type="button" class="btn-classic" style="height: 20px; font-size: 10px; margin-right: 2px;" onclick="openEditCodeModal('${escapeHtml(a.id)}')">[ Code ]</button>
+              <a href="/api/admin/addons-publisher/export/${encodeURIComponent(a.id)}" class="btn-classic" style="height: 20px; font-size: 10px; margin-right: 2px;" title="Export ready-to-merge ZIP package">[ Export ]</a>
+              <button type="button" class="btn-danger" style="height: 20px; font-size: 10px;" onclick="deleteAddon('${escapeHtml(a.id)}')">[ Delete ]</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterCatalogTable() {
+      const q = document.getElementById('catalog-search')?.value.toLowerCase().trim() || '';
+      if (!currentRepository) return;
+      const filtered = (currentRepository.addons || []).filter(a => {
+        return (a.name || '').toLowerCase().includes(q) ||
+               (a.id || '').toLowerCase().includes(q) ||
+               (a.category || '').toLowerCase().includes(q) ||
+               (a.description || '').toLowerCase().includes(q);
+      });
+      renderCatalogTable(filtered);
+    }
+
+    // ── Discord Server Link ─────────────────────────────────────────
+    async function saveCommunityDiscordLink() {
+      const inp = document.getElementById('fiesta-discord-url');
+      const statusEl = document.getElementById('discord-save-status');
+      const url = inp ? inp.value.trim() : '';
+
+      if (!url) {
+        if (statusEl) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = 'Please enter a valid URL.';
+        }
+        return;
+      }
+
+      if (statusEl) {
+        statusEl.style.color = '#0284c7';
+        statusEl.textContent = 'Saving...';
+      }
+
+      try {
+        const res = await fetch('/api/admin/addons-publisher/discord-link', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
+          body: JSON.stringify({ discord_url: url })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (statusEl) {
+            statusEl.style.color = '#16a34a';
+            statusEl.textContent = '✓ Saved & synced!';
+          }
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          if (statusEl) {
+            statusEl.style.color = '#dc2626';
+            statusEl.textContent = d.error || 'Failed to save.';
+          }
+        }
+      } catch (e) {
+        if (statusEl) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = 'Network error saving link.';
+        }
+      }
+    }
+
+    function testDiscordLink() {
+      const inp = document.getElementById('fiesta-discord-url');
+      const url = inp ? inp.value.trim() : '';
+      if (url) window.open(url, '_blank');
+    }
+
+    // ── Edit Addon Details ──────────────────────────────────────────
+    function openCreateAddonModal() {
+      editingAddon = {
+        id: '',
+        name: '',
+        version: '1.0.0',
+        author: 'FiestaSMP Team',
+        category: 'Tools',
+        icon: 'fas fa-cube',
+        featured: false,
+        summary: '',
+        description: '',
+        default_settings: {},
+        readme_markdown: '',
+        files: {
+          'main.py': '# Official Addon for FiestaPanel\ndef on_event(ctx, event_type, details=None):\n    pass\n',
+          'tab.html': '<div class="panel-box">\n  <div class="section-title-bar">Addon UI</div>\n  <p>Addon content goes here.</p>\n</div>\n'
+        }
+      };
+
+      document.getElementById('modal-addon-title').textContent = 'Create New Official Addon';
+      document.getElementById('edit-addon-id').disabled = false;
+      document.getElementById('edit-addon-id').value = '';
+      document.getElementById('edit-addon-name').value = '';
+      document.getElementById('edit-addon-version').value = '1.0.0';
+      document.getElementById('edit-addon-author').value = 'FiestaSMP Team';
+      document.getElementById('edit-addon-category').value = 'Tools';
+      document.getElementById('edit-addon-icon').value = 'fas fa-cube';
+      document.getElementById('edit-addon-featured').checked = false;
+      document.getElementById('edit-addon-summary').value = '';
+      document.getElementById('edit-addon-description').value = '';
+      document.getElementById('edit-addon-settings').value = '{}';
+
+      openModal('modal-edit-addon');
+    }
+
+    function openEditAddonModal(addonId) {
+      if (!currentRepository) return;
+      const a = (currentRepository.addons || []).find(x => x.id === addonId);
+      if (!a) return;
+      editingAddon = JSON.parse(JSON.stringify(a));
+
+      document.getElementById('modal-addon-title').textContent = `Edit Addon: ${a.name} (${a.id})`;
+      document.getElementById('edit-addon-id').disabled = true;
+      document.getElementById('edit-addon-id').value = a.id || '';
+      document.getElementById('edit-addon-name').value = a.name || '';
+      document.getElementById('edit-addon-version').value = a.version || '1.0.0';
+      document.getElementById('edit-addon-author').value = a.author || 'FiestaSMP Team';
+      document.getElementById('edit-addon-category').value = a.category || 'Tools';
+      document.getElementById('edit-addon-icon').value = a.icon || 'fas fa-cube';
+      document.getElementById('edit-addon-featured').checked = !!a.featured;
+      document.getElementById('edit-addon-summary').value = a.summary || '';
+      document.getElementById('edit-addon-description').value = a.description || '';
+      document.getElementById('edit-addon-settings').value = JSON.stringify(a.default_settings || {}, null, 2);
+
+      openModal('modal-edit-addon');
+    }
+
+    async function submitSaveAddon() {
+      if (!editingAddon) return;
+      const id = document.getElementById('edit-addon-id').value.trim();
+      const name = document.getElementById('edit-addon-name').value.trim();
+      const version = document.getElementById('edit-addon-version').value.trim();
+      const author = document.getElementById('edit-addon-author').value.trim();
+      const category = document.getElementById('edit-addon-category').value;
+      const icon = document.getElementById('edit-addon-icon').value.trim();
+      const featured = document.getElementById('edit-addon-featured').checked;
+      const summary = document.getElementById('edit-addon-summary').value.trim();
+      const description = document.getElementById('edit-addon-description').value.trim();
+      const rawSettings = document.getElementById('edit-addon-settings').value.trim();
+
+      if (!id || !name) {
+        alert('Please specify both an Addon ID and Display Name.');
+        return;
+      }
+
+      let parsedSettings = {};
+      try {
+        parsedSettings = rawSettings ? JSON.parse(rawSettings) : {};
+      } catch (e) {
+        alert('Invalid JSON format in Default Settings field: ' + e.message);
+        return;
+      }
+
+      editingAddon.id = id;
+      editingAddon.name = name;
+      editingAddon.version = version;
+      editingAddon.author = author;
+      editingAddon.category = category;
+      editingAddon.icon = icon;
+      editingAddon.featured = featured;
+      editingAddon.summary = summary;
+      editingAddon.description = description;
+      editingAddon.default_settings = parsedSettings;
+
+      try {
+        const res = await fetch('/api/admin/addons-publisher/save-addon', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
+          body: JSON.stringify(editingAddon)
+        });
+        const d = await res.json();
+        if (d.success) {
+          closeModal('modal-edit-addon');
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          alert('Failed to save addon: ' + (d.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Network error saving addon: ' + e.message);
+      }
+    }
+
+    // ── Edit README Docs ────────────────────────────────────────────
+    function openEditDocsModal(addonId) {
+      if (!currentRepository) return;
+      const a = (currentRepository.addons || []).find(x => x.id === addonId);
+      if (!a) return;
+      editingAddon = JSON.parse(JSON.stringify(a));
+
+      document.getElementById('docs-addon-name').textContent = a.name;
+      document.getElementById('docs-markdown-input').value = a.readme_markdown || `# ${a.name}\n\n${a.description || ''}`;
+      openModal('modal-edit-docs');
+    }
+
+    async function submitSaveDocs() {
+      if (!editingAddon) return;
+      const md = document.getElementById('docs-markdown-input').value;
+      editingAddon.readme_markdown = md;
+
+      try {
+        const res = await fetch('/api/admin/addons-publisher/save-addon', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
+          body: JSON.stringify(editingAddon)
+        });
+        const d = await res.json();
+        if (d.success) {
+          closeModal('modal-edit-docs');
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          alert('Failed to save docs: ' + (d.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Network error saving docs: ' + e.message);
+      }
+    }
+
+    // ── Edit Code Files ─────────────────────────────────────────────
+    function openEditCodeModal(addonId) {
+      if (!currentRepository) return;
+      const a = (currentRepository.addons || []).find(x => x.id === addonId);
+      if (!a) return;
+      editingAddon = JSON.parse(JSON.stringify(a));
+      codeFilesBuffer = Object.assign({}, a.files || {});
+
+      document.getElementById('code-addon-name').textContent = a.name;
+      switchCodeTab('main.py');
+      openModal('modal-edit-code');
+    }
+
+    function switchCodeTab(filename) {
+      // Save current content to buffer before switching
+      const editor = document.getElementById('code-editor-input');
+      if (editor && activeCodeFile) {
+        codeFilesBuffer[activeCodeFile] = editor.value;
+      }
+
+      activeCodeFile = filename;
+      const btnMain = document.getElementById('tab-btn-main');
+      const btnTab = document.getElementById('tab-btn-tab');
+
+      if (filename === 'main.py') {
+        btnMain.className = 'btn-satin-green';
+        btnTab.className = 'btn-classic';
+      } else {
+        btnMain.className = 'btn-classic';
+        btnTab.className = 'btn-satin-green';
+      }
+
+      if (editor) {
+        editor.value = codeFilesBuffer[filename] || (filename === 'main.py' ? '# main.py\n' : '<!-- tab.html -->\n');
+      }
+    }
+
+    async function submitSaveCode() {
+      if (!editingAddon) return;
+      const editor = document.getElementById('code-editor-input');
+      if (editor && activeCodeFile) {
+        codeFilesBuffer[activeCodeFile] = editor.value;
+      }
+      editingAddon.files = codeFilesBuffer;
+
+      try {
+        const res = await fetch('/api/admin/addons-publisher/save-addon', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN},
+          body: JSON.stringify(editingAddon)
+        });
+        const d = await res.json();
+        if (d.success) {
+          closeModal('modal-edit-code');
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          alert('Failed to save code: ' + (d.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Network error saving code: ' + e.message);
+      }
+    }
+
+    // ── Delete Addon ────────────────────────────────────────────────
+    async function deleteAddon(addonId) {
+      if (!confirm(`Remove official addon '${addonId}' from the store repository?\n\nThis will remove it from the online store catalog.`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/addons-publisher/delete-addon/${encodeURIComponent(addonId)}`, {
+          method: 'POST',
+          headers: {'X-CSRF-Token': CSRF_TOKEN}
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          alert(d.error || 'Failed to delete addon.');
+        }
+      } catch (e) {
+        alert('Network error deleting addon.');
+      }
+    }
+
+    // ── Bundle Upload ───────────────────────────────────────────────
+    async function handleBundleUpload(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append('bundle_file', file);
+
+      showBanner('Uploading and publishing addon bundle...');
+      try {
+        const res = await fetch('/api/admin/addons-publisher/upload-bundle', {
+          method: 'POST',
+          headers: {'X-CSRF-Token': CSRF_TOKEN},
+          body: formData
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBanner(d.message);
+          loadPublisherRepository();
+        } else {
+          alert('Upload failed: ' + (d.error || 'Unknown error'));
+        }
+      } catch (e) {
+        alert('Network error uploading bundle: ' + e.message);
+      }
+      input.value = '';
+    }
+
+    // ── Modal Helpers ───────────────────────────────────────────────
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'flex';
+    }
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Init
+    {% if is_unlocked %}
+    loadPublisherRepository();
+    {% endif %}
+  </script>
+</body>
+</html>

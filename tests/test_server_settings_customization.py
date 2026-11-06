@@ -130,6 +130,7 @@ class ServerSettingsCustomizationTests(unittest.TestCase):
         self.assertIn('service_name', data['settings'])
         self.assertIn('screen_session', data['settings'])
         self.assertIn('backup_dir', data['settings'])
+        self.assertIn('admin_email', data['settings'])
 
         # Update environment settings
         test_sdir = os.path.join(self.temp_dir.name, "custom_mc")
@@ -138,7 +139,8 @@ class ServerSettingsCustomizationTests(unittest.TestCase):
             "server_dir": test_sdir,
             "service_name": "custom-mc-svc",
             "screen_session": "custom-mc-screen",
-            "backup_dir": test_bdir
+            "backup_dir": test_bdir,
+            "admin_email": "ops@custom-network.org"
         }
         res_post = self._post('/api/system/settings', payload)
         self.assertEqual(res_post.status_code, 200)
@@ -146,6 +148,10 @@ class ServerSettingsCustomizationTests(unittest.TestCase):
         self.assertTrue(post_data.get('success'))
         self.assertEqual(post_data['settings']['service_name'], "custom-mc-svc")
         self.assertEqual(post_data['settings']['screen_session'], "custom-mc-screen")
+        self.assertEqual(post_data['settings']['admin_email'], "ops@custom-network.org")
+        self.assertEqual(portal_app.SERVER_CONFIG.get('admin_email'), "ops@custom-network.org")
+        self.assertEqual(portal_app.get_contact_email(), "ops@custom-network.org")
+        self.assertIn("ops@custom-network.org", portal_app.get_panel_user_agent())
 
         # Verify send_mc_command uses the updated screen session
         with patch("subprocess.run") as mock_sub:

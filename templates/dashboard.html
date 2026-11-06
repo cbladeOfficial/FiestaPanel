@@ -2064,7 +2064,8 @@
       margin: 0 !important;
       padding: 12px 14px !important;
       box-sizing: border-box !important;
-      height: 199px !important;
+      min-height: 199px !important;
+      height: auto !important;
       display: block !important;
     }
 
@@ -2078,7 +2079,8 @@
 
     table.status-overview-table {
       width: 100% !important;
-      height: 144px !important;
+      min-height: 144px !important;
+      height: auto !important;
       table-layout: fixed !important;
       border-collapse: collapse !important;
       margin-bottom: 0 !important;
@@ -2087,7 +2089,7 @@
     }
 
     table.status-overview-table td {
-      padding: 2px 6px !important;
+      padding: 3px 6px !important;
       vertical-align: middle !important;
       border-bottom: 1px solid var(--form-td-border) !important;
       box-sizing: border-box !important;
@@ -2107,8 +2109,8 @@
     }
 
     table.status-overview-table tr.status-row-1, table.status-overview-table tr.status-row-1 td {
-      height: 48px !important;
-      max-height: 48px !important;
+      min-height: 48px !important;
+      height: auto !important;
     }
 
     table.status-overview-table tr.status-row-2, table.status-overview-table tr.status-row-2 td {
@@ -3621,6 +3623,7 @@
             <div class="nav-sub-item" onclick="selectNavView('panel-addons-installed', this)" id="nav-sub-paddons-installed">- Installed Addons</div>
             <div class="nav-sub-item" onclick="selectNavView('panel-addons-store', this)" id="nav-sub-paddons-store">- Plugin Store</div>
             <div class="nav-sub-item" onclick="selectNavView('panel-addons-create', this)" id="nav-sub-paddons-create">- Developer Guide</div>
+            <a href="/admin/addons-publisher" target="_blank" class="nav-sub-item" style="text-decoration: none; color: inherit; display: block;" title="Official FiestaSMP Team Addon Publisher Studio (Dev Key Required)">- Fiesta Studio &#8599;</a>
             <div id="dynamic-addon-nav-items"></div>
           </div>
         </div>
@@ -3757,26 +3760,33 @@
                 <tbody>
                 <tr class="status-row-1">
                   <td class="label-col">Server Domain:</td>
-                  <td class="val-col">
-                    <div style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
-                      <span id="st-server-domain-display" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                        <strong id="st-server-domain" style="color: var(--help-sub-text, #006622); font-size: 13px;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
-                        {% if role in ['owner', 'administrator'] or 'all' in permissions %}
-                          <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; font-weight: bold; color: #0284c7;" onclick="openEditServerDomain()" title="Edit Domain (Admins Only)">[ Edit Domain ]</button>
-                        {% endif %}
-                      </span>
+                  <td class="val-col" style="padding: 4px 6px !important;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%;">
+                      <!-- Display Mode -->
+                      <div id="st-server-domain-display" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+                        <span style="display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex: 1 1 auto;">
+                          <strong id="st-server-domain" style="color: var(--help-sub-text, #006622); font-size: 12px; word-break: break-all; line-height: 1.2;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
+                          {% if role in ['owner', 'administrator'] or 'all' in permissions %}
+                            <button type="button" class="btn-classic" style="height: 18px; line-height: 10px; font-size: 9.5px; padding: 0 5px; font-weight: bold; color: #0284c7; flex-shrink: 0;" onclick="openEditServerDomain()" title="Edit Domain (Admins Only)">[ Edit ]</button>
+                          {% endif %}
+                        </span>
+                      </div>
+
+                      <!-- Editor Mode -->
                       {% if role in ['owner', 'administrator'] or 'all' in permissions %}
-                      <span id="st-server-domain-editor" style="display: none; align-items: center; gap: 5px; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
-                        <input type="text" id="input-server-domain" class="ctrl-input" style="width: 155px; font-size: 11px; height: 22px; padding: 0 6px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="e.g. mc.yourdomain.com">
-                        <button type="button" class="btn-satin-green" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="saveServerDomain()">[ Save ]</button>
-                        <button type="button" class="btn-classic" style="height: 22px; line-height: 22px; font-size: 10.5px; padding: 0 8px; font-weight: bold; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
-                      </span>
+                      <div id="st-server-domain-editor" style="display: none; align-items: center; gap: 4px; flex-wrap: wrap; width: 100%;">
+                        <input type="text" id="input-server-domain" class="ctrl-input" style="flex: 1 1 120px; min-width: 100px; max-width: 180px; font-size: 11px; height: 20px; padding: 0 5px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="mc.yourdomain.com">
+                        <button type="button" class="btn-satin-green" style="height: 20px; line-height: 18px; font-size: 10px; padding: 0 6px; font-weight: bold; flex-shrink: 0;" onclick="saveServerDomain()">[ Save ]</button>
+                        <button type="button" class="btn-classic" style="height: 20px; line-height: 18px; font-size: 10px; padding: 0 6px; font-weight: bold; flex-shrink: 0;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
+                      </div>
                       {% endif %}
-                      <div style="margin-top: 3px; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerDomain(this)">[ Copy Domain ]</button>
-                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px;" onclick="copyServerIpPort(this)">[ Copy IP:Port ]</button>
-                        <button type="button" class="btn-classic" style="height: 20px; line-height: 12px; font-size: 10px; padding: 0 6px; color: #0284c7; font-weight: bold;" onclick="openDynIpModal()" title="Direct dynamic IP and port fallback for players experiencing DNS SRV resolution issues">[ DynIP Fallback ]</button>
-                        <span id="domain-update-msg" style="margin-left: 6px; font-size: 10.5px; font-weight: bold;"></span>
+
+                      <!-- Action Buttons Bar -->
+                      <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-top: 1px;">
+                        <button type="button" class="btn-classic" style="height: 19px; line-height: 11px; font-size: 9.5px; padding: 0 5px;" onclick="copyServerDomain(this)" title="Copy Domain Name">[ Copy Domain ]</button>
+                        <button type="button" class="btn-classic" style="height: 19px; line-height: 11px; font-size: 9.5px; padding: 0 5px;" onclick="copyServerIpPort(this)" title="Copy IP:Port">[ Copy IP:Port ]</button>
+                        <button type="button" class="btn-classic" style="height: 19px; line-height: 11px; font-size: 9.5px; padding: 0 5px; color: #0284c7; font-weight: bold;" onclick="openDynIpModal()" title="Direct dynamic numeric IP:Port fallback for players experiencing DNS SRV resolution issues">[ DynIP ]</button>
+                        <span id="domain-update-msg" style="font-size: 10px; font-weight: bold; display: inline-block;"></span>
                       </div>
                     </div>
                   </td>
@@ -5937,6 +5947,13 @@
               </td>
             </tr>
             <tr>
+              <td class="label-col">API / User-Agent Email:</td>
+              <td class="val-col">
+                <input type="email" id="sys-cfg-admin-email" class="tp-input-text" style="width: 280px;" placeholder="admin@yourserver.net">
+                <span class="inline-hint">Contact email sent in outbound User-Agent headers (Modrinth / Asset sync)</span>
+              </td>
+            </tr>
+            <tr>
               <td class="label-col">Save Configuration:</td>
               <td class="val-col">
                 <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 18px; font-weight: bold;" onclick="saveServerEnvSettings()">[ Save Server Settings ]</button>
@@ -6298,9 +6315,10 @@
         <section id="view-panel-addons-store" class="view-panel" style="display:none;">
           <div class="section-title-bar">
             <span>FiestaPanel Plugin Store &amp; Extension Catalog</span>
-            <div>
+            <div style="display: flex; gap: 6px; align-items: center;">
               <button class="btn-classic" onclick="loadPanelAddonStore()">[ Refresh Catalog ]</button>
               <button class="btn-classic" style="font-weight: bold;" onclick="selectNavView('panel-addons-create')">[ Developer Guide ]</button>
+              <a href="/admin/addons-publisher" target="_blank" class="btn-classic" style="text-decoration: none; font-weight: bold; color: #1f3a52; background: #e6f0fa; border-color: #3f729b;" title="Official Fiesta Team Addon Publisher Studio (Dev Key Required)">[ Fiesta Studio &#8599; ]</a>
             </div>
           </div>
           <p class="inline-hint" style="margin-bottom: 14px;">
@@ -6329,9 +6347,10 @@
               <strong style="color: var(--help-sub-text, #006622); font-size: 13px;">Want to build your own FiestaPanel Addon?</strong>
               <div class="inline-hint">Create custom tabs, dashboard widgets, console bots, and live themes in Python and HTML.</div>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <a href="/api/panel-addons/template/download" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold;">[ Download Starter Boilerplate (.zip) ]</a>
               <button class="btn-classic" style="padding: 4px 12px;" onclick="selectNavView('panel-addons-create')">[ View Developer Guide ]</button>
+              <a href="/admin/addons-publisher" target="_blank" class="btn-classic" style="text-decoration: none; padding: 4px 12px; font-weight: bold; background: #e6f0fa; color: #1f3a52; border-color: #3f729b;">[ Fiesta Studio &#8599; ]</a>
             </div>
           </div>
         </section>
@@ -7556,9 +7575,7 @@ def on_action(ctx, action_name, payload):
       const input = document.getElementById('input-server-domain');
       if (disp && edit) {
         disp.style.display = 'none';
-        edit.style.display = 'inline-flex';
-        edit.style.flexWrap = 'nowrap';
-        edit.style.whiteSpace = 'nowrap';
+        edit.style.display = 'flex';
         if (input) input.focus();
       }
     }
@@ -7569,7 +7586,7 @@ def on_action(ctx, action_name, payload):
       const msg = document.getElementById('domain-update-msg');
       if (disp && edit) {
         edit.style.display = 'none';
-        disp.style.display = 'inline-flex';
+        disp.style.display = 'flex';
       }
       if (msg) msg.textContent = '';
     }
@@ -16250,11 +16267,13 @@ def on_action(ctx, action_name, payload):
         const inSvc = document.getElementById('sys-cfg-service-name');
         const inScr = document.getElementById('sys-cfg-screen-session');
         const inBdir = document.getElementById('sys-cfg-backup-dir');
+        const inEmail = document.getElementById('sys-cfg-admin-email');
 
         if (inSdir) inSdir.value = s.server_dir || '';
         if (inSvc) inSvc.value = s.service_name || '';
         if (inScr) inScr.value = s.screen_session || '';
         if (inBdir) inBdir.value = s.backup_dir || '';
+        if (inEmail) inEmail.value = s.admin_email || '';
       } catch (e) {
         console.error('Failed to load system environment settings:', e);
       }
@@ -16266,6 +16285,7 @@ def on_action(ctx, action_name, payload):
       const service_name = document.getElementById('sys-cfg-service-name')?.value.trim();
       const screen_session = document.getElementById('sys-cfg-screen-session')?.value.trim();
       const backup_dir = document.getElementById('sys-cfg-backup-dir')?.value.trim();
+      const admin_email = document.getElementById('sys-cfg-admin-email')?.value.trim();
 
       if (msgEl) {
         msgEl.textContent = 'Saving...';
@@ -16280,7 +16300,8 @@ def on_action(ctx, action_name, payload):
             server_dir,
             service_name,
             screen_session,
-            backup_dir
+            backup_dir,
+            admin_email
           })
         });
         const d = await res.json();

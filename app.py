@@ -134,6 +134,9 @@ def load_server_config():
         jpath = os.environ.get(f"{prefix}JAVA_PATH") or os.environ.get(f"{prefix}JAVA_BIN")
         if jpath:
             cfg["java_path"] = jpath
+        em = os.environ.get(f"{prefix}ADMIN_EMAIL") or os.environ.get(f"{prefix}CONTACT_EMAIL")
+        if em:
+            cfg["admin_email"] = em
     return cfg
 
 SERVER_CONFIG = load_server_config()
@@ -142,6 +145,16 @@ ADMIN_PASS = SERVER_CONFIG["admin_pass"]
 SERVER_DIR = SERVER_CONFIG["server_dir"]
 SERVICE_NAME = SERVER_CONFIG["service_name"]
 SCREEN_SESSION = SERVER_CONFIG.get("screen_session", "fiesta")
+
+def get_contact_email():
+    """Retrieve user-agent contact email from SERVER_CONFIG or default."""
+    return (SERVER_CONFIG.get("admin_email") or "admin@server.local").strip()
+
+def get_panel_user_agent(include_email=True):
+    """Generate compliant User-Agent string for external API requests."""
+    if include_email:
+        return f"FiestaPanel/2.5 ({get_contact_email()})"
+    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.5"
 
 def get_backup_dir():
     bdir = SERVER_CONFIG.get("backup_dir")
@@ -1177,6 +1190,8 @@ def enforce_security():
                 return jsonify(error="Owner permission required"), 403
 
 addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc, SERVER_DIR)
+OFFICIAL_REPO_FILE = os.path.join(BASE_DIR, "addons", "repo", "repository.json")
+addon_manager.repo_file = OFFICIAL_REPO_FILE
 try:
     addon_manager.initialize()
 except Exception as e:
@@ -2542,7 +2557,8 @@ def api_system_settings():
                 "bedrock_server_name": b.get("bedrock_server_name", "FiestaSMP"),
                 "spawn_coordinates": get_spawn_coordinates(),
                 "java_path": SERVER_CONFIG.get("java_path", ""),
-                "active_java": detect_java_version_str()
+                "active_java": detect_java_version_str(),
+                "admin_email": get_contact_email()
             }
         })
 
@@ -2604,6 +2620,15 @@ def api_system_settings():
                 existing["java_path"] = resolved
                 SERVER_CONFIG["java_path"] = resolved
 
+    if "admin_email" in data:
+        em_req = str(data.get("admin_email") or "").strip()
+        if em_req:
+            existing["admin_email"] = em_req
+            SERVER_CONFIG["admin_email"] = em_req
+        else:
+            existing.pop("admin_email", None)
+            SERVER_CONFIG.pop("admin_email", None)
+
     try:
         with open(target_cfg, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
@@ -2619,7 +2644,8 @@ def api_system_settings():
             "screen_session": SCREEN_SESSION,
             "backup_dir": get_backup_dir(),
             "java_path": SERVER_CONFIG.get("java_path", ""),
-            "active_java": detect_java_version_str()
+            "active_java": detect_java_version_str(),
+            "admin_email": get_contact_email()
         }
     })
 
@@ -3977,7 +4003,7 @@ def api_plugin_install_online():
     try:
         loaders = '["paper","spigot","purpur","bukkit"]'
         url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
+        req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
 
         versions = []
         try:
@@ -3988,7 +4014,7 @@ def api_plugin_install_online():
 
         if not versions:
             url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
+            req_all = urllib.request.Request(url_all, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
             with urllib.request.urlopen(req_all, timeout=8) as resp:
                 versions = json.loads(resp.read().decode())
 
@@ -4021,7 +4047,7 @@ def api_plugin_install_online():
         os.makedirs(plugins_dir, exist_ok=True)
         dest_path = os.path.join(plugins_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
+        dl_req = urllib.request.Request(download_url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
         with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
             shutil.copyfileobj(resp, out_f)
 
@@ -4289,7 +4315,7 @@ def api_mod_install_online():
         if target_loader and target_loader not in ["all", "any"]:
             loaders_param = json.dumps([target_loader])
             url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders_param})
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
             try:
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     versions = json.loads(resp.read().decode())
@@ -4299,7 +4325,7 @@ def api_mod_install_online():
         if not versions:
             loaders = '["neoforge","fabric","quilt","forge"]'
             url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
             try:
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     versions = json.loads(resp.read().decode())
@@ -4308,7 +4334,7 @@ def api_mod_install_online():
 
         if not versions:
             url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req_all = urllib.request.Request(url_all, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
             with urllib.request.urlopen(req_all, timeout=8) as resp:
                 versions = json.loads(resp.read().decode())
 
@@ -4341,7 +4367,7 @@ def api_mod_install_online():
         os.makedirs(mods_dir, exist_ok=True)
         dest_path = os.path.join(mods_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        dl_req = urllib.request.Request(download_url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
         with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
             shutil.copyfileobj(resp, out_f)
 
@@ -4529,6 +4555,401 @@ def api_panel_addons_template_download():
         mimetype="application/zip",
         as_attachment=True,
         download_name="fiestapanel-addon-starter.zip"
+    )
+
+# ── Fiesta Team Official Addon Publisher Studio & Repository API ────────────
+
+def get_fiesta_dev_key():
+    return os.environ.get("FIESTA_DEV_KEY") or SERVER_CONFIG.get("fiesta_dev_key") or "fiesta-core-dev-2026"
+
+def check_fiesta_dev_auth():
+    """Verify owner role and Fiesta developer key authentication."""
+    if session.get("role") != "owner" and "all" not in session.get("permissions", []):
+        return False
+    if session.get("fiesta_dev_authenticated") is True:
+        return True
+    header_key = request.headers.get("X-Fiesta-Dev-Key")
+    if header_key and hmac.compare_digest(header_key.strip(), get_fiesta_dev_key()):
+        return True
+    return False
+
+@app.route("/admin/addons-publisher", methods=["GET"])
+@app.route("/fiesta-admin/addons", methods=["GET"])
+@login_required
+def admin_addons_publisher_page():
+    if session.get("role") != "owner" and "all" not in session.get("permissions", []):
+        return render_template("login.html", error="Access Denied: Owner privileges required for Developer Studio.", branding=load_branding()), 403
+
+    branding = load_branding()
+    is_unlocked = bool(session.get("fiesta_dev_authenticated"))
+    return render_template(
+        "admin_addon_publisher.html",
+        branding=branding,
+        is_unlocked=is_unlocked,
+        csrf_token=session.get("csrf_token", "")
+    )
+
+@app.route("/api/admin/addons-publisher/unlock", methods=["POST"])
+@login_required
+def api_admin_addons_unlock():
+    if session.get("role") != "owner" and "all" not in session.get("permissions", []):
+        return jsonify({"success": False, "error": "Owner privileges required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    key = str(data.get("dev_key") or data.get("key") or "").strip()
+
+    expected = get_fiesta_dev_key()
+    if not key or not hmac.compare_digest(key, expected):
+        return jsonify({
+            "success": False,
+            "error": "Invalid Developer Key. Direct store publishing is restricted to the FiestaSMP core team. External server admins must submit community addons via GitHub Pull Request."
+        }), 401
+
+    session["fiesta_dev_authenticated"] = True
+    return jsonify({"success": True, "message": "Fiesta Developer Publisher unlocked successfully!"})
+
+@app.route("/api/admin/addons-publisher/lock", methods=["POST"])
+@login_required
+def api_admin_addons_lock():
+    session["fiesta_dev_authenticated"] = False
+    return jsonify({"success": True, "message": "Fiesta Developer Publisher session locked."})
+
+@app.route("/api/admin/addons-publisher/key", methods=["POST"])
+@login_required
+def api_admin_addons_update_key():
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    new_key = str(data.get("new_key", "")).strip()
+    if len(new_key) < 8:
+        return jsonify({"success": False, "error": "New Developer Key must be at least 8 characters long."}), 400
+
+    SERVER_CONFIG["fiesta_dev_key"] = new_key
+    target_cfg = CONFIG_FILE
+    try:
+        cfg = {}
+        if os.path.exists(target_cfg):
+            with open(target_cfg, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+        cfg["fiesta_dev_key"] = new_key
+        with open(target_cfg, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to persist new developer key: {e}"}), 500
+
+    return jsonify({"success": True, "message": "Fiesta Developer Key rotated and updated in config.json!"})
+
+@app.route("/api/admin/addons-publisher/repo", methods=["GET"])
+@login_required
+def api_admin_addons_get_repo():
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    repo = addon_manager.load_repository()
+    return jsonify({"success": True, "repository": repo})
+
+@app.route("/api/admin/addons-publisher/discord-link", methods=["POST"])
+@login_required
+def api_admin_addons_discord_link():
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    discord_url = str(data.get("discord_url") or data.get("url") or "").strip()
+    if not discord_url or not (discord_url.startswith("http://") or discord_url.startswith("https://")):
+        return jsonify({"success": False, "error": "Please enter a valid Discord invite URL (e.g. https://discord.gg/fiestasmp)."}), 400
+
+    repo = addon_manager.load_repository()
+    repo["community_discord"] = discord_url
+    repo["official_discord"] = discord_url
+
+    # Propagate into server_scheduler addon if present
+    for a in repo.get("addons", []):
+        if a.get("id") == "server_scheduler":
+            tasks = a.get("default_settings", {}).get("tasks", [])
+            for t in tasks:
+                if t.get("id") == "t2" or "discord" in t.get("name", "").lower():
+                    t["cmd"] = f"say ✦ Join our community Discord at {discord_url} ! ✦"
+
+    repo_file = OFFICIAL_REPO_FILE
+    try:
+        os.makedirs(os.path.dirname(repo_file), exist_ok=True)
+        repo["updated_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        tmp = f"{repo_file}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(repo, f, indent=2)
+        os.replace(tmp, repo_file)
+        addon_manager.load_repository()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to save repository: {e}"}), 500
+
+    # Also update branding
+    try:
+        b = load_branding()
+        b["community_discord"] = discord_url
+        target_b = BRANDING_FILE
+        with open(target_b, "w", encoding="utf-8") as f:
+            json.dump(b, f, indent=2)
+    except Exception:
+        pass
+
+    return jsonify({
+        "success": True,
+        "message": f"FiestaSMP community Discord link updated to '{discord_url}' and synchronized into official addon broadcasts!",
+        "community_discord": discord_url
+    })
+
+@app.route("/api/admin/addons-publisher/save-addon", methods=["POST"])
+@login_required
+def api_admin_addons_save_addon():
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    addon_id = re.sub(r'[^a-z0-9_-]', '', str(data.get("id", "")).lower().strip())
+    name = str(data.get("name", "")).strip()
+
+    if not addon_id or len(addon_id) < 2:
+        return jsonify({"success": False, "error": "Valid alphanumeric Addon ID (slug) is required."}), 400
+    if not name:
+        return jsonify({"success": False, "error": "Addon Display Name is required."}), 400
+
+    repo_file = OFFICIAL_REPO_FILE
+    repo = addon_manager.load_repository()
+    addons = repo.get("addons", [])
+
+    existing_idx = None
+    for idx, a in enumerate(addons):
+        if a.get("id") == addon_id:
+            existing_idx = idx
+            break
+
+    target_addon = addons[existing_idx] if existing_idx is not None else {}
+    target_addon["id"] = addon_id
+    target_addon["name"] = name
+    target_addon["version"] = str(data.get("version", target_addon.get("version", "1.0.0"))).strip()
+    target_addon["author"] = str(data.get("author", target_addon.get("author", "FiestaSMP Team"))).strip()
+    target_addon["category"] = str(data.get("category", target_addon.get("category", "Tools"))).strip()
+    target_addon["featured"] = bool(data.get("featured", target_addon.get("featured", False)))
+    target_addon["icon"] = str(data.get("icon", target_addon.get("icon", "fas fa-cube"))).strip()
+    target_addon["summary"] = str(data.get("summary", target_addon.get("summary", ""))).strip()
+    target_addon["description"] = str(data.get("description", target_addon.get("description", target_addon["summary"]))).strip()
+    target_addon["readme_markdown"] = str(data.get("readme_markdown", target_addon.get("readme_markdown", f"# {name}\n\n{target_addon['description']}"))).strip()
+
+    if "dependencies" in data and isinstance(data["dependencies"], dict):
+        target_addon["dependencies"] = data["dependencies"]
+    elif "dependencies" not in target_addon:
+        target_addon["dependencies"] = {"engine": ["Any"], "required_plugins": []}
+
+    if "default_settings" in data and isinstance(data["default_settings"], dict):
+        target_addon["default_settings"] = data["default_settings"]
+    elif "default_settings" not in target_addon:
+        target_addon["default_settings"] = {}
+
+    if "settings_schema" in data and isinstance(data["settings_schema"], list):
+        target_addon["settings_schema"] = data["settings_schema"]
+    elif "settings_schema" not in target_addon:
+        target_addon["settings_schema"] = []
+
+    if "ui_slots" in data and isinstance(data["ui_slots"], dict):
+        target_addon["ui_slots"] = data["ui_slots"]
+    elif "ui_slots" not in target_addon:
+        target_addon["ui_slots"] = {"tab": {"title": name, "icon": target_addon["icon"], "description": target_addon["summary"]}}
+
+    files = target_addon.get("files", {})
+    if "files" in data and isinstance(data["files"], dict):
+        files.update(data["files"])
+    if "main_py" in data and str(data["main_py"]).strip():
+        files["main.py"] = str(data["main_py"])
+    if "tab_html" in data and str(data["tab_html"]).strip():
+        files["tab.html"] = str(data["tab_html"])
+    target_addon["files"] = files
+
+    if not files.get("main.py"):
+        files["main.py"] = f'# {name} Official Extension for FiestaPanel\ndef on_event(ctx, event_type, details=None):\n    pass\n'
+    if not files.get("tab.html"):
+        files["tab.html"] = f'<div class="panel-box">\n  <div class="section-title-bar">{name}</div>\n  <p>Official {name} interface.</p>\n</div>\n'
+
+    if existing_idx is not None:
+        addons[existing_idx] = target_addon
+    else:
+        addons.append(target_addon)
+
+    repo["addons"] = addons
+    repo["updated_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        tmp = f"{repo_file}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(repo, f, indent=2)
+        os.replace(tmp, repo_file)
+
+        addon_dir = os.path.join(BASE_DIR, "addons", addon_id)
+        if os.path.isdir(addon_dir):
+            for fname, fcontent in files.items():
+                fpath = os.path.join(addon_dir, fname)
+                try:
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        f.write(fcontent)
+                except Exception:
+                    pass
+
+        addon_manager.load_repository()
+        addon_manager.scan_addons()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to persist addon to repository: {e}"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": f"Official addon '{name}' ({addon_id}) saved and published to repository!",
+        "addon": target_addon
+    })
+
+@app.route("/api/admin/addons-publisher/delete-addon/<addon_id>", methods=["DELETE", "POST"])
+@login_required
+def api_admin_addons_delete_addon(addon_id):
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    repo_file = OFFICIAL_REPO_FILE
+    repo = addon_manager.load_repository()
+    addons = repo.get("addons", [])
+
+    new_addons = [a for a in addons if a.get("id") != addon_id]
+    if len(new_addons) == len(addons):
+        return jsonify({"success": False, "error": f"Addon '{addon_id}' not found in official repository."}), 404
+
+    repo["addons"] = new_addons
+    repo["updated_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        tmp = f"{repo_file}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(repo, f, indent=2)
+        os.replace(tmp, repo_file)
+        addon_manager.load_repository()
+        addon_manager.scan_addons()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to delete addon: {e}"}), 500
+
+    return jsonify({"success": True, "message": f"Addon '{addon_id}' removed from official store repository."})
+
+@app.route("/api/admin/addons-publisher/upload-bundle", methods=["POST"])
+@login_required
+def api_admin_addons_upload_bundle():
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    if "bundle_file" not in request.files:
+        return jsonify({"success": False, "error": "No bundle_file provided."}), 400
+
+    file = request.files["bundle_file"]
+    if not file.filename.endswith(".zip"):
+        return jsonify({"success": False, "error": "Only .zip bundles are accepted."}), 400
+
+    try:
+        zip_bytes = file.read()
+        zf = zipfile.ZipFile(io.BytesIO(zip_bytes))
+        manifest_raw = None
+        main_py = None
+        tab_html = None
+        readme_md = None
+
+        for n in zf.namelist():
+            lower = n.lower()
+            if lower.endswith("addon.json"):
+                manifest_raw = zf.read(n).decode("utf-8", errors="replace")
+            elif lower.endswith("main.py"):
+                main_py = zf.read(n).decode("utf-8", errors="replace")
+            elif lower.endswith("tab.html"):
+                tab_html = zf.read(n).decode("utf-8", errors="replace")
+            elif lower.endswith("readme.md"):
+                readme_md = zf.read(n).decode("utf-8", errors="replace")
+
+        if not manifest_raw:
+            return jsonify({"success": False, "error": "Bundle must contain an addon.json manifest."}), 400
+
+        manifest = json.loads(manifest_raw)
+        aid = re.sub(r'[^a-z0-9_-]', '', str(manifest.get("id", "")).lower().strip())
+        if not aid:
+            return jsonify({"success": False, "error": "Manifest missing valid 'id' field."}), 400
+
+        files_dict = manifest.get("files", {})
+        if main_py: files_dict["main.py"] = main_py
+        if tab_html: files_dict["tab.html"] = tab_html
+        manifest["files"] = files_dict
+        if readme_md and not manifest.get("readme_markdown"):
+            manifest["readme_markdown"] = readme_md
+
+        repo_file = OFFICIAL_REPO_FILE
+        repo = addon_manager.load_repository()
+        addons = repo.get("addons", [])
+        existing_idx = None
+        for idx, a in enumerate(addons):
+            if a.get("id") == aid:
+                existing_idx = idx
+                break
+
+        if existing_idx is not None:
+            addons[existing_idx] = manifest
+        else:
+            addons.append(manifest)
+
+        repo["addons"] = addons
+        repo["updated_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        tmp = f"{repo_file}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(repo, f, indent=2)
+        os.replace(tmp, repo_file)
+
+        target_dir = os.path.join(BASE_DIR, "addons", aid)
+        os.makedirs(target_dir, exist_ok=True)
+        for fname, fcontent in files_dict.items():
+            with open(os.path.join(target_dir, fname), "w", encoding="utf-8") as out:
+                out.write(fcontent)
+        with open(os.path.join(target_dir, "addon.json"), "w", encoding="utf-8") as out:
+            json.dump({k: v for k, v in manifest.items() if k != "files"}, out, indent=2)
+
+        addon_manager.load_repository()
+        addon_manager.scan_addons()
+        return jsonify({"success": True, "message": f"Addon '{manifest.get('name', aid)}' uploaded and published to store repository!", "addon": manifest})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Failed to unpack and publish bundle: {e}"}), 400
+
+@app.route("/api/admin/addons-publisher/export/<addon_id>", methods=["GET"])
+@login_required
+def api_admin_addons_export_bundle(addon_id):
+    if not check_fiesta_dev_auth():
+        return jsonify({"success": False, "error": "Unauthorized: Fiesta Developer Publisher authentication required."}), 403
+
+    repo = addon_manager.load_repository()
+    found = None
+    for a in repo.get("addons", []):
+        if a.get("id") == addon_id:
+            found = a
+            break
+
+    if not found:
+        return jsonify({"success": False, "error": "Addon not found in store repository."}), 404
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        manifest_clean = {k: v for k, v in found.items() if k != "files"}
+        zf.writestr("addon.json", json.dumps(manifest_clean, indent=2))
+        files = found.get("files", {})
+        for fname, fcontent in files.items():
+            zf.writestr(fname, fcontent)
+        if found.get("readme_markdown"):
+            zf.writestr("README.md", found["readme_markdown"])
+
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"{addon_id}-v{found.get('version', '1.0.0')}.zip"
     )
 
 # ── Backups ──────────────────────────────────────────────────────────────────

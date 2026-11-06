@@ -17,6 +17,18 @@ DESCRIPTIONS_FILE = os.path.join(ASSET_DIR, "descriptions.json")
 
 os.makedirs(ASSET_DIR, exist_ok=True)
 
+def get_contact_email():
+    try:
+        cfg_file = os.path.join(BASE_DIR, "config.json")
+        if os.path.exists(cfg_file):
+            with open(cfg_file, "r", encoding="utf-8") as f:
+                em = json.load(f).get("admin_email")
+                if em:
+                    return str(em).strip()
+    except Exception:
+        pass
+    return os.environ.get("FIESTA_ADMIN_EMAIL") or os.environ.get("ADMIN_EMAIL") or "admin@server.local"
+
 # 3D block entities & special items that fail or map to unwrapped UV net textures in vanilla dumps.
 # These prioritize Minecraft Wiki's official 3D isometric inventory icons (Invicon).
 WIKI_PREFERRED_ITEMS = {
@@ -138,7 +150,8 @@ def fetch_wiki_item(item_name, dest=None):
     url = f"https://minecraft.wiki/api.php?action=query&titles={urllib.parse.quote(query_titles)}&prop=imageinfo|pageimages&iiprop=url&piprop=original|thumbnail&pithumbsize=160&redirects=1&format=json"
 
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@server.local)"})
+        ua = f"FiestaPanel/2.1 ({get_contact_email()})"
+        req = urllib.request.Request(url, headers={"User-Agent": ua})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             pages = data.get("query", {}).get("pages", {})
@@ -166,7 +179,7 @@ def fetch_wiki_item(item_name, dest=None):
                         break
 
             if img_url:
-                img_req = urllib.request.Request(img_url, headers={"User-Agent": "FiestaPanel/2.1 (admin@server.local)"})
+                img_req = urllib.request.Request(img_url, headers={"User-Agent": f"FiestaPanel/2.1 ({get_contact_email()})"})
                 with urllib.request.urlopen(img_req, timeout=5) as img_resp:
                     data = img_resp.read()
                     if len(data) > 50:
@@ -207,7 +220,8 @@ def get_item_description(item_name):
     desc = None
     wiki_title = title
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@server.local)"})
+        ua = f"FiestaPanel/2.1 ({get_contact_email()})"
+        req = urllib.request.Request(url, headers={"User-Agent": ua})
         with urllib.request.urlopen(req, timeout=4) as resp:
             data = json.loads(resp.read().decode())
             pages = data.get("query", {}).get("pages", {})
