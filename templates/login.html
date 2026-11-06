@@ -859,7 +859,7 @@
         </div>
         <div class="info-row">
           <span class="label">Java Edition IP:</span>
-          <span class="val" id="login-java-ip">{{ branding.server_domain or 'play.your-server.net' }}:25565</span>
+          <span class="val" id="login-java-ip">{{ branding.server_domain or 'play.your-server.net' }}:{{ mc_port or 25565 }}</span>
         </div>
         <div class="info-row">
           <span class="label">Bedrock Edition IP:</span>
@@ -942,7 +942,7 @@
       if (!cfgDomain && window.location.hostname && window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost') {
         const jEl = document.getElementById('login-java-ip');
         const bEl = document.getElementById('login-bedrock-ip');
-        if (jEl) jEl.textContent = window.location.hostname + ':25565';
+        if (jEl) jEl.textContent = window.location.hostname + ':{{ mc_port or 25565 }}';
         if (bEl) bEl.textContent = window.location.hostname + ':19132';
       }
     })();

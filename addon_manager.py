@@ -423,11 +423,11 @@ def on_action(ctx, action_name, payload):
         "rating": 5.0,
         "downloads": 980,
         "settings_schema": [
-            {"key": "line1", "label": "MOTD Line 1", "type": "text", "default": "§b§l✦ FiestaSMP Network ✦ §7[1.21.x]"},
+            {"key": "line1", "label": "MOTD Line 1", "type": "text", "default": "§b§l✦ Minecraft Server Network ✦ §7[1.21.x]"},
             {"key": "line2", "label": "MOTD Line 2", "type": "text", "default": "§eSurvival • Custom Items • Low Ping"}
         ],
         "default_settings": {
-            "line1": "§b§l✦ FiestaSMP Network ✦ §7[1.21.x]",
+            "line1": "§b§l✦ Minecraft Server Network ✦ §7[1.21.x]",
             "line2": "§eSurvival • Custom Items • Low Ping"
         },
         "ui_slots": {
@@ -454,11 +454,11 @@ def on_action(ctx, action_name, payload):
     </div>
     <div style="flex:1;">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-        <span style="font-weight:bold;color:#fff;font-size:14px;">FiestaSMP Minecraft Server</span>
+        <span style="font-weight:bold;color:#fff;font-size:14px;">Minecraft SMP Server</span>
         <span style="color:#aaa;font-size:12px;">5 / 20 &nbsp; <i class="fa-solid fa-signal" style="color:#55ff55;"></i></span>
       </div>
       <div id="motd-preview-line1" style="font-family:'Courier New',monospace;font-size:13px;line-height:18px;color:#38bdf8;font-weight:bold;">
-        ✦ FiestaSMP Network ✦ [1.21.x]
+        ✦ Minecraft Server Network ✦ [1.21.x]
       </div>
       <div id="motd-preview-line2" style="font-family:'Courier New',monospace;font-size:13px;line-height:18px;color:#facc15;">
         Survival • Custom Items • Low Ping
@@ -470,7 +470,7 @@ def on_action(ctx, action_name, payload):
     <tr>
       <td class="label-col">MOTD Line 1:</td>
       <td class="val-col">
-        <input type="text" id="addon-motd-line1" class="ctrl-input" style="width:80%;font-family:monospace;" value="§b§l✦ FiestaSMP Network ✦ §7[1.21.x]" oninput="updateMotdLivePreview()">
+        <input type="text" id="addon-motd-line1" class="ctrl-input" style="width:80%;font-family:monospace;" value="§b§l✦ Minecraft Server Network ✦ §7[1.21.x]" oninput="updateMotdLivePreview()">
       </td>
     </tr>
     <tr>
@@ -799,7 +799,8 @@ class AddonManager:
         self.app = app
         self.send_mc_command = send_mc_command
         self.ping_mc = ping_mc
-        self.server_dir = server_dir or os.environ.get("MC_PATH") or os.environ.get("SERVER_DIR") or "/home/ubuntu/fiesta"
+        def_sdir = "/home/ubuntu/fiesta" if os.path.isdir("/home/ubuntu/fiesta") else os.path.join(os.path.expanduser("~"), "minecraft")
+        self.server_dir = server_dir or os.environ.get("MC_PATH") or os.environ.get("SERVER_DIR") or def_sdir
         
         # Primary addons directory
         self.addons_dir = os.path.join(self.base_dir, "addons")

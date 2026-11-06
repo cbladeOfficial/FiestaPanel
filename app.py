@@ -1122,7 +1122,7 @@ def login_page():
                 msg = "This sub-user account has been disabled."
                 if request.is_json:
                     return jsonify({"success": False, "message": msg}), 403
-                return render_template("login.html", error=msg, branding=load_branding())
+                return render_template("login.html", error=msg, branding=load_branding(), mc_port=int(get_server_properties_dict().get("server-port", 25565)))
             if verify_password(user_entry.get("password_hash"), password):
                 if re.fullmatch(r"[0-9a-f]{64}", user_entry.get("password_hash", "")):
                     user_entry["password_hash"] = hash_password(password)
@@ -1143,8 +1143,10 @@ def login_page():
 
         if request.is_json:
             return jsonify({"success": False, "message": "Invalid username or password"}), 401
-        return render_template("login.html", error="Invalid credentials", branding=load_branding())
-    return render_template("login.html", branding=load_branding())
+        mc_port = int(get_server_properties_dict().get("server-port", 25565))
+        return render_template("login.html", error="Invalid credentials", branding=load_branding(), mc_port=mc_port)
+    mc_port = int(get_server_properties_dict().get("server-port", 25565))
+    return render_template("login.html", branding=load_branding(), mc_port=mc_port)
 
 @app.route("/logout")
 def logout():
@@ -1160,7 +1162,9 @@ def dashboard():
         role=session.get("role", "owner"),
         permissions=session.get("permissions", ["all"]),
         branding=load_branding(),
-        server_running=server_runner.is_running()
+        server_running=server_runner.is_running(),
+        level_name=get_main_level_name(),
+        mc_port=int(get_server_properties_dict().get("server-port", 25565))
     )
 
 LATEST_PAPER_VERSION_CACHE = {"version": "26.3", "ts": 0}
@@ -1320,6 +1324,8 @@ def api_status():
         "service_name": SERVICE_NAME,
         "screen_session": SCREEN_SESSION,
         "backup_dir": get_backup_dir(),
+        "level_name": get_main_level_name(),
+        "mc_port": int(get_server_properties_dict().get("server-port", 25565)),
         "spawn_coordinates": get_spawn_coordinates(),
         "java_version": detect_java_version_str(),
         "runtime_config": server_runner.load_runtime_config(),
@@ -5019,7 +5025,7 @@ def api_worlds_upload():
     if not file.filename.endswith(".zip"):
         return jsonify({"success": False, "message": "Only .zip world archives are supported"}), 400
 
-    target_world = request.form.get("world", "world").strip()
+    target_world = request.form.get("world", get_main_level_name()).strip()
     abs_world = safe_fiesta_path(target_world)
     if not abs_world:
         return jsonify({"success": False, "message": "Invalid world target"}), 400
@@ -5147,7 +5153,7 @@ def api_worlds_generate():
         return jsonify({"success": False, "message": "Owner permission required for world generation"}), 403
 
     data = request.get_json() or {}
-    world_name = data.get("name", "world").strip()
+    world_name = data.get("name", get_main_level_name()).strip()
     seed = data.get("seed", "").strip()
     level_type = data.get("type", "minecraft:normal").strip()
     structures = str(data.get("structures", True)).lower()
@@ -5350,10 +5356,11 @@ def api_logs_analyze():
                     "solution": "Increase memory (-Xmx) or remove heavy entity/chunk loaders."
                 })
             if "FAILED TO BIND TO PORT" in text or "Address already in use" in text:
+                configured_port = int(get_server_properties_dict().get("server-port", 25565))
                 findings.append({
                     "severity": "critical",
                     "title": "Port Binding Conflict",
-                    "description": "Port 25565 is already occupied by another running server instance.",
+                    "description": f"Port {configured_port} is already occupied by another running server instance.",
                     "solution": "Kill lingering Java instances or adjust server-port in server.properties."
                 })
             if "Corrupt chunk" in text or "RegionFileException" in text:

@@ -4214,7 +4214,7 @@
           <table class="form-layout-table">
             <tr>
               <td class="label-col">World Folder Name:</td>
-              <td class="val-col"><input type="text" id="world-gen-name" value="world" style="width: 180px;"></td>
+              <td class="val-col"><input type="text" id="world-gen-name" value="{{ level_name or 'world' }}" style="width: 180px;"></td>
             </tr>
             <tr>
               <td class="label-col">Seed:</td>
@@ -5113,7 +5113,7 @@
           <table class="form-layout-table">
             <tr>
               <td class="label-col">Gateway Target:</td>
-              <td class="val-col">127.0.0.1:25565 (Internal Minecraft Loopback)</td>
+              <td class="val-col"><span id="diag-ping-target">127.0.0.1:{{ mc_port or 25565 }}</span> (Internal Minecraft Loopback)</td>
             </tr>
             <tr>
               <td class="label-col">Server Protocol Ping:</td>
@@ -5377,7 +5377,7 @@
               <tr>
                 <td class="label-col">Message of the Day (MOTD):</td>
                 <td class="val-col">
-                  <input type="text" id="gui-prop-motd" style="width: 320px;" placeholder="fiesta smp">
+                  <input type="text" id="gui-prop-motd" style="width: 320px;" placeholder="A Minecraft Server">
                   <span class="inline-hint">(Displayed in the multiplayer server browser)</span>
                 </td>
               </tr>
@@ -5563,7 +5563,7 @@
                 </label>
               </div>
               <p class="inline-hint" style="margin-bottom: 10px;">
-                Generates a clean timestamped ZIP snapshot archive of all world data and stores it in /home/ubuntu/backups/ automatically.
+                Generates a clean timestamped ZIP snapshot archive of all world data and stores it in the configured backups directory automatically.
               </p>
               <div style="display: flex; gap: 8px; align-items: center;">
                 <span style="font-weight: bold; font-size: 11px;">Time (24h):</span>
@@ -10758,7 +10758,7 @@ def on_action(ctx, action_name, payload):
       }
 
       const file = fileInput.files[0];
-      if (!confirm(`Warning: Uploading this world will replace the current '${targetWorld}' directory. An automated pre-upload snapshot backup will be created in /home/ubuntu/backups/. Continue?`)) {
+      if (!confirm(`Warning: Uploading this world will replace the current '${targetWorld}' directory. An automated pre-upload snapshot backup will be created in the backups directory. Continue?`)) {
         return;
       }
 
@@ -11904,10 +11904,13 @@ def on_action(ctx, action_name, payload):
 
     // ── Diagnostic Ping ─────────────────────────────────────────
     async function runPingTest() {
-      document.getElementById('diag-ping-result').textContent = 'Pinging 127.0.0.1:25565...';
+      document.getElementById('diag-ping-result').textContent = 'Pinging Minecraft loopback port...';
       try {
         const res = await fetch('/api/status');
         const d = await res.json();
+        if (d.mc_port && document.getElementById('diag-ping-target')) {
+          document.getElementById('diag-ping-target').textContent = `127.0.0.1:${d.mc_port}`;
+        }
         if (d.mc_ping && d.mc_ping.online) {
           document.getElementById('diag-ping-result').innerHTML = '<span style="color: #008822;">SUCCESS (Packet Handshake OK)</span>';
           document.getElementById('diag-ping-rtt').textContent = `${d.mc_ping.ping_ms} ms`;
@@ -15594,14 +15597,14 @@ def on_action(ctx, action_name, payload):
         if (l1) l1.value = '§b§l[+] CYBERPUNK 2077 SMP [+] §7[1.21.x]';
         if (l2) l2.value = '§dHigh-Speed ZGC §f• §3No Phantoms §f• §bCustom Items';
       } else if (preset === 'gold') {
-        if (l1) l1.value = '§6§l[★] FIESTA SURVIVAL NETWORK [★]';
+        if (l1) l1.value = '§6§l[★] MINECRAFT SURVIVAL NETWORK [★]';
         if (l2) l2.value = '§eVanilla+ §7• §aEconomy §7• §eCrossplay Bedrock+Java';
       } else if (preset === 'matrix') {
-        if (l1) l1.value = '§a§l[SYSTEM] §2FIESTA GATEWAY ONLINE';
+        if (l1) l1.value = '§a§l[SYSTEM] §2SERVER GATEWAY ONLINE';
         if (l2) l2.value = '§aTPS: 20.0 §7• §2Low Latency Direct Pipeline §7• §a100% Free';
       } else if (preset === 'clean') {
-        if (l1) l1.value = '§f§lFiestaSMP §7| §bModern Paper 26.3';
-        if (l2) l2.value = '§7Join the community at §bdiscord.gg/fiesta';
+        if (l1) l1.value = '§f§lMinecraft SMP §7| §bModern Server';
+        if (l2) l2.value = '§7Welcome to the server! §bHave fun playing!';
       }
       updateMotdLivePreview();
     }
@@ -15926,9 +15929,9 @@ def on_action(ctx, action_name, payload):
         if (jvmEl) jvmEl.textContent = dStatus.java_version || 'OpenJDK 64-Bit Server VM';
 
         const s = dSettings.settings || {};
-        if (scrEl) scrEl.textContent = s.screen_session || 'fiesta';
-        if (sdirEl) sdirEl.textContent = s.server_dir || '/home/ubuntu/fiesta';
-        if (bdirEl) bdirEl.textContent = s.backup_dir || '/home/ubuntu/backups';
+        if (scrEl) scrEl.textContent = s.screen_session || dStatus.screen_session || 'minecraft';
+        if (sdirEl) sdirEl.textContent = s.server_dir || dStatus.server_dir || '/server';
+        if (bdirEl) bdirEl.textContent = s.backup_dir || dStatus.backup_dir || 'backups';
 
         // Populate Config Form Inputs
         const inSdir = document.getElementById('sys-cfg-server-dir');
