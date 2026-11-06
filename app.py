@@ -65,9 +65,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 
 DEFAULT_SPAWN_COORDINATES = {
-    "x": -58423,
-    "y": 69,
-    "z": -9669,
+    "x": 0,
+    "y": 64,
+    "z": 0,
     "dimension": "minecraft:overworld",
     "radius": 0
 }
@@ -676,8 +676,8 @@ DEFAULT_BRANDING = {
     "header_icon": "tplink",
     "header_icon_custom": "",
     "server_domain": "",
-    "public_site_url": "https://open-fiestasmp.github.io",
-    "bedrock_server_name": "FiestaSMP"
+    "public_site_url": "",
+    "bedrock_server_name": "Minecraft Server"
 }
 
 HEADER_ICONS = {
@@ -723,15 +723,29 @@ def load_branding():
     if not os.path.exists(target) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "branding.json")):
         target = os.path.join(BASE_DIR, "branding.json")
     if not os.path.exists(target):
-        return DEFAULT_BRANDING.copy()
-    try:
-        with open(target, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        merged = DEFAULT_BRANDING.copy()
+    else:
+        try:
+            with open(target, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                merged = DEFAULT_BRANDING.copy()
+                merged.update(data)
+        except Exception:
             merged = DEFAULT_BRANDING.copy()
-            merged.update(data)
-            return merged
-    except Exception:
-        return DEFAULT_BRANDING.copy()
+
+    # Environment variables or server config overrides/fallbacks
+    env_domain = os.environ.get("SERVER_DOMAIN") or SERVER_CONFIG.get("server_domain")
+    if env_domain and not merged.get("server_domain"):
+        merged["server_domain"] = env_domain.strip()
+    env_site = os.environ.get("PUBLIC_SITE_URL") or SERVER_CONFIG.get("public_site_url")
+    if env_site and not merged.get("public_site_url"):
+        merged["public_site_url"] = env_site.strip()
+    bedrock_name = os.environ.get("BEDROCK_SERVER_NAME") or SERVER_CONFIG.get("bedrock_server_name")
+    if bedrock_name and (not merged.get("bedrock_server_name") or merged.get("bedrock_server_name") == DEFAULT_BRANDING["bedrock_server_name"]):
+        merged["bedrock_server_name"] = bedrock_name.strip()
+    if os.environ.get("BRAND_NAME") and merged.get("brand_name") == DEFAULT_BRANDING["brand_name"]:
+        merged["brand_name"] = os.environ.get("BRAND_NAME").strip()
+    return merged
 
 def save_branding(data):
     with open(BRANDING_FILE, "w", encoding="utf-8") as f:
@@ -1315,7 +1329,7 @@ def get_latest_paper_version():
     try:
         req = urllib.request.Request(
             "https://fill.papermc.io/v3/projects/paper",
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"}
+            headers={"User-Agent": get_panel_user_agent(include_email=False)}
         )
         with urllib.request.urlopen(req, timeout=4) as r:
             d = json.loads(r.read())
@@ -1337,7 +1351,7 @@ def api_software_latest():
     sw = request.args.get("software", "paper").lower().strip()
     if sw == "neoforge":
         try:
-            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "FiestaPanel/2.1"})
+            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 all_v = d.get("versions", [])
@@ -2071,7 +2085,7 @@ def api_mc_item_icon(item_id):
 
     for tmpl in candidates:
         try:
-            req = urllib.request.Request(tmpl, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request(tmpl, headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=2) as resp:
                 if resp.status == 200:
                     data = resp.read()
@@ -2151,7 +2165,7 @@ def get_server_public_ip():
 
     for url in ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"]:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1"})
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=2.5) as resp:
                 ip = resp.read().decode("utf-8").strip()
                 if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
@@ -2437,8 +2451,8 @@ def api_save_branding():
     header_icon = data.get("header_icon", cur.get("header_icon", "tplink")).strip()
     header_icon_custom = data.get("header_icon_custom", cur.get("header_icon_custom", "")).strip()
     server_domain = data.get("server_domain", cur.get("server_domain", "")).strip()
-    public_site_url = data.get("public_site_url", cur.get("public_site_url", "https://open-fiestasmp.github.io")).strip()
-    bedrock_server_name = data.get("bedrock_server_name", cur.get("bedrock_server_name", "FiestaSMP")).strip()
+    public_site_url = data.get("public_site_url", cur.get("public_site_url", "")).strip()
+    bedrock_server_name = data.get("bedrock_server_name", cur.get("bedrock_server_name", cur.get("brand_name", "Minecraft Server"))).strip()
 
     if not brand_name:
         return jsonify({"success": False, "message": "Brand name cannot be blank."}), 400
@@ -2807,7 +2821,7 @@ def resolve_software_download(software, version, build="latest"):
     if software == "purpur":
         if build == "latest":
             url_meta = f"https://api.purpurmc.org/v2/purpur/{version}"
-            req = urllib.request.Request(url_meta, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request(url_meta, headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=5) as r:
                 d = json.loads(r.read())
                 build = d.get("builds", {}).get("latest")
@@ -2818,7 +2832,7 @@ def resolve_software_download(software, version, build="latest"):
 
     elif software == "paper":
         url_meta = f"https://fill.papermc.io/v3/projects/paper/versions/{version}"
-        req = urllib.request.Request(url_meta, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req = urllib.request.Request(url_meta, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req, timeout=5) as r:
             d = json.loads(r.read())
             builds = d.get("builds", [])
@@ -2827,7 +2841,7 @@ def resolve_software_download(software, version, build="latest"):
             target_build = max(builds, key=lambda b: int(b) if str(b).isdigit() else 0) if build == "latest" else build
 
         url_build = f"https://fill.papermc.io/v3/projects/paper/versions/{version}/builds/{target_build}"
-        req_b = urllib.request.Request(url_build, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req_b = urllib.request.Request(url_build, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req_b, timeout=5) as r_b:
             d_b = json.loads(r_b.read())
             dl_info = d_b.get("downloads", {}).get("server:default", {})
@@ -2838,7 +2852,7 @@ def resolve_software_download(software, version, build="latest"):
             return download_url, filename, f"Paper {version} (Build #{target_build})"
 
     elif software == "vanilla":
-        req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req, timeout=5) as r:
             manifest = json.loads(r.read())
             matched = [v for v in manifest.get("versions", []) if v.get("id") == version]
@@ -2846,7 +2860,7 @@ def resolve_software_download(software, version, build="latest"):
                 raise ValueError(f"Version {version} not found in Mojang release manifest")
             pkg_url = matched[0]["url"]
 
-        req_pkg = urllib.request.Request(pkg_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req_pkg = urllib.request.Request(pkg_url, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req_pkg, timeout=5) as r_pkg:
             pkg_data = json.loads(r_pkg.read())
             download_url = pkg_data.get("downloads", {}).get("server", {}).get("url")
@@ -2856,7 +2870,7 @@ def resolve_software_download(software, version, build="latest"):
 
     elif software == "fabric":
         loaders_url = "https://meta.fabricmc.net/v2/versions/loader"
-        req = urllib.request.Request(loaders_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req = urllib.request.Request(loaders_url, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req, timeout=5) as r:
             loaders = json.loads(r.read())
             loader_ver = loaders[0]["version"]
@@ -2871,7 +2885,7 @@ def resolve_software_download(software, version, build="latest"):
     elif software == "neoforge":
         nf_ver = None
         try:
-            req_m = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req_m = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req_m, timeout=5) as r_m:
                 d_m = json.loads(r_m.read())
                 all_nf = d_m.get("versions", [])
@@ -2980,13 +2994,13 @@ def api_software_versions():
 
     try:
         if sw == "purpur":
-            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 raw_vers = d.get("versions", [])
                 versions = list(reversed(raw_vers))
         elif sw == "paper":
-            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 v_dict = d.get("versions", {})
@@ -2996,19 +3010,19 @@ def api_software_versions():
                         all_v.extend(v_dict[major])
                 versions = all_v if all_v else ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.4", "1.20.4"]
         elif sw == "vanilla":
-            req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 versions = [v["id"] for v in d.get("versions", []) if v.get("type") == "release"][:40]
         elif sw == "fabric":
-            req = urllib.request.Request("https://meta.fabricmc.net/v2/versions/game", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request("https://meta.fabricmc.net/v2/versions/game", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 versions = [v["version"] for v in d if v.get("stable")][:40]
         elif sw == "spigot":
             versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
         elif sw == "neoforge":
-            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 all_v = d.get("versions", [])
@@ -3059,7 +3073,7 @@ def api_software_install():
     meta_path = os.path.join(SERVER_DIR, "installed_software.json")
 
     try:
-        req = urllib.request.Request(download_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req = urllib.request.Request(download_url, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req, timeout=120) as resp, open(tmp_path, "wb") as f_out:
             shutil.copyfileobj(resp, f_out)
 
@@ -3796,14 +3810,14 @@ def api_software_check_update():
     try:
         sw_low = cur_sw.lower().strip()
         if sw_low == "purpur":
-            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": "FiestaPanel/2.1"})
+            req = urllib.request.Request("https://api.purpurmc.org/v2/purpur", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=3) as r:
                 p_data = json.loads(r.read())
                 v_list = p_data.get("versions", [])
                 if v_list:
                     latest_ver = v_list[-1]
         elif sw_low == "paper":
-            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": "FiestaPanel/2.1"})
+            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=3) as r:
                 p_data = json.loads(r.read())
                 v_dict = p_data.get("versions", {})
@@ -3812,7 +3826,7 @@ def api_software_check_update():
                         latest_ver = v_dict[major][-1]
                         break
         elif sw_low == "neoforge":
-            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": "FiestaPanel/2.1"})
+            req = urllib.request.Request("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=3) as r:
                 p_data = json.loads(r.read())
                 v_list = p_data.get("versions", [])
@@ -3973,7 +3987,7 @@ def api_plugins_search():
             "limit": 15
         }
         url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
+        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode())
 
@@ -4005,7 +4019,7 @@ def api_plugin_install_online():
     try:
         loaders = '["paper","spigot","purpur","bukkit"]'
         url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-        req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
 
         versions = []
         try:
@@ -4016,7 +4030,7 @@ def api_plugin_install_online():
 
         if not versions:
             url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+            req_all = urllib.request.Request(url_all, headers={"User-Agent": get_panel_user_agent()})
             with urllib.request.urlopen(req_all, timeout=8) as resp:
                 versions = json.loads(resp.read().decode())
 
@@ -4049,7 +4063,7 @@ def api_plugin_install_online():
         os.makedirs(plugins_dir, exist_ok=True)
         dest_path = os.path.join(plugins_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+        dl_req = urllib.request.Request(download_url, headers={"User-Agent": get_panel_user_agent()})
         with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
             shutil.copyfileobj(resp, out_f)
 
@@ -4263,7 +4277,7 @@ def api_mods_search():
             "limit": 15
         }
         url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode())
 
@@ -4317,7 +4331,7 @@ def api_mod_install_online():
         if target_loader and target_loader not in ["all", "any"]:
             loaders_param = json.dumps([target_loader])
             url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders_param})
-            req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
             try:
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     versions = json.loads(resp.read().decode())
@@ -4327,7 +4341,7 @@ def api_mod_install_online():
         if not versions:
             loaders = '["neoforge","fabric","quilt","forge"]'
             url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-            req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
             try:
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     versions = json.loads(resp.read().decode())
@@ -4336,7 +4350,7 @@ def api_mod_install_online():
 
         if not versions:
             url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+            req_all = urllib.request.Request(url_all, headers={"User-Agent": get_panel_user_agent()})
             with urllib.request.urlopen(req_all, timeout=8) as resp:
                 versions = json.loads(resp.read().decode())
 
@@ -4369,7 +4383,7 @@ def api_mod_install_online():
         os.makedirs(mods_dir, exist_ok=True)
         dest_path = os.path.join(mods_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
+        dl_req = urllib.request.Request(download_url, headers={"User-Agent": get_panel_user_agent()})
         with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
             shutil.copyfileobj(resp, out_f)
 
@@ -4995,25 +5009,29 @@ def api_admin_addons_export_bundle(addon_id):
     )
 
 # ── Backups ──────────────────────────────────────────────────────────────────
+def get_backup_search_dirs():
+    user_home = os.path.expanduser('~')
+    candidates = [
+        get_backup_dir(),
+        os.path.join(SERVER_DIR, "backups"),
+        SERVER_DIR,
+        user_home,
+        os.path.join(user_home, 'backups'),
+        os.path.dirname(SERVER_DIR),
+        os.path.join(os.path.dirname(SERVER_DIR), 'backups')
+    ]
+    if os.path.isdir('/home/ubuntu'):
+        candidates.extend(['/home/ubuntu', '/home/ubuntu/backups'])
+    return [d for d in dict.fromkeys(candidates) if os.path.isdir(d)]
+
 @app.route("/api/backups")
 @login_required
 def api_get_backups():
-    bdir = get_backup_dir()
-    search_dirs = [bdir]
-    s_backups = os.path.join(SERVER_DIR, "backups")
-    if s_backups not in search_dirs and os.path.isdir(s_backups):
-        search_dirs.append(s_backups)
-    user_home = os.path.expanduser('~')
-    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
-        if legacy not in search_dirs and os.path.isdir(legacy):
-            search_dirs.append(legacy)
-
+    search_dirs = get_backup_search_dirs()
     files = []
     seen_paths = set()
     patterns = ['*.tar.gz', '*.tar.zst', '*.tar.*', '*.zip']
     for d in search_dirs:
-        if not os.path.isdir(d):
-            continue
         for pat in patterns:
             for f in glob.glob(os.path.join(d, pat)):
                 if os.path.isfile(f) and f not in seen_paths:
@@ -5065,12 +5083,7 @@ def api_create_backup():
 def api_download_backup():
     filename = request.args.get("filename", "").strip()
     safe_name = os.path.basename(filename)
-    bdir = get_backup_dir()
-    search_dirs = [bdir, os.path.join(SERVER_DIR, "backups"), SERVER_DIR, os.path.dirname(SERVER_DIR)]
-    user_home = os.path.expanduser('~')
-    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
-        if legacy not in search_dirs and os.path.isdir(legacy):
-            search_dirs.append(legacy)
+    search_dirs = get_backup_search_dirs()
     for folder in search_dirs:
         p = os.path.join(folder, safe_name)
         if os.path.isfile(p):
@@ -5089,13 +5102,7 @@ def api_delete_backup():
     if not filename or not (filename.endswith(".tar.gz") or filename.endswith(".zip") or filename.endswith(".tar.zst") or ".tar." in filename):
         return jsonify({"success": False, "message": "Invalid backup archive filename."}), 400
 
-    bdir = get_backup_dir()
-    search_dirs = [bdir, os.path.join(SERVER_DIR, "backups")]
-    user_home = os.path.expanduser('~')
-    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
-        if legacy not in search_dirs and os.path.isdir(legacy):
-            search_dirs.append(legacy)
-
+    search_dirs = get_backup_search_dirs()
     deleted = False
     for folder in search_dirs:
         p = os.path.join(folder, filename)
@@ -5166,13 +5173,7 @@ def api_backup_cloud_upload():
     if not filename:
         return jsonify({"success": False, "message": "Filename required."}), 400
 
-    bdir = get_backup_dir()
-    search_dirs = [bdir, os.path.join(SERVER_DIR, "backups"), SERVER_DIR, os.path.dirname(SERVER_DIR)]
-    user_home = os.path.expanduser('~')
-    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
-        if legacy not in search_dirs and os.path.isdir(legacy):
-            search_dirs.append(legacy)
-
+    search_dirs = get_backup_search_dirs()
     target_path = None
     for folder in search_dirs:
         p = os.path.join(folder, filename)
@@ -6076,7 +6077,7 @@ def api_logs_share_mclogs():
         sanitized = re.sub(r"(password\s*:\s*)[^\n\r]+", r"\1[REDACTED]", sanitized)
 
         data = urllib.parse.urlencode({"content": sanitized}).encode("utf-8")
-        req = urllib.request.Request("https://api.mclo.gs/1/log", data=data, headers={"User-Agent": "FiestaPanel/2.5.0"})
+        req = urllib.request.Request("https://api.mclo.gs/1/log", data=data, headers={"User-Agent": get_panel_user_agent()})
         with urllib.request.urlopen(req, timeout=12) as resp:
             res_data = json.loads(resp.read().decode("utf-8"))
 

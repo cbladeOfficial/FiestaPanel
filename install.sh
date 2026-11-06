@@ -188,7 +188,7 @@ else
     fi
     if [ ! -f "$TARGET_INSTALL_DIR/app.py" ]; then
         curl -sSL "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/main.tar.gz" | tar -xz --strip-components=1 -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
-            curl -sSL "https://fiesta.debarkak.xyz/static/fiestapanel-latest.tar.gz" | tar -xz -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
+            curl -sSL "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/master.tar.gz" | tar -xz --strip-components=1 -C "$TARGET_INSTALL_DIR" 2>/dev/null || {
                 curl -sSL "https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/app.py" -o "$TARGET_INSTALL_DIR/app.py"
             }
         }

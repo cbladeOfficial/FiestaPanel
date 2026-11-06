@@ -102,7 +102,7 @@ if (-not $IsLocal) {
     $Downloaded = $false
     $DownloadUrls = @(
         "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/main.zip",
-        "https://fiesta.debarkak.xyz/static/fiestapanel-latest.zip"
+        "https://github.com/open-fiestasmp/FiestaPanel/archive/refs/heads/master.zip"
     )
 
     foreach ($url in $DownloadUrls) {

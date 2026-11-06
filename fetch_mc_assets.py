@@ -150,7 +150,7 @@ def fetch_wiki_item(item_name, dest=None):
     url = f"https://minecraft.wiki/api.php?action=query&titles={urllib.parse.quote(query_titles)}&prop=imageinfo|pageimages&iiprop=url&piprop=original|thumbnail&pithumbsize=160&redirects=1&format=json"
 
     try:
-        ua = f"FiestaPanel/2.1 ({get_contact_email()})"
+        ua = f"FiestaPanel/2.5 ({get_contact_email()})"
         req = urllib.request.Request(url, headers={"User-Agent": ua})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
@@ -179,7 +179,7 @@ def fetch_wiki_item(item_name, dest=None):
                         break
 
             if img_url:
-                img_req = urllib.request.Request(img_url, headers={"User-Agent": f"FiestaPanel/2.1 ({get_contact_email()})"})
+                img_req = urllib.request.Request(img_url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
                 with urllib.request.urlopen(img_req, timeout=5) as img_resp:
                     data = img_resp.read()
                     if len(data) > 50:
@@ -220,7 +220,7 @@ def get_item_description(item_name):
     desc = None
     wiki_title = title
     try:
-        ua = f"FiestaPanel/2.1 ({get_contact_email()})"
+        ua = f"FiestaPanel/2.5 ({get_contact_email()})"
         req = urllib.request.Request(url, headers={"User-Agent": ua})
         with urllib.request.urlopen(req, timeout=4) as resp:
             data = json.loads(resp.read().decode())
@@ -293,7 +293,7 @@ def fetch_single(item_name, versions=None):
 
     for url in candidates:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.1"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.5"})
             with urllib.request.urlopen(req, timeout=3) as resp:
                 if resp.status == 200:
                     data = resp.read()

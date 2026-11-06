@@ -3503,7 +3503,7 @@
             <option value="custom">Custom Palette (Studio)</option>
           </select>
           <button class="btn-theme-quick" onclick="openThemeStudio()" title="Open Theme Studio &amp; Customizer">[ Theme Studio ]</button>
-          <a id="header-public-site-link" href="{{ branding.public_site_url if (branding and branding.public_site_url is not none) else 'https://open-fiestasmp.github.io' }}" target="_blank" class="btn-theme-quick" title="View Official Website" style="text-decoration: none; display: {% if branding and branding.public_site_url == '' %}none{% else %}inline-flex{% endif %}; align-items: center; gap: 3px;">[ Public Site &nearr; ]</a>
+          <a id="header-public-site-link" href="{{ branding.public_site_url if (branding and branding.public_site_url) else '#' }}" target="_blank" class="btn-theme-quick" title="View Official Website" style="text-decoration: none; display: {% if branding and branding.public_site_url %}inline-flex{% else %}none{% endif %}; align-items: center; gap: 3px;">[ Public Site &nearr; ]</a>
           <div class="win7-title-controls" style="display: none;">
             <button class="win7-btn-min" title="Minimize Window" type="button" onclick="windowToggleMin()"></button>
             <button class="win7-btn-max" title="Maximize Window" type="button" onclick="windowToggleMax()"></button>
@@ -4578,7 +4578,7 @@
           <div class="section-sub-header" style="margin-top: 18px;">Bedrock One-Click Join &amp; Mobile QR Code</div>
           <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
             <div id="bedrock-qr-container" style="text-align: center;">
-              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') | urlencode }}%7C{{ (branding.server_domain or 'play.your-server.net') | urlencode }}%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
+              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') | urlencode }}%7C{{ (branding.server_domain or 'play.your-server.net') | urlencode }}%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
               <div class="inline-hint" style="margin-top: 4px; font-size: 10px;">Scan with Camera</div>
             </div>
             <div style="flex: 1; min-width: 240px;">
@@ -4587,7 +4587,7 @@
                 Players on Android, iOS, Windows Bedrock, or Nintendo Switch can join directly with one tap without manually entering hostnames or ports.
               </p>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') }}|{{ (branding.server_domain or 'play.your-server.net') }}:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
+                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') }}|{{ (branding.server_domain or 'play.your-server.net') }}:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
                 <button class="btn-classic" onclick="copyBedrockLink()">[ Copy Bedrock Link ]</button>
               </div>
             </div>
@@ -6071,14 +6071,14 @@
               <tr>
                 <td class="label-col">Public Server Website URL:</td>
                 <td class="val-col">
-                  <input type="text" id="brand-input-website" class="tp-input-text" style="width: 480px;" value="{{ branding.public_site_url if (branding and branding.public_site_url is not none) else 'https://open-fiestasmp.github.io' }}" placeholder="https://yourserver.com (leave empty to hide button)">
+                  <input type="text" id="brand-input-website" class="tp-input-text" style="width: 480px;" value="{{ branding.public_site_url if (branding and branding.public_site_url is not none) else '' }}" placeholder="https://yourserver.com (leave empty to hide button)">
                   <span class="inline-hint">Target URL for header [ Public Site ↗ ] button &amp; login link (leave blank to hide)</span>
                 </td>
               </tr>
               <tr>
                 <td class="label-col">Bedrock Edition Server Name:</td>
                 <td class="val-col">
-                  <input type="text" id="brand-input-bedrock-name" class="tp-input-text" style="width: 280px;" value="{{ branding.bedrock_server_name if branding else 'FiestaSMP' }}" placeholder="e.g. FiestaSMP">
+                  <input type="text" id="brand-input-bedrock-name" class="tp-input-text" style="width: 280px;" value="{{ branding.bedrock_server_name if (branding and branding.bedrock_server_name) else (branding.brand_name if branding else 'Minecraft Server') }}" placeholder="e.g. Minecraft Server">
                   <span class="inline-hint">Display name used when Bedrock players connect via QR Code or One-Click Join</span>
                 </td>
               </tr>
@@ -7153,7 +7153,7 @@ def on_action(ctx, action_name, payload):
               <span id="addon-modal-category" class="inline-badge" style="background: rgba(100,116,139,0.15); color: #475569; font-size: 11px;">Tools</span>
             </div>
             <div id="addon-modal-author" style="font-size: 11.5px; color: #64748b;">
-              By FiestaSMP Team • Official Package
+              By Developer • Verified Addon
             </div>
           </div>
         </div>
@@ -11287,7 +11287,7 @@ def on_action(ctx, action_name, payload):
     function renderBedrockConnectAndQr() {
       const host = window.location.hostname || '127.0.0.1';
       const port = '19132';
-      const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'FiestaSMP';
+      const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'Minecraft Server';
       const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:${port}`;
 
       const linkEl = document.getElementById('bedrock-direct-link');
@@ -11301,7 +11301,7 @@ def on_action(ctx, action_name, payload):
 
     function copyBedrockLink() {
       const host = window.location.hostname || '127.0.0.1';
-      const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'FiestaSMP';
+      const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'Minecraft Server';
       const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:19132`;
       navigator.clipboard.writeText(connectUrl);
       showBannerAlert('Bedrock One-Click Connect URL copied to clipboard!');
@@ -14544,8 +14544,8 @@ def on_action(ctx, action_name, payload):
           if (document.getElementById('brand-input-title')) document.getElementById('brand-input-title').value = b.browser_title || '';
           if (document.getElementById('brand-input-serverdesc')) document.getElementById('brand-input-serverdesc').value = b.server_desc || '';
           if (document.getElementById('brand-input-footer')) document.getElementById('brand-input-footer').value = b.footer_text || '';
-          if (document.getElementById('brand-input-website')) document.getElementById('brand-input-website').value = b.public_site_url !== undefined ? b.public_site_url : 'https://open-fiestasmp.github.io';
-          if (document.getElementById('brand-input-bedrock-name')) document.getElementById('brand-input-bedrock-name').value = b.bedrock_server_name || 'FiestaSMP';
+          if (document.getElementById('brand-input-website')) document.getElementById('brand-input-website').value = b.public_site_url !== undefined ? b.public_site_url : '';
+          if (document.getElementById('brand-input-bedrock-name')) document.getElementById('brand-input-bedrock-name').value = b.bedrock_server_name || b.brand_name || '';
           if (document.getElementById('brand-input-domain')) document.getElementById('brand-input-domain').value = b.server_domain || '';
           if (document.getElementById('brand-input-icon')) document.getElementById('brand-input-icon').value = b.header_icon || 'tplink';
           if (document.getElementById('brand-input-custom-icon')) document.getElementById('brand-input-custom-icon').value = b.header_icon_custom || '';
@@ -14605,7 +14605,7 @@ def on_action(ctx, action_name, payload):
         server_desc: document.getElementById('brand-input-serverdesc')?.value.trim() || 'Server Gateway Console',
         footer_text: document.getElementById('brand-input-footer')?.value.trim() || "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
         public_site_url: document.getElementById('brand-input-website') ? document.getElementById('brand-input-website').value.trim() : '',
-        bedrock_server_name: document.getElementById('brand-input-bedrock-name')?.value.trim() || 'FiestaSMP',
+        bedrock_server_name: document.getElementById('brand-input-bedrock-name')?.value.trim() || document.getElementById('brand-input-name')?.value.trim() || 'Minecraft Server',
         server_domain: document.getElementById('brand-input-domain')?.value.trim() || '',
         header_icon: document.getElementById('brand-input-icon')?.value.trim() || 'tplink',
         header_icon_custom: document.getElementById('brand-input-custom-icon')?.value.trim() || ''
@@ -14981,7 +14981,7 @@ def on_action(ctx, action_name, payload):
                   <div style="min-width: 0; overflow: hidden;">
                     <strong style="font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 220px;" title="${escapeQuotes(item.name)}">${escapeHtml(item.name)}</strong>
                     <div style="font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                      v${escapeHtml(item.version)} • By ${escapeHtml(item.author || 'FiestaSMP')}
+                      v${escapeHtml(item.version)} • By ${escapeHtml(item.author || 'Verified Developer')}
                     </div>
                   </div>
                 </div>
@@ -15126,7 +15126,7 @@ def on_action(ctx, action_name, payload):
                 </p>
               </div>
               <div style="font-size: 11px; color: var(--text-sub, #64748b); display: flex; gap: 10px; align-items: center; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                <span style="white-space: nowrap;">By <strong>${escapeHtml(item.author || 'FiestaSMP Team')}</strong></span>
+                <span style="white-space: nowrap;">By <strong>${escapeHtml(item.author || 'Verified Developer')}</strong></span>
                 <span>•</span>
                 <span style="color: #d97706; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">
                   <i class="fa-solid fa-star" style="font-size: 10px; color: #eab308;"></i>
@@ -15401,7 +15401,7 @@ def on_action(ctx, action_name, payload):
         document.getElementById('addon-modal-title').textContent = addon.name;
         document.getElementById('addon-modal-version').textContent = `v${addon.version || '1.0.0'}`;
         document.getElementById('addon-modal-category').textContent = addon.category || 'Extension';
-        document.getElementById('addon-modal-author').textContent = `By ${addon.author || 'FiestaSMP Team'} • Official Verified Package`;
+        document.getElementById('addon-modal-author').textContent = `By ${addon.author || 'Verified Developer'} • Official Verified Package`;
 
         // Icon
         const headerIcon = document.getElementById('addon-modal-header-icon');
