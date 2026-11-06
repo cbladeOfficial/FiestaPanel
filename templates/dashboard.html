@@ -6325,6 +6325,42 @@
             One-click install official and verified extensions to customize and automate your FiestaPanel gateway.
           </p>
 
+          <!-- Featured Addons Carousel Banner -->
+          <div id="store-featured-banner-wrapper" style="display: none; margin-bottom: 18px;">
+            <div class="panel-box" style="margin: 0; position: relative; overflow: hidden; border: 1px solid #0284c7; box-shadow: 0 2px 10px rgba(2, 132, 199, 0.12);">
+              <!-- Top Banner Ribbon Header with Badge & Dismiss Controls -->
+              <div style="padding: 7px 14px; background: linear-gradient(to right, #0284c7, #0369a1); color: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="background: #facc15; color: #78350f; font-weight: bold; font-size: 10px; padding: 2px 8px; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.5px;">★ Featured Extension</span>
+                  <span style="font-size: 11px; opacity: 0.95;">Official &amp; Verified FiestaPanel Extensions</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <label style="font-size: 11px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; color: #f8fafc;" title="Do not show this featured banner again">
+                    <input type="checkbox" id="chk-hide-featured-banner" onchange="handleHideFeaturedBannerChange(this)"> Don't show again
+                  </label>
+                  <button type="button" class="btn-classic" style="height: 19px; line-height: 17px; padding: 0 6px; font-size: 10px; background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: #fff; cursor: pointer;" onclick="dismissFeaturedBanner()" title="Dismiss featured banner">[ ✕ ]</button>
+                </div>
+              </div>
+
+              <!-- Carousel Slide Body -->
+              <div id="featured-carousel-slides" style="padding: 16px 20px; background: linear-gradient(to bottom, rgba(2, 132, 199, 0.04), rgba(0,0,0,0.01));">
+                <!-- Injected dynamically via renderFeaturedSlide() -->
+              </div>
+
+              <!-- Carousel Footer with Prev/Next Navigation and Slide Indicator Dots -->
+              <div style="padding: 6px 14px; border-top: 1px solid var(--table-border, #cbd5e1); background: var(--table-alt, #f8fafc); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <button type="button" class="btn-classic" style="height: 22px; padding: 0 10px; font-size: 10.5px;" onclick="prevFeaturedSlide()">&#10094; Prev</button>
+                  <button type="button" class="btn-classic" style="height: 22px; padding: 0 10px; font-size: 10.5px;" onclick="nextFeaturedSlide()">Next &#10095;</button>
+                  <span id="featured-carousel-counter" style="font-size: 11px; color: var(--text-sub, #64748b); margin-left: 8px;"></span>
+                </div>
+                <div id="featured-carousel-dots" style="display: flex; gap: 6px; align-items: center;">
+                  <!-- Dots -->
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Store Category Filters -->
           <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center;">
             <span style="font-weight: bold; font-size: 11px;">Category:</span>
@@ -6335,7 +6371,8 @@
             <button class="btn-classic store-cat-btn" data-cat="Visuals" onclick="filterStoreCategory('Visuals', this)">Visuals</button>
             <button class="btn-classic store-cat-btn" data-cat="Administration" onclick="filterStoreCategory('Administration', this)">Administration</button>
             <button class="btn-classic store-cat-btn" data-cat="Customization" onclick="filterStoreCategory('Customization', this)">Customization</button>
-            <input type="text" id="store-search-input" class="ctrl-input" style="margin-left: auto; width: 220px;" placeholder="Search store..." oninput="filterStoreCatalogSearch()">
+            <button type="button" id="btn-restore-featured-banner" class="btn-classic" style="display: none; margin-left: auto; height: 22px; font-size: 10.5px; color: #0284c7; border-color: #0284c7;" onclick="restoreFeaturedBanner()">[ ★ Show Featured Banner ]</button>
+            <input type="text" id="store-search-input" class="ctrl-input" style="width: 200px;" placeholder="Search store..." oninput="filterStoreCatalogSearch()">
           </div>
 
           <div id="store-catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; margin-bottom: 20px;">
@@ -14876,6 +14913,7 @@ def on_action(ctx, action_name, payload):
 
         cachedStoreCatalog = data.catalog || [];
         renderStoreCatalog(cachedStoreCatalog);
+        renderFeaturedCarousel(cachedStoreCatalog);
       } catch (err) {
         if (grid) {
           grid.innerHTML = `<div style="grid-column: 1 / -1; color: #dc2626; padding: 12px; background: rgba(220, 38, 38, 0.1); border-radius: 4px;">
@@ -14986,6 +15024,180 @@ def on_action(ctx, action_name, payload):
           </div>
         `;
       }).join('');
+    }
+
+    // ── Store Featured Addons Carousel & Don't Show Again Controls ─
+    let currentFeaturedItems = [];
+    let currentFeaturedIndex = 0;
+    let featuredCarouselTimer = null;
+
+    function renderFeaturedCarousel(catalog) {
+      currentFeaturedItems = (catalog || []).filter(item => item.featured === true);
+      const wrapper = document.getElementById('store-featured-banner-wrapper');
+      const restoreBtn = document.getElementById('btn-restore-featured-banner');
+      if (!wrapper) return;
+
+      if (currentFeaturedItems.length === 0) {
+        wrapper.style.display = 'none';
+        if (restoreBtn) restoreBtn.style.display = 'none';
+        return;
+      }
+
+      const isHiddenByUser = localStorage.getItem('fiesta_hide_featured_banner') === 'true';
+      if (isHiddenByUser) {
+        wrapper.style.display = 'none';
+        if (restoreBtn) restoreBtn.style.display = 'inline-flex';
+        return;
+      }
+
+      wrapper.style.display = 'block';
+      if (restoreBtn) restoreBtn.style.display = 'none';
+
+      const chk = document.getElementById('chk-hide-featured-banner');
+      if (chk) chk.checked = false;
+
+      if (currentFeaturedIndex >= currentFeaturedItems.length) {
+        currentFeaturedIndex = 0;
+      }
+
+      renderFeaturedSlide();
+      startFeaturedAutoAdvance();
+    }
+
+    function renderFeaturedSlide() {
+      if (currentFeaturedItems.length === 0) return;
+      const item = currentFeaturedItems[currentFeaturedIndex];
+      const container = document.getElementById('featured-carousel-slides');
+      const counter = document.getElementById('featured-carousel-counter');
+      const dotsContainer = document.getElementById('featured-carousel-dots');
+      if (!container) return;
+
+      if (counter) {
+        counter.textContent = `Featured ${currentFeaturedIndex + 1} of ${currentFeaturedItems.length}`;
+      }
+
+      if (dotsContainer) {
+        dotsContainer.innerHTML = currentFeaturedItems.map((_, idx) => `
+          <button type="button" onclick="goToFeaturedSlide(${idx})" style="width: ${idx === currentFeaturedIndex ? '20px' : '8px'}; height: 8px; border-radius: 4px; border: none; background: ${idx === currentFeaturedIndex ? '#0284c7' : '#cbd5e1'}; cursor: pointer; padding: 0; transition: all 0.2s ease;" title="Jump to featured slide ${idx + 1}"></button>
+        `).join('');
+      }
+
+      const isInstalled = item.installed === true;
+      const iconHtml = getAddonIconHtml(item.icon, 34);
+      const stats = item.stats || {};
+      const ratingVal = stats.rating_score !== undefined ? stats.rating_score : (item.rating || 0);
+      const ratingStr = ratingVal > 0 ? ratingVal.toFixed(1) + ' / 5.0' : '5.0 / 5.0';
+      const reviewsCount = stats.reviews_count !== undefined ? stats.reviews_count : (stats.rating_score ? 12 : 1);
+      const installsCount = stats.install_count !== undefined ? stats.install_count : (item.installed ? 1 : 0);
+
+      container.innerHTML = `
+        <div style="display: flex; gap: 18px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+          <div style="display: flex; gap: 14px; align-items: center; flex: 1; min-width: 280px;">
+            <div style="width: 52px; height: 52px; border-radius: 8px; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ${iconHtml}
+            </div>
+            <div>
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 3px;">
+                <h3 style="margin: 0; font-size: 15px; color: var(--text-bold, #0f172a);">${escapeHtml(item.name)}</h3>
+                <span class="inline-badge" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; font-size: 10px;">${escapeHtml(item.category || 'Tools')}</span>
+                <span class="inline-badge" style="background: #e2e8f0; color: #334155; font-size: 10px;">v${escapeHtml(item.version || '1.0.0')}</span>
+              </div>
+              <p style="margin: 0 0 5px 0; font-size: 12px; color: var(--text-main, #334155); line-height: 1.4; max-width: 680px;">
+                ${escapeHtml(item.summary || item.description || '')}
+              </p>
+              <div style="font-size: 11px; color: var(--text-sub, #64748b); display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <span>By <strong>${escapeHtml(item.author || 'FiestaSMP Team')}</strong></span>
+                <span>•</span>
+                <span style="color: #d97706; display: inline-flex; align-items: center; gap: 3px;">
+                  <i class="fa-solid fa-star" style="font-size: 10px; color: #eab308;"></i>
+                  <strong>${ratingStr}</strong> (${reviewsCount} review${reviewsCount === 1 ? '' : 's'})
+                </span>
+                <span>•</span>
+                <span style="color: #0284c7;"><strong>${installsCount}</strong> active install${installsCount === 1 ? '' : 's'}</span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 140px;">
+            ${isInstalled ? `
+              <button class="btn-classic" style="color: var(--banner-success-text, #15803d); font-weight: bold; background: var(--banner-success-bg, rgba(34, 197, 94, 0.12)); border-color: rgba(34, 197, 94, 0.4); padding: 5px 14px; font-size: 11.5px;" onclick="openPanelAddonTab('${escapeQuotes(item.id)}', '${escapeQuotes(item.name)}')">
+                [ Installed • Open ]
+              </button>
+            ` : `
+              <button class="btn-satin-green" style="padding: 6px 16px; font-size: 12px; font-weight: bold;" onclick="installAddonFromStore('${escapeQuotes(item.id)}', this)">
+                [ Install Extension ]
+              </button>
+            `}
+            <button class="btn-classic" style="padding: 3px 12px; font-size: 11px;" onclick="openAddonDetailModal('${escapeQuotes(item.id)}')">
+              [ Details &amp; Docs ]
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function prevFeaturedSlide() {
+      if (currentFeaturedItems.length <= 1) return;
+      currentFeaturedIndex = (currentFeaturedIndex - 1 + currentFeaturedItems.length) % currentFeaturedItems.length;
+      renderFeaturedSlide();
+      startFeaturedAutoAdvance();
+    }
+
+    function nextFeaturedSlide() {
+      if (currentFeaturedItems.length <= 1) return;
+      currentFeaturedIndex = (currentFeaturedIndex + 1) % currentFeaturedItems.length;
+      renderFeaturedSlide();
+      startFeaturedAutoAdvance();
+    }
+
+    function goToFeaturedSlide(idx) {
+      if (idx >= 0 && idx < currentFeaturedItems.length) {
+        currentFeaturedIndex = idx;
+        renderFeaturedSlide();
+        startFeaturedAutoAdvance();
+      }
+    }
+
+    function startFeaturedAutoAdvance() {
+      if (featuredCarouselTimer) clearInterval(featuredCarouselTimer);
+      if (currentFeaturedItems.length > 1) {
+        featuredCarouselTimer = setInterval(() => {
+          currentFeaturedIndex = (currentFeaturedIndex + 1) % currentFeaturedItems.length;
+          renderFeaturedSlide();
+        }, 9000);
+      }
+    }
+
+    function handleHideFeaturedBannerChange(chk) {
+      if (chk && chk.checked) {
+        localStorage.setItem('fiesta_hide_featured_banner', 'true');
+        dismissFeaturedBanner();
+      } else {
+        localStorage.removeItem('fiesta_hide_featured_banner');
+      }
+    }
+
+    function dismissFeaturedBanner() {
+      const chk = document.getElementById('chk-hide-featured-banner');
+      if (chk && chk.checked) {
+        localStorage.setItem('fiesta_hide_featured_banner', 'true');
+      }
+      const wrapper = document.getElementById('store-featured-banner-wrapper');
+      if (wrapper) wrapper.style.display = 'none';
+      const restoreBtn = document.getElementById('btn-restore-featured-banner');
+      if (restoreBtn) restoreBtn.style.display = 'inline-flex';
+      if (featuredCarouselTimer) clearInterval(featuredCarouselTimer);
+    }
+
+    function restoreFeaturedBanner() {
+      localStorage.removeItem('fiesta_hide_featured_banner');
+      const chk = document.getElementById('chk-hide-featured-banner');
+      if (chk) chk.checked = false;
+      const wrapper = document.getElementById('store-featured-banner-wrapper');
+      if (wrapper) wrapper.style.display = 'block';
+      const restoreBtn = document.getElementById('btn-restore-featured-banner');
+      if (restoreBtn) restoreBtn.style.display = 'none';
+      renderFeaturedSlide();
+      startFeaturedAutoAdvance();
     }
 
     // ── Full-Featured Client-Side Markdown Parser ─────────────────
