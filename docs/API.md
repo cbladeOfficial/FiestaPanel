@@ -321,3 +321,69 @@ Returns gateway server environment paths, screen session, systemd daemon name, a
 
 ### `POST /api/system/settings`
 Updates server environment paths in `config.json` (Owner only). Accepts `server_dir`, `service_name`, `screen_session`, and `backup_dir`.
+
+---
+
+## Cloud Offsite Backups & Local Archive Management
+
+### `POST /api/backup/delete`
+Deletes a local backup archive from `backup_dir` (Owner or `backups` permission required).
+- **Request Body**:
+  ```json
+  { "filename": "server_backup_20261106_140000.tar.gz" }
+  ```
+- **Response**:
+  ```json
+  { "success": true, "message": "Backup archive 'server_backup_20261106_140000.tar.gz' deleted from local storage." }
+  ```
+
+### `GET /api/backup/cloud/config`
+Returns masked offsite cloud storage configuration (S3 / WebDAV) and provider capabilities.
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "config": {
+      "enabled": true,
+      "provider": "s3",
+      "auto_sync": true,
+      "retention_count": 5,
+      "s3": {
+        "endpoint_url": "https://<accountid>.r2.cloudflarestorage.com",
+        "bucket_name": "minecraft-backups",
+        "region_name": "auto",
+        "access_key_id": "AKI...",
+        "secret_access_key": "••••••••••••••••",
+        "has_secret": true,
+        "prefix": "backups/"
+      },
+      "webdav": {
+        "url": "",
+        "username": "",
+        "password": "",
+        "has_password": false
+      }
+    }
+  }
+  ```
+
+### `POST /api/backup/cloud/config`
+Updates offsite cloud configuration (Owner or `backups` permission required). Automatically preserves existing secrets if `••••` mask is provided.
+
+### `POST /api/backup/cloud/test`
+Validates authentication and bucket/directory reachability for S3 or WebDAV. Returns detailed error message on failure or success confirmation.
+
+### `GET /api/backup/cloud/status`
+Returns live synchronization state, active progress percentage, bytes transferred, and last synced filename.
+
+### `GET /api/backup/cloud/list`
+Queries remote offsite cloud storage and returns metadata for all stored backup archives (filename, size, remote last modified timestamp, provider).
+
+### `POST /api/backup/cloud/upload`
+Initiates an asynchronous background upload of a local backup archive to configured cloud storage. Automatically enforces retention policy upon completion.
+
+### `POST /api/backup/cloud/download`
+Downloads a remote backup archive from offsite cloud storage back into the local server's `backup_dir`.
+
+### `POST /api/backup/cloud/delete`
+Deletes an offsite backup archive from remote cloud storage.

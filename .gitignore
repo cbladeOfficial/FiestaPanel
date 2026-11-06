@@ -9,6 +9,7 @@ static/*.tar.gz
 static/*.zip
 
 config.json
+cloud_backups.json
 addon_stats.json
 automated_tasks.json
 .secret_key

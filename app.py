@@ -29,6 +29,7 @@ from PIL import Image
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory, Response
 from addon_manager import AddonManager
+from cloud_backups import CloudBackupManager
 import autostart
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -73,16 +74,18 @@ DEFAULT_SPAWN_COORDINATES = {
 
 def load_server_config():
     is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
+    def_server_dir = "/server" if is_docker else (os.environ.get("MINECRAFT_DIR") or ("/home/ubuntu/fiesta" if os.path.isdir("/home/ubuntu/fiesta") else os.path.join(os.path.expanduser("~"), "minecraft")))
+    def_backup_dir = "/home/ubuntu/backups" if os.path.isdir("/home/ubuntu/backups") else os.path.join(os.path.dirname(def_server_dir), "backups")
     cfg = {
         "admin_user": "admin",
         "admin_pass": None,
-        "server_dir": "/server" if is_docker else "/home/ubuntu/fiesta",
-        "service_name": "fiesta",
-        "screen_session": "fiesta",
+        "server_dir": def_server_dir,
+        "service_name": "fiesta" if os.path.isdir("/home/ubuntu/fiesta") else "minecraft",
+        "screen_session": "fiesta" if os.path.isdir("/home/ubuntu/fiesta") else "minecraft",
         "host": "0.0.0.0" if is_docker else "127.0.0.1",
         "port": 8080,
         "autostart": True,
-        "backup_dir": "/home/ubuntu/backups" if os.path.isdir("/home/ubuntu/backups") else os.path.join(os.path.dirname("/home/ubuntu/fiesta"), "backups"),
+        "backup_dir": def_backup_dir,
         "spawn_coordinates": DEFAULT_SPAWN_COORDINATES.copy()
     }
     target_cfg = CONFIG_FILE
@@ -903,6 +906,11 @@ def get_server_properties_dict():
             pass
     return props
 
+def get_main_level_name():
+    """Returns the configured level-name from server.properties, defaulting to 'world'."""
+    props = get_server_properties_dict()
+    return props.get("level-name", "world").strip() or "world"
+
 def ping_mc():
     """Queries live Minecraft server via native SLP handshake using server-port from properties."""
     props = get_server_properties_dict()
@@ -1053,6 +1061,8 @@ try:
     addon_manager.initialize()
 except Exception as e:
     app.logger.warning(f"Error during addon_manager initialization: {e}")
+
+cloud_backup_mgr = CloudBackupManager(DATA_DIR)
 
 _last_known_server_running = None
 _state_notification_lock = threading.Lock()
@@ -1447,7 +1457,8 @@ def api_download_log():
 
     target_log = os.path.join(SERVER_DIR, "logs", req_file)
     if os.path.exists(target_log) and os.path.isfile(target_log):
-        download_name = f"fiesta-{req_file}" if req_file == "latest.log" else req_file
+        svc_prefix = (SERVICE_NAME or "server").lower().replace(" ", "-")
+        download_name = f"{svc_prefix}-{req_file}" if req_file == "latest.log" else req_file
         return send_file(target_log, as_attachment=True, download_name=download_name)
     return jsonify({"error": f"Log file '{req_file}' not found"}), 404
 
@@ -1647,7 +1658,12 @@ def api_player_inventory():
         except Exception:
             pass
 
-    dat_path = os.path.join(SERVER_DIR, "world", "playerdata", f"{uuid}.dat")
+    level_name = get_main_level_name()
+    dat_path = os.path.join(SERVER_DIR, level_name, "playerdata", f"{uuid}.dat")
+    if not os.path.exists(dat_path) and level_name != "world":
+        fallback_path = os.path.join(SERVER_DIR, "world", "playerdata", f"{uuid}.dat")
+        if os.path.exists(fallback_path):
+            dat_path = fallback_path
     if not os.path.exists(dat_path):
         return jsonify({"success": False, "message": f"No playerdata file found for {player_name or uuid}"}), 404
 
@@ -3632,7 +3648,7 @@ def api_plugins_search():
             "limit": 15
         }
         url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaGateway/1.0 (admin@fiesta.net)"})
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
         with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode())
 
@@ -3664,7 +3680,7 @@ def api_plugin_install_online():
     try:
         loaders = '["paper","spigot","purpur","bukkit"]'
         url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaGateway/1.0 (admin@fiesta.net)"})
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
 
         versions = []
         try:
@@ -3675,7 +3691,7 @@ def api_plugin_install_online():
 
         if not versions:
             url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": "FiestaGateway/1.0 (admin@fiesta.net)"})
+            req_all = urllib.request.Request(url_all, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
             with urllib.request.urlopen(req_all, timeout=8) as resp:
                 versions = json.loads(resp.read().decode())
 
@@ -3708,7 +3724,7 @@ def api_plugin_install_online():
         os.makedirs(plugins_dir, exist_ok=True)
         dest_path = os.path.join(plugins_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": "FiestaGateway/1.0 (admin@fiesta.net)"})
+        dl_req = urllib.request.Request(download_url, headers={"User-Agent": "FiestaPanel/1.0 (https://github.com/open-fiestasmp/FiestaPanel)"})
         with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
             shutil.copyfileobj(resp, out_f)
 
@@ -4227,7 +4243,8 @@ def api_get_backups():
     s_backups = os.path.join(SERVER_DIR, "backups")
     if s_backups not in search_dirs and os.path.isdir(s_backups):
         search_dirs.append(s_backups)
-    for legacy in ['/home/ubuntu', '/home/ubuntu/backups']:
+    user_home = os.path.expanduser('~')
+    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
         if legacy not in search_dirs and os.path.isdir(legacy):
             search_dirs.append(legacy)
 
@@ -4266,12 +4283,17 @@ def api_create_backup():
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_dir = get_backup_dir()
         os.makedirs(backup_dir, exist_ok=True)
-        target_tar = os.path.join(backup_dir, f"fiesta_backup_{ts}.tar.gz")
+        svc_prefix = (SERVICE_NAME or "server").lower().replace(" ", "-")
+        target_tar = os.path.join(backup_dir, f"{svc_prefix}_backup_{ts}.tar.gz")
         send_mc_command("save-all")
         time.sleep(2)
         try:
             with tarfile.open(target_tar, "w:gz") as tar:
                 tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR))
+            # Trigger cloud sync if enabled
+            c_cfg = cloud_backup_mgr.load_config()
+            if c_cfg.get("enabled") and c_cfg.get("auto_sync", True):
+                cloud_backup_mgr.start_async_upload(target_tar)
         except Exception as err:
             print("Backup creation error:", err)
 
@@ -4285,7 +4307,8 @@ def api_download_backup():
     safe_name = os.path.basename(filename)
     bdir = get_backup_dir()
     search_dirs = [bdir, os.path.join(SERVER_DIR, "backups"), SERVER_DIR, os.path.dirname(SERVER_DIR)]
-    for legacy in ['/home/ubuntu', '/home/ubuntu/backups']:
+    user_home = os.path.expanduser('~')
+    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
         if legacy not in search_dirs and os.path.isdir(legacy):
             search_dirs.append(legacy)
     for folder in search_dirs:
@@ -4293,6 +4316,151 @@ def api_download_backup():
         if os.path.isfile(p):
             return send_file(p, as_attachment=True, download_name=safe_name)
     return jsonify({"error": "Backup file not found"}), 404
+
+@app.route("/api/backup/delete", methods=["POST"])
+@login_required
+def api_delete_backup():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
+
+    data = request.get_json() or {}
+    filename = os.path.basename(data.get("filename", "").strip())
+    if not filename or not (filename.endswith(".tar.gz") or filename.endswith(".zip") or filename.endswith(".tar.zst") or ".tar." in filename):
+        return jsonify({"success": False, "message": "Invalid backup archive filename."}), 400
+
+    bdir = get_backup_dir()
+    search_dirs = [bdir, os.path.join(SERVER_DIR, "backups")]
+    user_home = os.path.expanduser('~')
+    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
+        if legacy not in search_dirs and os.path.isdir(legacy):
+            search_dirs.append(legacy)
+
+    deleted = False
+    for folder in search_dirs:
+        p = os.path.join(folder, filename)
+        if os.path.isfile(p):
+            try:
+                os.remove(p)
+                deleted = True
+                break
+            except Exception as e:
+                return jsonify({"success": False, "message": f"Failed to delete backup file: {e}"}), 500
+
+    if deleted:
+        return jsonify({"success": True, "message": f"Backup archive '{filename}' deleted from local storage."})
+    return jsonify({"success": False, "message": "Backup file not found."}), 404
+
+# ── Cloud Offsite Backups Endpoints ──────────────────────────────────────────
+@app.route("/api/backup/cloud/config", methods=["GET", "POST"])
+@login_required
+def api_backup_cloud_config():
+    if request.method == "GET":
+        cfg = cloud_backup_mgr.get_masked_config()
+        return jsonify({"success": True, "config": cfg})
+
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
+
+    data = request.get_json() or {}
+    ok, msg = cloud_backup_mgr.save_config(data)
+    if ok:
+        return jsonify({"success": True, "message": msg, "config": cloud_backup_mgr.get_masked_config()})
+    return jsonify({"success": False, "message": msg}), 400
+
+@app.route("/api/backup/cloud/test", methods=["POST"])
+@login_required
+def api_backup_cloud_test():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
+
+    data = request.get_json()
+    ok, msg = cloud_backup_mgr.test_connection(data if isinstance(data, dict) and data else None)
+    return jsonify({"success": ok, "message": msg})
+
+@app.route("/api/backup/cloud/status", methods=["GET"])
+@login_required
+def api_backup_cloud_status():
+    return jsonify(cloud_backup_mgr.get_status())
+
+@app.route("/api/backup/cloud/list", methods=["GET"])
+@login_required
+def api_backup_cloud_list():
+    try:
+        remotes = cloud_backup_mgr.list_remote_backups()
+        return jsonify({"success": True, "backups": remotes, "total": len(remotes)})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e), "backups": [], "total": 0}), 500
+
+@app.route("/api/backup/cloud/upload", methods=["POST"])
+@login_required
+def api_backup_cloud_upload():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
+
+    data = request.get_json() or {}
+    filename = os.path.basename(data.get("filename", "").strip())
+    if not filename:
+        return jsonify({"success": False, "message": "Filename required."}), 400
+
+    bdir = get_backup_dir()
+    search_dirs = [bdir, os.path.join(SERVER_DIR, "backups"), SERVER_DIR, os.path.dirname(SERVER_DIR)]
+    user_home = os.path.expanduser('~')
+    for legacy in [user_home, os.path.join(user_home, 'backups'), '/home/ubuntu', '/home/ubuntu/backups']:
+        if legacy not in search_dirs and os.path.isdir(legacy):
+            search_dirs.append(legacy)
+
+    target_path = None
+    for folder in search_dirs:
+        p = os.path.join(folder, filename)
+        if os.path.isfile(p):
+            target_path = p
+            break
+
+    if not target_path:
+        return jsonify({"success": False, "message": f"Local backup archive '{filename}' not found."}), 404
+
+    cloud_backup_mgr.start_async_upload(target_path)
+    return jsonify({"success": True, "message": f"Initiated background cloud upload for '{filename}'. Check status monitor."})
+
+@app.route("/api/backup/cloud/download", methods=["POST"])
+@login_required
+def api_backup_cloud_download():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
+
+    data = request.get_json() or {}
+    filename = os.path.basename(data.get("filename", "").strip())
+    if not filename:
+        return jsonify({"success": False, "message": "Filename required."}), 400
+
+    bdir = get_backup_dir()
+    def download_task():
+        cloud_backup_mgr.download_remote_backup(filename, bdir)
+
+    threading.Thread(target=download_task, daemon=True).start()
+    return jsonify({"success": True, "message": f"Downloading '{filename}' from cloud storage into local backups directory in background..."})
+
+@app.route("/api/backup/cloud/delete", methods=["POST"])
+@login_required
+def api_backup_cloud_delete():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
+
+    data = request.get_json() or {}
+    filename = os.path.basename(data.get("filename", "").strip())
+    if not filename:
+        return jsonify({"success": False, "message": "Filename required."}), 400
+
+    ok, msg = cloud_backup_mgr.delete_remote_backup(filename)
+    if ok:
+        return jsonify({"success": True, "message": msg})
+    return jsonify({"success": False, "message": msg}), 400
 
 # ── File Manager ─────────────────────────────────────────────────────────────
 def safe_fiesta_path(rel_path):
@@ -4336,7 +4504,8 @@ def api_files_list():
         if parent_rel == ".":
             parent_rel = ""
 
-    crumbs = [{"name": "fiesta", "path": ""}]
+    root_name = os.path.basename(os.path.realpath(SERVER_DIR)) or "server"
+    crumbs = [{"name": root_name, "path": ""}]
     if current_rel:
         parts = current_rel.split(os.sep)
         curr_p = ""
@@ -4741,7 +4910,10 @@ def api_game_options():
 @login_required
 def api_worlds_list():
     worlds = []
-    known_dims = ["world", "world_nether", "world_the_end", "maintenance"]
+    level_name = get_main_level_name()
+    known_dims = [level_name, f"{level_name}_nether", f"{level_name}_the_end"]
+    if "world" not in known_dims:
+        known_dims.append("world")
 
     seed = ""
     level_type = "minecraft:normal"
@@ -4921,8 +5093,14 @@ def api_worlds_reset_dimension():
     if dim not in ("nether", "the_end", "overworld"):
         return jsonify({"success": False, "message": "Dimension must be 'nether', 'the_end', or 'overworld'"}), 400
 
-    target_dir_name = "world_nether" if dim == "nether" else ("world_the_end" if dim == "the_end" else "world")
+    level_name = get_main_level_name()
+    target_dir_name = f"{level_name}_nether" if dim == "nether" else (f"{level_name}_the_end" if dim == "the_end" else level_name)
     abs_dir = os.path.join(SERVER_DIR, target_dir_name)
+    if not os.path.exists(abs_dir) and level_name != "world":
+        fallback_dir_name = "world_nether" if dim == "nether" else ("world_the_end" if dim == "the_end" else "world")
+        if os.path.exists(os.path.join(SERVER_DIR, fallback_dir_name)):
+            target_dir_name = fallback_dir_name
+            abs_dir = os.path.join(SERVER_DIR, target_dir_name)
 
     backup_dir = get_backup_dir()
     os.makedirs(backup_dir, exist_ok=True)
@@ -4945,7 +5123,9 @@ def api_worlds_reset_dimension():
             shutil.rmtree(dp, ignore_errors=True)
             os.makedirs(dp, exist_ok=True)
 
-    main_world = os.path.join(SERVER_DIR, "world")
+    main_world = os.path.join(SERVER_DIR, level_name)
+    if not os.path.exists(main_world) and os.path.exists(os.path.join(SERVER_DIR, "world")):
+        main_world = os.path.join(SERVER_DIR, "world")
     dim_sub = "DIM-1" if dim == "nether" else ("DIM1" if dim == "the_end" else "")
     if dim_sub:
         dim_sub_path = os.path.join(main_world, dim_sub)
@@ -5032,7 +5212,10 @@ def api_worlds_optimize():
 @app.route("/api/worlds/datapacks", methods=["GET", "POST"])
 @login_required
 def api_worlds_datapacks():
-    dp_dir = os.path.join(SERVER_DIR, "world", "datapacks")
+    level_name = get_main_level_name()
+    dp_dir = os.path.join(SERVER_DIR, level_name, "datapacks")
+    if not os.path.exists(dp_dir) and os.path.exists(os.path.join(SERVER_DIR, "world", "datapacks")):
+        dp_dir = os.path.join(SERVER_DIR, "world", "datapacks")
     os.makedirs(dp_dir, exist_ok=True)
 
     if request.method == "GET":
@@ -5326,21 +5509,28 @@ def _automated_tasks_worker():
                 if db.get("last_run") != today_str:
                     db["last_run"] = today_str
                     modified = True
-                    backup_dir = SERVER_CONFIG.get("backup_dir") or os.path.join(os.path.dirname(SERVER_DIR), "backups")
+                    backup_dir = get_backup_dir()
                     os.makedirs(backup_dir, exist_ok=True)
-                    target_tar = os.path.join(backup_dir, f"fiesta_auto_backup_{now.strftime('%Y%m%d_%H%M%S')}.tar.gz")
+                    svc_prefix = (SERVICE_NAME or "server").lower().replace(" ", "-")
+                    target_tar = os.path.join(backup_dir, f"{svc_prefix}_auto_backup_{now.strftime('%Y%m%d_%H%M%S')}.tar.gz")
                     send_mc_command("save-all")
                     time.sleep(2)
                     try:
                         with tarfile.open(target_tar, "w:gz") as tar:
                             tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR))
+                        # Auto-sync to cloud if configured
+                        c_cfg = cloud_backup_mgr.load_config()
+                        if c_cfg.get("enabled") and c_cfg.get("auto_sync", True):
+                            cloud_backup_mgr.start_async_upload(target_tar)
                     except Exception as err:
                         app.logger.error(f"Automated daily backup error: {err}")
 
             # 3. Idle Auto-Stop
             ias = tasks.get("idle_auto_stop", {})
             if ias.get("enabled"):
-                is_online, p_count, _, _ = ping_mc()
+                p_info = ping_mc()
+                is_online = bool(p_info.get("online"))
+                p_count = int(p_info.get("players_online", 0))
                 if is_online:
                     if p_count == 0:
                         if not ias.get("idle_since"):

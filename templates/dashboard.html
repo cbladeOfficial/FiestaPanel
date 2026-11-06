@@ -4567,7 +4567,7 @@
           <div class="section-sub-header" style="margin-top: 18px;">Bedrock One-Click Join &amp; Mobile QR Code</div>
           <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
             <div id="bedrock-qr-container" style="text-align: center;">
-              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') | urlencode }}%7C127.0.0.1%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
+              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') | urlencode }}%7C{{ (branding.server_domain or 'play.your-server.net') | urlencode }}%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
               <div class="inline-hint" style="margin-top: 4px; font-size: 10px;">Scan with Camera</div>
             </div>
             <div style="flex: 1; min-width: 240px;">
@@ -4576,7 +4576,7 @@
                 Players on Android, iOS, Windows Bedrock, or Nintendo Switch can join directly with one tap without manually entering hostnames or ports.
               </p>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') }}|127.0.0.1:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
+                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') }}|{{ (branding.server_domain or 'play.your-server.net') }}:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
                 <button class="btn-classic" onclick="copyBedrockLink()">[ Copy Bedrock Link ]</button>
               </div>
             </div>
@@ -5608,18 +5608,39 @@
         <section id="view-sys-backups" class="view-panel" style="display:none;">
           <div class="section-title-bar">
             <span>System Tools - Backup &amp; Restore</span>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadBackups()">[ Refresh List ]</button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadBackups(); loadRemoteCloudBackups();">[ 🔄 Refresh All ]</button>
+            </div>
           </div>
+
+          <!-- Section 1: Manual Backup & Local Snapshots -->
           <table class="form-layout-table">
             <tr>
               <td class="label-col">Manual Backup:</td>
-              <td class="val-col">
+              <td class="val-col" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <button class="btn-satin-green" onclick="createBackupNow()">[ Create Manual Backup Now ]</button>
-                <span class="inline-hint">(Creates safe compressed tarball in background)</span>
+                <span class="inline-hint">(Creates safe compressed tarball in background and auto-syncs to cloud if enabled)</span>
               </td>
             </tr>
           </table>
-          <div class="section-sub-header">Existing System Snapshots &amp; Archives</div>
+
+          <!-- Cloud Sync Live Status Box -->
+          <div id="cloud-sync-status-box" style="margin-bottom: 14px; background: var(--input-bg); border: 1px solid var(--input-border); padding: 10px 14px; border-radius: 3px; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="font-size: 12px; color: #0284c7;" id="cloud-sync-title">☁ Cloud Offsite Synchronization</strong>
+              <span id="cloud-sync-badge" class="badge-status online" style="font-size: 10px;">Syncing</span>
+            </div>
+            <div id="cloud-sync-msg" style="font-size: 11px; margin-bottom: 6px;">Preparing upload...</div>
+            <div class="meter-container" style="width: 100%; height: 14px; margin-bottom: 4px;">
+              <div id="cloud-sync-meter" class="meter-bar" style="width: 0%; background: #0284c7;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--text-sub, #666);">
+              <span id="cloud-sync-details">0 MB / 0 MB</span>
+              <span id="cloud-sync-pct">0%</span>
+            </div>
+          </div>
+
+          <div class="section-sub-header">Local System Snapshots &amp; Archives</div>
           <table class="data-grid-table">
             <thead>
               <tr>
@@ -5627,11 +5648,149 @@
                 <th>Size (GB / MB)</th>
                 <th>Created Timestamp</th>
                 <th>Storage Path</th>
-                <th style="width: 110px; text-align: center;">Download</th>
+                <th style="width: 210px; text-align: center;">Actions</th>
               </tr>
             </thead>
             <tbody id="backups-table-body">
               <tr><td colspan="5" style="text-align: center; color: #888;">Loading backups list...</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Section 2: Cloud Offsite Storage Configuration -->
+          <div class="section-sub-header" style="margin-top: 24px;">Cloud Offsite Backup Configuration (S3 / WebDAV)</div>
+          <p class="inline-hint" style="margin-bottom: 12px;">
+            Synchronize your server world archives to remote cloud storage (Cloudflare R2, Amazon S3, Backblaze B2, MinIO, or Nextcloud/WebDAV) so backups are protected offsite even in the event of hardware failure.
+          </p>
+
+          <table class="form-layout-table">
+            <tr>
+              <td class="label-col">Enable Cloud Offsite:</td>
+              <td class="val-col">
+                <label class="switch-toggle" style="vertical-align: middle;">
+                  <input type="checkbox" id="cloud-backup-enable">
+                  <span class="switch-slider"></span>
+                </label>
+                <span class="inline-hint" style="margin-left: 8px;">Activate offsite cloud archiving</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Storage Provider:</td>
+              <td class="val-col">
+                <select id="cloud-backup-provider" class="ctrl-input" style="width: 280px; font-weight: bold;" onchange="toggleCloudProviderUI()">
+                  <option value="s3">S3-Compatible (Cloudflare R2, AWS S3, B2, MinIO)</option>
+                  <option value="webdav">WebDAV / Nextcloud / ownCloud</option>
+                </select>
+              </td>
+            </tr>
+
+            <!-- S3 Fields -->
+            <tr class="cloud-row-s3">
+              <td class="label-col">S3 Endpoint URL:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-s3-endpoint" class="tp-input-text" style="width: 440px;" placeholder="https://<accountid>.r2.cloudflarestorage.com (empty for AWS S3)">
+                <div class="inline-hint" style="font-size: 10px; margin-top: 2px;">Leave blank if using standard Amazon AWS S3</div>
+              </td>
+            </tr>
+            <tr class="cloud-row-s3">
+              <td class="label-col">S3 Bucket Name:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-s3-bucket" class="tp-input-text" style="width: 320px;" placeholder="e.g. my-minecraft-backups">
+              </td>
+            </tr>
+            <tr class="cloud-row-s3">
+              <td class="label-col">S3 Region:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-s3-region" class="tp-input-text" style="width: 180px;" value="auto" placeholder="auto or us-east-1">
+              </td>
+            </tr>
+            <tr class="cloud-row-s3">
+              <td class="label-col">S3 Access Key ID:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-s3-access-key" class="tp-input-text" style="width: 360px;" placeholder="Access Key">
+              </td>
+            </tr>
+            <tr class="cloud-row-s3">
+              <td class="label-col">S3 Secret Access Key:</td>
+              <td class="val-col">
+                <input type="password" id="cloud-s3-secret-key" class="tp-input-text" style="width: 360px;" placeholder="Secret Key">
+                <button type="button" class="btn-classic" style="margin-left: 6px;" onclick="togglePasswordVisibility('cloud-s3-secret-key', this)">[ 👁 Show ]</button>
+              </td>
+            </tr>
+            <tr class="cloud-row-s3">
+              <td class="label-col">S3 Storage Prefix / Folder:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-s3-prefix" class="tp-input-text" style="width: 220px;" value="backups/" placeholder="backups/">
+                <span class="inline-hint">(Subfolder path inside bucket)</span>
+              </td>
+            </tr>
+
+            <!-- WebDAV Fields -->
+            <tr class="cloud-row-webdav" style="display: none;">
+              <td class="label-col">WebDAV Server URL:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-webdav-url" class="tp-input-text" style="width: 440px;" placeholder="https://nextcloud.example.com/remote.php/dav/files/username/backups">
+              </td>
+            </tr>
+            <tr class="cloud-row-webdav" style="display: none;">
+              <td class="label-col">WebDAV Username:</td>
+              <td class="val-col">
+                <input type="text" id="cloud-webdav-user" class="tp-input-text" style="width: 280px;" placeholder="Username">
+              </td>
+            </tr>
+            <tr class="cloud-row-webdav" style="display: none;">
+              <td class="label-col">WebDAV Password / App Token:</td>
+              <td class="val-col">
+                <input type="password" id="cloud-webdav-pass" class="tp-input-text" style="width: 280px;" placeholder="Password">
+                <button type="button" class="btn-classic" style="margin-left: 6px;" onclick="togglePasswordVisibility('cloud-webdav-pass', this)">[ 👁 Show ]</button>
+              </td>
+            </tr>
+
+            <!-- Common Cloud Options -->
+            <tr>
+              <td class="label-col">Automatic Cloud Sync:</td>
+              <td class="val-col">
+                <label style="cursor: pointer; font-size: 12px; font-weight: bold;">
+                  <input type="checkbox" id="cloud-backup-autosync" checked style="vertical-align: middle;">
+                  Automatically upload snapshots to cloud upon backup creation (manual &amp; scheduled daily tasks)
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Cloud Retention Policy:</td>
+              <td class="val-col">
+                Keep the most recent <input type="number" id="cloud-backup-retention" class="tp-input-text" style="width: 60px; font-weight: bold;" value="5" min="0" max="100"> cloud snapshots.
+                <span class="inline-hint">(Oldest archives automatically pruned from cloud storage; set 0 for unlimited retention)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Actions &amp; Diagnostics:</td>
+              <td class="val-col">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button class="btn-satin-green" onclick="saveCloudBackupConfig()">[ 💾 Save Cloud Configuration ]</button>
+                  <button class="btn-classic" style="font-weight: bold;" onclick="testCloudConnection()">[ ⚡ Test Connection ]</button>
+                  <span id="cloud-config-status-msg" style="font-size: 11px; font-weight: bold;"></span>
+                </div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Section 3: Remote Cloud Storage Explorer -->
+          <div class="section-sub-header" style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Remote Cloud Archives (Offsite Storage Explorer)</span>
+            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadRemoteCloudBackups()">[ 🔄 Query Remote Cloud ]</button>
+          </div>
+          <table class="data-grid-table">
+            <thead>
+              <tr>
+                <th>Remote Archive Filename</th>
+                <th>Size (GB / MB)</th>
+                <th>Remote Modified Timestamp</th>
+                <th>Provider</th>
+                <th style="width: 190px; text-align: center;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="cloud-backups-table-body">
+              <tr><td colspan="5" style="text-align: center; color: #888;">Click [ Query Remote Cloud ] to fetch archives stored in offsite storage.</td></tr>
             </tbody>
           </table>
         </section>
@@ -5641,7 +5800,7 @@
           <div class="section-title-bar">System Tools - Reboot Server</div>
           <div style="padding: 10px 0;">
             <p style="margin-bottom: 12px; font-size: 12px; color: #cc0000; font-weight: bold;">
-              Caution: Clicking Reboot will safely save world data, stop active player connections, and restart the systemd fiesta service.
+              Caution: Clicking Reboot will safely save world data, stop active player connections, and restart the backend server daemon.
             </p>
             <div id="reboot-progress-box" style="display: none; margin: 15px 0;">
               <div style="font-weight: bold; margin-bottom: 4px;" id="reboot-status-msg">Rebooting server, please wait...</div>
@@ -5919,8 +6078,8 @@
             <!-- Live Custom Theme Preview Box -->
             <div class="live-preview-box" id="custom-preview-box" style="margin-bottom: 14px; overflow: hidden;">
               <div id="cust-prev-header" style="padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #00f0ff;">
-                <div style="font-weight: bold; font-size: 12px; color: #ffffff;">FIESTA-LINK <span style="font-weight: normal; font-size: 9px; opacity: 0.85;">Preview</span></div>
-                <div style="font-size: 10px; font-weight: bold; color: #ffffff;">Model No. FS-GATEWAY-PRO</div>
+                <div style="font-weight: bold; font-size: 12px; color: #ffffff;"><span id="cust-prev-brand-name">{{ branding.brand_name if branding else 'FIESTA-LINK' }}</span> <span style="font-weight: normal; font-size: 9px; opacity: 0.85;">Preview</span></div>
+                <div style="font-size: 10px; font-weight: bold; color: #ffffff;" id="cust-prev-model-num">{{ branding.model_number if branding else 'Model No. FS-GATEWAY-PRO' }}</div>
               </div>
               <div style="display: flex; min-height: 80px;">
                 <div id="cust-prev-nav" style="width: 140px; padding: 8px; font-size: 10px; display: flex; flex-direction: column; gap: 4px;">
@@ -7273,7 +7432,7 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'sys-filemanager') loadFileManager();
       if (viewId === 'sys-configs') { loadServerProps(); loadConfigsDropdown(); }
       if (viewId === 'sys-tasks') loadAutomatedTasks();
-      if (viewId === 'sys-backups') loadBackups();
+      if (viewId === 'sys-backups') { loadBackups(); loadCloudBackupConfig(); pollCloudStatus(); }
       if (viewId === 'sys-branding') loadBrandingForm();
       if (viewId === 'sys-themes') loadThemeStudio();
       if (viewId === 'sys-info') loadSystemInfo();
@@ -7654,7 +7813,8 @@ def on_action(ctx, action_name, payload):
       const fileName = sel ? sel.value : 'latest.log';
       if (dlBtn) {
         dlBtn.href = `/api/log/download?file=${encodeURIComponent(fileName)}`;
-        dlBtn.setAttribute('download', fileName === 'latest.log' ? 'fiesta-latest.log' : fileName);
+        const logPrefix = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) ? currentBranding.brand_name.toLowerCase().replace(/[^a-z0-9]/g, '') : 'server';
+        dlBtn.setAttribute('download', fileName === 'latest.log' ? `${logPrefix}-latest.log` : fileName);
       }
 
       if (fileName !== 'latest.log') {
@@ -11377,6 +11537,331 @@ def on_action(ctx, action_name, payload):
     }
 
     // ── Backups ─────────────────────────────────────────────────
+    // ── Backups & Cloud Offsite Storage ─────────────────────────
+    let cloudStatusPollInterval = null;
+
+    function toggleCloudProviderUI() {
+      const provider = document.getElementById('cloud-backup-provider')?.value || 's3';
+      document.querySelectorAll('.cloud-row-s3').forEach(el => el.style.display = (provider === 's3') ? '' : 'none');
+      document.querySelectorAll('.cloud-row-webdav').forEach(el => el.style.display = (provider === 'webdav') ? '' : 'none');
+    }
+
+    async function loadCloudBackupConfig() {
+      try {
+        const res = await fetch('/api/backup/cloud/config');
+        if (!res.ok) return;
+        const d = await res.json();
+        const c = d.config || {};
+
+        const chkEnable = document.getElementById('cloud-backup-enable');
+        if (chkEnable) chkEnable.checked = !!c.enabled;
+
+        const selProv = document.getElementById('cloud-backup-provider');
+        if (selProv) selProv.value = c.provider || 's3';
+
+        const chkAuto = document.getElementById('cloud-backup-autosync');
+        if (chkAuto) chkAuto.checked = c.auto_sync !== false;
+
+        const inRet = document.getElementById('cloud-backup-retention');
+        if (inRet) inRet.value = c.retention_count !== undefined ? c.retention_count : 5;
+
+        // S3 fields
+        const s = c.s3 || {};
+        if (document.getElementById('cloud-s3-endpoint')) document.getElementById('cloud-s3-endpoint').value = s.endpoint_url || '';
+        if (document.getElementById('cloud-s3-bucket')) document.getElementById('cloud-s3-bucket').value = s.bucket_name || '';
+        if (document.getElementById('cloud-s3-region')) document.getElementById('cloud-s3-region').value = s.region_name || 'auto';
+        if (document.getElementById('cloud-s3-access-key')) document.getElementById('cloud-s3-access-key').value = s.access_key_id || '';
+        if (document.getElementById('cloud-s3-secret-key')) document.getElementById('cloud-s3-secret-key').value = s.secret_access_key || '';
+        if (document.getElementById('cloud-s3-prefix')) document.getElementById('cloud-s3-prefix').value = s.prefix || 'backups/';
+
+        // WebDAV fields
+        const w = c.webdav || {};
+        if (document.getElementById('cloud-webdav-url')) document.getElementById('cloud-webdav-url').value = w.url || '';
+        if (document.getElementById('cloud-webdav-user')) document.getElementById('cloud-webdav-user').value = w.username || '';
+        if (document.getElementById('cloud-webdav-pass')) document.getElementById('cloud-webdav-pass').value = w.password || '';
+
+        toggleCloudProviderUI();
+      } catch (e) {
+        console.error('Failed to load cloud backup config:', e);
+      }
+    }
+
+    async function saveCloudBackupConfig() {
+      const msgEl = document.getElementById('cloud-config-status-msg');
+      if (msgEl) {
+        msgEl.textContent = 'Saving...';
+        msgEl.style.color = '#0284c7';
+      }
+
+      const payload = {
+        enabled: document.getElementById('cloud-backup-enable')?.checked || false,
+        provider: document.getElementById('cloud-backup-provider')?.value || 's3',
+        auto_sync: document.getElementById('cloud-backup-autosync')?.checked !== false,
+        retention_count: parseInt(document.getElementById('cloud-backup-retention')?.value || '5', 10),
+        s3: {
+          endpoint_url: document.getElementById('cloud-s3-endpoint')?.value.trim() || '',
+          bucket_name: document.getElementById('cloud-s3-bucket')?.value.trim() || '',
+          region_name: document.getElementById('cloud-s3-region')?.value.trim() || 'auto',
+          access_key_id: document.getElementById('cloud-s3-access-key')?.value.trim() || '',
+          secret_access_key: document.getElementById('cloud-s3-secret-key')?.value.trim() || '',
+          prefix: document.getElementById('cloud-s3-prefix')?.value.trim() || 'backups/'
+        },
+        webdav: {
+          url: document.getElementById('cloud-webdav-url')?.value.trim() || '',
+          username: document.getElementById('cloud-webdav-user')?.value.trim() || '',
+          password: document.getElementById('cloud-webdav-pass')?.value.trim() || ''
+        }
+      };
+
+      try {
+        const res = await fetch('/api/backup/cloud/config', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (msgEl) {
+            msgEl.textContent = 'Configuration saved!';
+            msgEl.style.color = '#22c55e';
+          }
+          showBannerAlert('Cloud offsite backup configuration updated!');
+          loadCloudBackupConfig();
+        } else {
+          if (msgEl) {
+            msgEl.textContent = d.message || 'Save failed.';
+            msgEl.style.color = '#ef4444';
+          }
+          showBannerAlert(d.message || 'Failed to save cloud config.', true);
+        }
+      } catch (e) {
+        if (msgEl) {
+          msgEl.textContent = 'Network error saving config.';
+          msgEl.style.color = '#ef4444';
+        }
+        showBannerAlert('Network error saving cloud config: ' + e, true);
+      }
+    }
+
+    async function testCloudConnection() {
+      const msgEl = document.getElementById('cloud-config-status-msg');
+      if (msgEl) {
+        msgEl.textContent = 'Testing connection...';
+        msgEl.style.color = '#0284c7';
+      }
+
+      const payload = {
+        enabled: document.getElementById('cloud-backup-enable')?.checked || false,
+        provider: document.getElementById('cloud-backup-provider')?.value || 's3',
+        s3: {
+          endpoint_url: document.getElementById('cloud-s3-endpoint')?.value.trim() || '',
+          bucket_name: document.getElementById('cloud-s3-bucket')?.value.trim() || '',
+          region_name: document.getElementById('cloud-s3-region')?.value.trim() || 'auto',
+          access_key_id: document.getElementById('cloud-s3-access-key')?.value.trim() || '',
+          secret_access_key: document.getElementById('cloud-s3-secret-key')?.value.trim() || '',
+          prefix: document.getElementById('cloud-s3-prefix')?.value.trim() || 'backups/'
+        },
+        webdav: {
+          url: document.getElementById('cloud-webdav-url')?.value.trim() || '',
+          username: document.getElementById('cloud-webdav-user')?.value.trim() || '',
+          password: document.getElementById('cloud-webdav-pass')?.value.trim() || ''
+        }
+      };
+
+      try {
+        const res = await fetch('/api/backup/cloud/test', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (msgEl) {
+            msgEl.textContent = 'Connection test successful!';
+            msgEl.style.color = '#22c55e';
+          }
+          showBannerAlert(d.message || 'Connection test successful!');
+        } else {
+          if (msgEl) {
+            msgEl.textContent = 'Connection test failed.';
+            msgEl.style.color = '#ef4444';
+          }
+          showBannerAlert(d.message || 'Connection test failed.', true);
+        }
+      } catch (e) {
+        if (msgEl) {
+          msgEl.textContent = 'Network error during test.';
+          msgEl.style.color = '#ef4444';
+        }
+        showBannerAlert('Network error during test: ' + e, true);
+      }
+    }
+
+    async function pollCloudStatus() {
+      try {
+        const res = await fetch('/api/backup/cloud/status');
+        if (!res.ok) return;
+        const s = await res.json();
+        const box = document.getElementById('cloud-sync-status-box');
+        if (!box) return;
+
+        if (s.active) {
+          box.style.display = 'block';
+          document.getElementById('cloud-sync-badge').className = 'badge-status online';
+          document.getElementById('cloud-sync-badge').textContent = 'Uploading';
+          document.getElementById('cloud-sync-msg').textContent = s.last_status || `Uploading ${s.current_file}...`;
+          document.getElementById('cloud-sync-meter').style.width = (s.progress || 0) + '%';
+          const sentMb = (s.bytes_transferred / (1024 * 1024)).toFixed(1);
+          const totalMb = (s.total_bytes / (1024 * 1024)).toFixed(1);
+          document.getElementById('cloud-sync-details').textContent = `${sentMb} MB / ${totalMb} MB (${s.current_file})`;
+          document.getElementById('cloud-sync-pct').textContent = (s.progress || 0) + '%';
+
+          if (!cloudStatusPollInterval) {
+            cloudStatusPollInterval = setInterval(pollCloudStatus, 1500);
+          }
+        } else {
+          if (cloudStatusPollInterval) {
+            clearInterval(cloudStatusPollInterval);
+            cloudStatusPollInterval = null;
+          }
+          if (s.last_sync) {
+            box.style.display = 'block';
+            document.getElementById('cloud-sync-badge').className = 'badge-status online';
+            document.getElementById('cloud-sync-badge').textContent = 'Synced';
+            document.getElementById('cloud-sync-msg').textContent = s.last_status || `Last sync completed at ${s.last_sync}`;
+            document.getElementById('cloud-sync-meter').style.width = '100%';
+            document.getElementById('cloud-sync-details').textContent = `Last sync: ${s.last_sync}`;
+            document.getElementById('cloud-sync-pct').textContent = '100%';
+          } else if (s.last_error) {
+            box.style.display = 'block';
+            document.getElementById('cloud-sync-badge').className = 'badge-status offline';
+            document.getElementById('cloud-sync-badge').textContent = 'Error';
+            document.getElementById('cloud-sync-msg').textContent = `Sync error: ${s.last_error}`;
+            document.getElementById('cloud-sync-meter').style.width = '0%';
+            document.getElementById('cloud-sync-details').textContent = 'Error during upload';
+            document.getElementById('cloud-sync-pct').textContent = '!';
+          } else {
+            box.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.error('Failed to poll cloud status:', e);
+      }
+    }
+
+    async function loadRemoteCloudBackups() {
+      const tbody = document.getElementById('cloud-backups-table-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">Fetching offsite archives from cloud...</td></tr>';
+      try {
+        const res = await fetch('/api/backup/cloud/list');
+        const d = await res.json();
+        if (!tbody) return;
+
+        if (!d.success || !d.backups || !d.backups.length) {
+          const emptyMsg = d.message ? `Error: ${escapeHtml(d.message)}` : 'No remote cloud backups found or cloud not configured.';
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #888;">${emptyMsg}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = d.backups.map(b => `
+          <tr>
+            <td><strong>${escapeHtml(b.filename)}</strong></td>
+            <td>${b.size_gb > 1 ? b.size_gb + ' GB' : b.size_mb + ' MB'}</td>
+            <td>${escapeHtml(b.mtime)}</td>
+            <td><span class="inline-badge" style="background: #0284c7; color: #fff; font-size: 10px;">${escapeHtml(b.provider || 'Cloud')}</span></td>
+            <td style="text-align: center; white-space: nowrap;">
+              <button class="btn-satin-green" style="padding: 1px 8px; font-size: 10px; height: 20px;" onclick="pullCloudBackup('${escapeHtml(b.filename)}')">[ 📥 Pull to Local ]</button>
+              <button class="btn-classic" style="padding: 1px 8px; font-size: 10px; height: 20px; margin-left: 4px; color: #dc2626;" onclick="deleteRemoteBackup('${escapeHtml(b.filename)}')">[ 🗑 Delete ]</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ef4444;">Failed to query cloud: ${escapeHtml(String(e))}</td></tr>`;
+      }
+    }
+
+    async function uploadLocalToCloud(filename) {
+      if (!confirm(`Upload backup '${filename}' to offsite cloud storage now?`)) return;
+      showBannerAlert(`Initiating cloud upload for '${filename}'...`);
+      try {
+        const res = await fetch('/api/backup/cloud/upload', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message);
+          pollCloudStatus();
+        } else {
+          showBannerAlert(d.message || 'Upload failed.', true);
+        }
+      } catch (e) {
+        showBannerAlert('Network error triggering cloud upload: ' + e, true);
+      }
+    }
+
+    async function pullCloudBackup(filename) {
+      if (!confirm(`Download '${filename}' from cloud storage to local backups directory?`)) return;
+      showBannerAlert(`Downloading '${filename}' from cloud storage in background...`);
+      try {
+        const res = await fetch('/api/backup/cloud/download', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message);
+          setTimeout(() => { loadBackups(); }, 4000);
+        } else {
+          showBannerAlert(d.message || 'Download failed.', true);
+        }
+      } catch (e) {
+        showBannerAlert('Network error downloading cloud backup: ' + e, true);
+      }
+    }
+
+    async function deleteRemoteBackup(filename) {
+      if (!confirm(`Are you sure you want to permanently delete '${filename}' from remote cloud storage?`)) return;
+      try {
+        const res = await fetch('/api/backup/cloud/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message);
+          loadRemoteCloudBackups();
+        } else {
+          showBannerAlert(d.message || 'Failed to delete remote backup.', true);
+        }
+      } catch (e) {
+        showBannerAlert('Network error deleting remote backup: ' + e, true);
+      }
+    }
+
+    async function deleteLocalBackup(filename) {
+      if (!confirm(`Are you sure you want to delete local backup '${filename}'?`)) return;
+      try {
+        const res = await fetch('/api/backup/delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ filename })
+        });
+        const d = await res.json();
+        if (d.success) {
+          showBannerAlert(d.message);
+          loadBackups();
+        } else {
+          showBannerAlert(d.message || 'Failed to delete local backup.', true);
+        }
+      } catch (e) {
+        showBannerAlert('Network error deleting local backup: ' + e, true);
+      }
+    }
+
     async function loadBackups() {
       try {
         const res = await fetch('/api/backups');
@@ -11393,9 +11878,11 @@ def on_action(ctx, action_name, payload):
             <td><strong>${escapeHtml(b.filename)}</strong></td>
             <td>${b.size_gb > 1 ? b.size_gb + ' GB' : b.size_mb + ' MB'}</td>
             <td>${b.mtime}</td>
-            <td style="font-family: monospace; font-size: 10px; color: #555;">${b.path}</td>
-            <td style="text-align: center;">
-              <a href="/api/backup/download?filename=${encodeURIComponent(b.filename)}" class="btn-satin-green" style="padding: 1px 8px; font-size: 10px; height: 20px; text-decoration: none;">[ ⬇ Download ]</a>
+            <td style="font-family: monospace; font-size: 10px; color: #555;">${escapeHtml(b.path)}</td>
+            <td style="text-align: center; white-space: nowrap;">
+              <a href="/api/backup/download?filename=${encodeURIComponent(b.filename)}" class="btn-satin-green" style="padding: 1px 6px; font-size: 10px; height: 20px; text-decoration: none;" title="Download archive to local computer">[ ⬇ Download ]</a>
+              <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px; margin-left: 4px;" onclick="uploadLocalToCloud('${escapeHtml(b.filename)}')" title="Upload this archive to configured cloud storage">[ ☁ Upload ]</button>
+              <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px; margin-left: 4px; color: #dc2626;" onclick="deleteLocalBackup('${escapeHtml(b.filename)}')" title="Delete this local archive">[ 🗑 Delete ]</button>
             </td>
           </tr>
         `).join('');
@@ -11409,6 +11896,7 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         showBannerAlert(d.message);
         setTimeout(loadBackups, 3000);
+        setTimeout(pollCloudStatus, 3500);
       } catch (e) {
         showBannerAlert('Failed to start backup.', true);
       }
@@ -11423,7 +11911,8 @@ def on_action(ctx, action_name, payload):
         if (d.mc_ping && d.mc_ping.online) {
           document.getElementById('diag-ping-result').innerHTML = '<span style="color: #008822;">SUCCESS (Packet Handshake OK)</span>';
           document.getElementById('diag-ping-rtt').textContent = `${d.mc_ping.ping_ms} ms`;
-          document.getElementById('diag-ping-motd').textContent = d.mc_ping.motd || 'Fiesta SMP';
+          const defMotd = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) ? currentBranding.brand_name : 'Minecraft Server';
+          document.getElementById('diag-ping-motd').textContent = d.mc_ping.motd || defMotd;
         } else {
           document.getElementById('diag-ping-result').innerHTML = '<span style="color: #cc0000;">FAILED (Port Closed / Offline)</span>';
           document.getElementById('diag-ping-rtt').textContent = 'Timeout';
