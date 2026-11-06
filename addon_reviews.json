@@ -1,1 +1,11 @@
-{}
+{
+  "discord_notifier": [
+    {
+      "id": "rev_disc_1793965241",
+      "reviewer": "admin",
+      "rating": 5,
+      "comment": "This is epic (test review)",
+      "created_at": "2026-11-06 17:10:41"
+    }
+  ]
+}

@@ -846,8 +846,9 @@ class AddonManager:
 
     def add_addon_review(self, addon_id: str, reviewer: str, rating: int, comment: str) -> Dict[str, Any]:
         """Appends a new user review, persists to disk, and recalculates stats."""
+        import secrets
         new_rev = {
-            "id": f"rev_{addon_id[:4]}_{int(time.time())}",
+            "id": f"rev_{addon_id[:4]}_{int(time.time())}_{secrets.token_hex(3)}",
             "reviewer": reviewer or "admin",
             "rating": max(1, min(5, int(rating))),
             "comment": comment.strip(),
@@ -859,6 +860,36 @@ class AddonManager:
             "success": True,
             "message": "Review submitted successfully!",
             "review": new_rev,
+            "stats": self.get_addon_stats(addon_id),
+            "reviews": self.get_addon_reviews(addon_id)
+        }
+
+    def delete_addon_review(self, addon_id: str, review_id: str, current_user: str, is_admin: bool = False) -> Dict[str, Any]:
+        """Deletes a review if posted by current_user or if caller has admin privileges."""
+        revs = self.reviews.get(addon_id, [])
+        target_idx = None
+        for idx, r in enumerate(revs):
+            if str(r.get("id")) == str(review_id) or str(idx) == str(review_id):
+                target_idx = idx
+                break
+
+        if target_idx is None:
+            return {"success": False, "error": f"Review '{review_id}' not found."}
+
+        target_rev = revs[target_idx]
+        author = str(target_rev.get("reviewer", "")).strip()
+
+        # Permission check: caller must be author or an administrator
+        if not is_admin and author.lower() != str(current_user).strip().lower():
+            return {"success": False, "error": "Permission denied: You can only delete your own reviews."}
+
+        revs.pop(target_idx)
+        self.reviews[addon_id] = revs
+        self._save_reviews()
+
+        return {
+            "success": True,
+            "message": "Review deleted successfully.",
             "stats": self.get_addon_stats(addon_id),
             "reviews": self.get_addon_reviews(addon_id)
         }

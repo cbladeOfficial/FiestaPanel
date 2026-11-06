@@ -7239,6 +7239,8 @@ def on_action(ctx, action_name, payload):
     let activeConfig = 'server.properties';
     let allPlayersData = [];
     let currentBranding = {{ (branding or {}) | tojson }};
+    const CURRENT_USER = {{ (user or "admin") | tojson }};
+    const CURRENT_ROLE = {{ (role or "owner") | tojson }};
 
     // Contextual Help Definitions
     const HELP_DOCS = {
@@ -15600,23 +15602,35 @@ def on_action(ctx, action_name, payload):
               </div>
             `;
           } else {
-            reviewsListHtml = reviewsList.map(r => `
-              <div style="padding: 12px 14px; background: rgba(0,0,0,0.02); border-left: 3px solid #0284c7; border-radius: 0 4px 4px 0; margin-bottom: 10px; border: 1px solid rgba(128,128,128,0.15); border-left-width: 3px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px;">
-                  <div>
-                    <strong style="color: #0284c7;"><i class="fa-solid fa-user" style="font-size: 11px; margin-right: 4px;"></i>${escapeHtml(r.reviewer || 'Administrator')}</strong>
-                    <span style="font-size: 10.5px; color: #64748b; margin-left: 8px;">${escapeHtml(r.created_at || '')}</span>
+            reviewsListHtml = reviewsList.map(r => {
+              const reviewerName = r.reviewer || 'Administrator';
+              const isAuthor = (typeof CURRENT_USER !== 'undefined' && CURRENT_USER && String(CURRENT_USER).toLowerCase() === String(reviewerName).toLowerCase());
+              const isOwner = (typeof CURRENT_ROLE !== 'undefined' && CURRENT_ROLE === 'owner');
+              const canDelete = isAuthor || isOwner;
+              return `
+                <div id="review-item-${escapeHtml(r.id)}" style="padding: 12px 14px; background: rgba(0,0,0,0.02); border-left: 3px solid #0284c7; border-radius: 0 4px 4px 0; margin-bottom: 10px; border: 1px solid rgba(128,128,128,0.15); border-left-width: 3px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; flex-wrap: wrap; gap: 6px;">
+                    <div>
+                      <strong style="color: #0284c7;"><i class="fa-solid fa-user" style="font-size: 11px; margin-right: 4px;"></i>${escapeHtml(reviewerName)}</strong>
+                      ${isAuthor ? '<span class="inline-badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-size: 9.5px; margin-left: 4px;">You</span>' : ''}
+                      <span style="font-size: 10.5px; color: #64748b; margin-left: 8px;">${escapeHtml(r.created_at || '')}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div style="color: #eab308; font-weight: bold; font-size: 11.5px; display: flex; align-items: center;">
+                        ${renderStarRating(r.rating)}
+                        <span style="font-size: 11px; color: #64748b; margin-left: 6px;">(${r.rating}/5)</span>
+                      </div>
+                      ${canDelete && r.id ? `
+                        <button type="button" class="btn-classic" style="height: 20px; line-height: 18px; padding: 0 6px; font-size: 10px; color: #dc2626; border-color: #fca5a5; background: #fff5f5; cursor: pointer;" onclick="deleteAddonReview('${escapeQuotes(addon.id)}', '${escapeQuotes(r.id)}')" title="Delete your review">[ Delete ]</button>
+                      ` : ''}
+                    </div>
                   </div>
-                  <div style="color: #eab308; font-weight: bold; font-size: 11.5px; display: flex; align-items: center;">
-                    ${renderStarRating(r.rating)}
-                    <span style="font-size: 11px; color: #64748b; margin-left: 6px;">(${r.rating}/5)</span>
+                  <div style="font-size: 12px; color: var(--text-color, #334155); line-height: 1.45;">
+                    ${escapeHtml(r.comment)}
                   </div>
                 </div>
-                <div style="font-size: 12px; color: var(--text-color, #334155); line-height: 1.45;">
-                  ${escapeHtml(r.comment)}
-                </div>
-              </div>
-            `).join('');
+              `;
+            }).join('');
           }
 
           reviewsTab.innerHTML = `
@@ -15746,6 +15760,28 @@ def on_action(ctx, action_name, payload):
           statusEl.textContent = 'Network error submitting review.';
         }
         if (btnEl) btnEl.disabled = false;
+      }
+    }
+
+    async function deleteAddonReview(addonId, reviewId) {
+      if (!confirm('Are you sure you want to delete this review?')) return;
+
+      try {
+        const res = await fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/review/${encodeURIComponent(reviewId)}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showBannerAlert('Review deleted successfully.');
+          await openAddonDetailModal(addonId);
+          switchAddonModalTab('reviews');
+          await loadPanelAddonStore();
+        } else {
+          showBannerAlert(data.error || 'Failed to delete review.', true);
+        }
+      } catch (err) {
+        showBannerAlert('Network error deleting review.', true);
       }
     }
 

@@ -1185,8 +1185,10 @@ def enforce_security():
             if path == "/api/command": permission = "console"
             elif path == "/api/server/power": permission = "power"
             elif path.startswith("/api/player/"): permission = "players"
+            elif path.startswith("/api/panel-addons/") and "/review" in path:
+                permission = "allow_any_logged_in"
             perms = session.get("permissions", [])
-            if session.get("role") != "owner" and "all" not in perms and (not permission or permission not in perms):
+            if permission != "allow_any_logged_in" and session.get("role") != "owner" and "all" not in perms and (not permission or permission not in perms):
                 return jsonify(error="Owner permission required"), 403
 
 addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc, SERVER_DIR)
@@ -4479,7 +4481,7 @@ def api_panel_addons_submit_review(addon_id):
     data = request.get_json() or {}
     rating = data.get("rating")
     comment = (data.get("comment") or "").strip()
-    reviewer = session.get("username", "admin")
+    reviewer = session.get("user") or session.get("username") or "admin"
 
     try:
         rating_int = int(rating)
@@ -4493,6 +4495,15 @@ def api_panel_addons_submit_review(addon_id):
 
     res = addon_manager.add_addon_review(addon_id, reviewer, rating_int, comment)
     return jsonify(res)
+
+@app.route("/api/panel-addons/<addon_id>/review/<review_id>", methods=["DELETE", "POST"])
+@login_required
+def api_panel_addons_delete_review(addon_id, review_id):
+    current_user = session.get("user") or session.get("username") or "admin"
+    is_admin = session.get("role") == "owner" or "all" in session.get("permissions", [])
+    res = addon_manager.delete_addon_review(addon_id, review_id, current_user, is_admin=is_admin)
+    status_code = 200 if res.get("success") else (403 if "Permission" in res.get("error", "") else 404)
+    return jsonify(res), status_code
 
 @app.route("/api/panel-addons/repository/refresh", methods=["POST"])
 @login_required
