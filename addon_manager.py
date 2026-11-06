@@ -209,7 +209,7 @@ def _deliver_discord_event(ctx, event_type, details=None):
             color = custom_color if custom_color != 0x38bdf8 else 0x22c55e
 
             embed = {
-                "title": "🟢 Minecraft Server is Online",
+                "title": "[●] Minecraft Server is Online",
                 "description": f"The Minecraft server is active and online. Players can now connect.",
                 "color": color,
                 "fields": [
@@ -228,7 +228,7 @@ def _deliver_discord_event(ctx, event_type, details=None):
                 return
 
             embed = {
-                "title": "🔴 Minecraft Server has Stopped",
+                "title": "[■] Minecraft Server has Stopped",
                 "description": "The Minecraft server has been shut down. World data has been saved and all player connections have been closed.",
                 "color": 0xef4444,
                 "fields": [
@@ -558,7 +558,7 @@ def on_action(ctx, action_name, payload):
             "auto_save": True,
             "tasks": [
                 {"id": "t1", "name": "Daily Reboot", "time": "04:00 UTC", "cmd": "restart", "enabled": True},
-                {"id": "t2", "name": "Discord Reminder", "time": "Every 30m", "cmd": "say ✦ Join our community Discord at fiesta.local/discord ! ✦", "enabled": True},
+                {"id": "t2", "name": "Discord Reminder", "time": "Every 30m", "cmd": "say ✦ Join our community Discord server! ✦", "enabled": True},
                 {"id": "t3", "name": "Hourly Save-All", "time": "Every 60m", "cmd": "save-all", "enabled": True}
             ]
         },
@@ -607,7 +607,7 @@ def on_action(ctx, action_name, payload):
         <td>2</td>
         <td><strong>Community Broadcast</strong></td>
         <td><code>Every 30m</code></td>
-        <td><code>/say ✦ Join our Discord at fiesta.local/discord ! ✦</code></td>
+        <td><code>/say ✦ Join our community Discord server! ✦</code></td>
         <td><span class="inline-badge" style="background:#22c55e;color:#fff;">Active</span></td>
         <td>
           <button class="btn-classic" onclick="runScheduledTaskNow('t2')">[ Run ]</button>

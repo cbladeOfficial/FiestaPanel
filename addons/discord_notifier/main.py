@@ -49,7 +49,7 @@ def _deliver_discord_event(ctx, event_type, details=None):
             color = custom_color if custom_color != 0x38bdf8 else 0x22c55e
 
             embed = {
-                "title": "🟢 Minecraft Server is Online",
+                "title": "[●] Minecraft Server is Online",
                 "description": f"The Minecraft server is active and online. Players can now connect.",
                 "color": color,
                 "fields": [
@@ -68,7 +68,7 @@ def _deliver_discord_event(ctx, event_type, details=None):
                 return
 
             embed = {
-                "title": "🔴 Minecraft Server has Stopped",
+                "title": "[■] Minecraft Server has Stopped",
                 "description": "The Minecraft server has been shut down. World data has been saved and all player connections have been closed.",
                 "color": 0xef4444,
                 "fields": [

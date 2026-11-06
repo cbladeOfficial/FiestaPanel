@@ -138,7 +138,7 @@ def fetch_wiki_item(item_name, dest=None):
     url = f"https://minecraft.wiki/api.php?action=query&titles={urllib.parse.quote(query_titles)}&prop=imageinfo|pageimages&iiprop=url&piprop=original|thumbnail&pithumbsize=160&redirects=1&format=json"
 
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@fiestasmp.com)"})
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@server.local)"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
             pages = data.get("query", {}).get("pages", {})
@@ -166,7 +166,7 @@ def fetch_wiki_item(item_name, dest=None):
                         break
 
             if img_url:
-                img_req = urllib.request.Request(img_url, headers={"User-Agent": "FiestaPanel/2.1 (admin@fiestasmp.com)"})
+                img_req = urllib.request.Request(img_url, headers={"User-Agent": "FiestaPanel/2.1 (admin@server.local)"})
                 with urllib.request.urlopen(img_req, timeout=5) as img_resp:
                     data = img_resp.read()
                     if len(data) > 50:
@@ -207,7 +207,7 @@ def get_item_description(item_name):
     desc = None
     wiki_title = title
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@fiestasmp.com)"})
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1 (admin@server.local)"})
         with urllib.request.urlopen(req, timeout=4) as resp:
             data = json.loads(resp.read().decode())
             pages = data.get("query", {}).get("pages", {})

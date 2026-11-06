@@ -131,6 +131,9 @@ def load_server_config():
         astart = os.environ.get(f"{prefix}AUTOSTART")
         if astart is not None:
             cfg["autostart"] = astart.lower() in ("1", "true", "yes", "on")
+        jpath = os.environ.get(f"{prefix}JAVA_PATH") or os.environ.get(f"{prefix}JAVA_BIN")
+        if jpath:
+            cfg["java_path"] = jpath
     return cfg
 
 SERVER_CONFIG = load_server_config()
@@ -220,8 +223,59 @@ def tail_file(filepath, n_lines=100, block_size=4096):
         except Exception:
             return []
 
+def get_single_java_info(bin_path):
+    """Inspect an executable java binary and extract vendor, version string, and major version."""
+    if not bin_path:
+        return None
+    resolved = shutil.which(bin_path) or (bin_path if os.path.isfile(bin_path) and os.access(bin_path, os.X_OK) else None)
+    if not resolved or not os.path.isfile(resolved) or not os.access(resolved, os.X_OK):
+        return None
+    try:
+        res = subprocess.run([resolved, "-version"], capture_output=True, text=True, timeout=3)
+        out = (res.stderr or res.stdout or "").strip()
+        if not out:
+            return None
+        first_line = out.splitlines()[0].strip()
+        major = None
+        m = re.search(r'version\s+"(\d+)', first_line)
+        if m:
+            major = int(m.group(1))
+        elif "1.8." in first_line:
+            major = 8
+        vendor = "Java"
+        out_lower = out.lower()
+        if "openjdk" in out_lower:
+            vendor = "OpenJDK"
+        elif "temurin" in out_lower:
+            vendor = "Eclipse Temurin"
+        elif "corretto" in out_lower:
+            vendor = "Amazon Corretto"
+        elif "zulu" in out_lower:
+            vendor = "Azul Zulu"
+        elif "graalvm" in out_lower:
+            vendor = "GraalVM"
+        elif "microsoft" in out_lower:
+            vendor = "Microsoft"
+        return {
+            "path": resolved,
+            "version_str": first_line,
+            "major_version": major,
+            "vendor": vendor
+        }
+    except Exception:
+        return None
+
 def detect_java_bin():
-    """Locate java binary across Windows, macOS, and Linux."""
+    """Locate java binary across Windows, macOS, and Linux. Prioritizes configured java_path."""
+    try:
+        cfg_java = SERVER_CONFIG.get("java_path") if isinstance(SERVER_CONFIG, dict) else None
+        if cfg_java:
+            resolved = shutil.which(cfg_java) or (cfg_java if os.path.isfile(cfg_java) and os.access(cfg_java, os.X_OK) else None)
+            if resolved:
+                return resolved
+    except Exception:
+        pass
+
     j = shutil.which("java") or shutil.which("java.exe")
     if j:
         return j
@@ -231,7 +285,7 @@ def detect_java_bin():
         if os.path.exists(bin_j):
             return bin_j
     if IS_WINDOWS:
-        for wr in [r"C:\Program Files\Eclipse Adoptium", r"C:\Program Files\Java", r"C:\Program Files\Microsoft", r"C:\Program Files\Amazon Corretto"]:
+        for wr in [r"C:\Program Files\Eclipse Adoptium", r"C:\Program Files\Java", r"C:\Program Files\Microsoft", r"C:\Program Files\Amazon Corretto", r"C:\Program Files\BellSoft"]:
             if os.path.exists(wr):
                 for root, dirs, files in os.walk(wr):
                     if "java.exe" in files:
@@ -245,8 +299,8 @@ def detect_java_bin():
             pass
     return "java"
 
-def detect_java_version_str():
-    j_bin = detect_java_bin()
+def detect_java_version_str(bin_path=None):
+    j_bin = bin_path or detect_java_bin()
     try:
         res = subprocess.run([j_bin, "-version"], capture_output=True, text=True, timeout=2)
         out = res.stderr or res.stdout
@@ -255,6 +309,72 @@ def detect_java_version_str():
     except Exception:
         pass
     return "OpenJDK / Java Runtime"
+
+def detect_all_installed_javas():
+    """Scan and return all installed Java runtimes on the host."""
+    found = {}
+
+    if shutil.which("update-alternatives"):
+        try:
+            res = subprocess.run(["update-alternatives", "--list", "java"], capture_output=True, text=True, timeout=2)
+            for line in res.stdout.splitlines():
+                p = line.strip()
+                if p and os.path.exists(p):
+                    found[os.path.realpath(p)] = p
+        except Exception:
+            pass
+
+    for p in glob.glob("/usr/lib/jvm/*/bin/java") + glob.glob("/opt/java/*/bin/java") + glob.glob("/usr/java/*/bin/java"):
+        if os.path.exists(p):
+            found[os.path.realpath(p)] = p
+
+    if IS_MACOS:
+        try:
+            out = subprocess.check_output(["/usr/libexec/java_home", "-V"], stderr=subprocess.STDOUT, text=True, timeout=3)
+            for line in out.splitlines():
+                m = re.search(r'(/Library/Java/JavaVirtualMachines/[^\s]+/Contents/Home)', line)
+                if m:
+                    jp = os.path.join(m.group(1), "bin", "java")
+                    if os.path.exists(jp):
+                        found[os.path.realpath(jp)] = jp
+        except Exception:
+            pass
+
+    if IS_WINDOWS:
+        for wr in [r"C:\Program Files\Eclipse Adoptium", r"C:\Program Files\Java", r"C:\Program Files\Microsoft", r"C:\Program Files\Amazon Corretto", r"C:\Program Files\BellSoft"]:
+            if os.path.exists(wr):
+                for root, dirs, files in os.walk(wr):
+                    if "java.exe" in files:
+                        jp = os.path.join(root, "java.exe")
+                        found[os.path.realpath(jp)] = jp
+
+    sys_j = shutil.which("java") or shutil.which("java.exe")
+    if sys_j:
+        found[os.path.realpath(sys_j)] = sys_j
+
+    jh = os.environ.get("JAVA_HOME")
+    if jh:
+        bin_j = os.path.join(jh, "bin", "java.exe" if IS_WINDOWS else "java")
+        if os.path.exists(bin_j):
+            found[os.path.realpath(bin_j)] = bin_j
+
+    cfg_j = SERVER_CONFIG.get("java_path") if isinstance(SERVER_CONFIG, dict) else None
+    if cfg_j and os.path.exists(cfg_j):
+        found[os.path.realpath(cfg_j)] = cfg_j
+
+    active_raw = detect_java_bin()
+    active_bin = os.path.realpath(active_raw) if os.path.exists(active_raw) else active_raw
+
+    results = []
+    for rp, disp in found.items():
+        info = get_single_java_info(rp)
+        if info:
+            info["display_path"] = disp
+            info["active"] = (rp == active_bin or disp == active_raw or rp == active_raw)
+            results.append(info)
+
+    results.sort(key=lambda x: (x.get("major_version") or 0), reverse=True)
+    return results
 
 class ServerRunner:
     """
@@ -2004,11 +2124,139 @@ def api_mc_assets_sync():
 
 # ── Portal Branding & Customization APIs ──────────────────────
 
-@app.route("/api/system/java", methods=["GET"])
+_PUBLIC_IP_CACHE = {"ip": None, "expires_at": 0}
+
+def get_server_public_ip():
+    """Retrieve host public IPv4 address with caching."""
+    now = time.time()
+    if _PUBLIC_IP_CACHE["ip"] and now < _PUBLIC_IP_CACHE["expires_at"]:
+        return _PUBLIC_IP_CACHE["ip"]
+
+    for url in ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel/2.1"})
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                ip = resp.read().decode("utf-8").strip()
+                if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
+                    _PUBLIC_IP_CACHE["ip"] = ip
+                    _PUBLIC_IP_CACHE["expires_at"] = now + 300
+                    return ip
+        except Exception:
+            continue
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        _PUBLIC_IP_CACHE["ip"] = local_ip
+        _PUBLIC_IP_CACHE["expires_at"] = now + 60
+        return local_ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
+
+def get_bedrock_port():
+    """Detect Bedrock port from Geyser config or return standard 19132."""
+    for gp in [
+        os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
+        os.path.join(SERVER_DIR, "plugins", "Geyser", "config.yml"),
+    ]:
+        if os.path.exists(gp):
+            try:
+                with open(gp, "r", encoding="utf-8") as f:
+                    content = f.read()
+                m = re.search(r"port:\s*(\d+)", content)
+                if m:
+                    return int(m.group(1))
+            except Exception:
+                pass
+    return 19132
+
+@app.route("/api/system/java", methods=["GET", "POST"])
 @login_required
 def api_system_java():
-    j_bin = detect_java_bin()
-    ver_str = detect_java_version_str()
+    if request.method == "POST":
+        curr_perms = session.get("permissions", [])
+        if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+            return jsonify({"success": False, "message": "Permission denied: Administrative privileges required to configure Java runtime."}), 403
+
+        data = request.get_json(silent=True) or {}
+        req_path = str(data.get("java_path", "")).strip()
+        is_test_only = bool(data.get("test_only", False))
+
+        if not req_path or req_path.lower() in ("default", "system", "auto"):
+            if is_test_only:
+                def_bin = shutil.which("java") or "java"
+                vstr = detect_java_version_str(def_bin)
+                return jsonify({"success": True, "message": "System default runtime is valid.", "version_str": vstr})
+
+            SERVER_CONFIG.pop("java_path", None)
+            target_cfg = CONFIG_FILE
+            try:
+                cfg = {}
+                if os.path.exists(target_cfg):
+                    with open(target_cfg, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                cfg.pop("java_path", None)
+                with open(target_cfg, "w", encoding="utf-8") as f:
+                    json.dump(cfg, f, indent=2)
+            except Exception as e:
+                return jsonify({"success": False, "message": f"Failed to persist config: {e}"}), 500
+
+            active = detect_java_bin()
+            vstr = detect_java_version_str(active)
+            return jsonify({
+                "success": True,
+                "message": f"Java runtime reset to system default auto-detection ({vstr}). Server restart required to apply.",
+                "path": active,
+                "version_str": vstr
+            })
+
+        resolved = shutil.which(req_path) or (req_path if os.path.isfile(req_path) and os.access(req_path, os.X_OK) else None)
+        if not resolved:
+            return jsonify({"success": False, "message": f"Specified binary '{req_path}' was not found or is not executable."}), 400
+
+        single_info = get_single_java_info(resolved)
+        if not single_info:
+            return jsonify({"success": False, "message": f"Binary '{resolved}' executed but failed to report valid Java version information."}), 400
+
+        if is_test_only:
+            return jsonify({
+                "success": True,
+                "message": f"Verified valid executable: {single_info['vendor']} Java {single_info['major_version'] or ''}",
+                "path": resolved,
+                "version_str": single_info["version_str"],
+                "major_version": single_info["major_version"],
+                "vendor": single_info["vendor"]
+            })
+
+        SERVER_CONFIG["java_path"] = resolved
+        target_cfg = CONFIG_FILE
+        try:
+            cfg = {}
+            if os.path.exists(target_cfg):
+                with open(target_cfg, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+            cfg["java_path"] = resolved
+            with open(target_cfg, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+        except Exception as e:
+            return jsonify({"success": False, "message": f"Failed to persist Java selection to config: {e}"}), 500
+
+        return jsonify({
+            "success": True,
+            "message": f"Switched Java runtime to {single_info['vendor']} Java {single_info['major_version'] or ''} ({resolved}). Restart server for changes to take effect.",
+            "path": resolved,
+            "version_str": single_info["version_str"],
+            "major_version": single_info["major_version"],
+            "vendor": single_info["vendor"]
+        })
+
+    active_bin = detect_java_bin()
+    ver_str = detect_java_version_str(active_bin)
     major_ver = None
     m = re.search(r'version\s+"(\d+)', ver_str)
     if m:
@@ -2016,17 +2264,45 @@ def api_system_java():
     elif "1.8." in ver_str:
         major_ver = 8
 
+    configured_path = SERVER_CONFIG.get("java_path") or ""
+    all_javas = detect_all_installed_javas()
+
     info = {
-        "installed": bool(j_bin),
-        "path": j_bin,
+        "installed": bool(active_bin),
+        "path": active_bin,
+        "configured_path": configured_path,
+        "is_custom": bool(configured_path),
         "version_str": ver_str,
         "major_version": major_ver,
         "platform": platform.system(),
         "arch": platform.machine(),
         "is_compatible_1_21": bool(major_ver and major_ver >= 21),
-        "recommendation": "Java 21 (Temurin / OpenJDK) recommended for Minecraft 1.20.5 - 1.21.x"
+        "recommendation": "Java 21 (Temurin / OpenJDK) recommended for Minecraft 1.20.5 - 1.21.x",
+        "available": all_javas
     }
-    return jsonify({"success": True, "java": info})
+    return jsonify({"success": True, "java": info, "available": all_javas})
+
+@app.route("/api/connect/dynip", methods=["GET"])
+@login_required
+def api_connect_dynip():
+    b = load_branding()
+    props = get_server_properties_dict()
+    mc_port = int(props.get("server-port", 25565))
+    bedrock_port = get_bedrock_port()
+    pub_ip = get_server_public_ip()
+    domain = b.get("server_domain") or "play.your-server.net"
+
+    return jsonify({
+        "success": True,
+        "public_ip": pub_ip,
+        "domain": domain,
+        "java_port": mc_port,
+        "dynip_java": f"{pub_ip}:{mc_port}",
+        "bedrock_port": bedrock_port,
+        "dynip_bedrock": f"{pub_ip}:{bedrock_port}",
+        "standard_address": f"{domain}:{mc_port}" if mc_port != 25565 else domain,
+        "bedrock_address": domain
+    })
 
 @app.route("/api/system/autostart", methods=["GET", "POST"])
 @login_required
@@ -2264,7 +2540,9 @@ def api_system_settings():
                 "server_domain": b.get("server_domain", ""),
                 "public_site_url": b.get("public_site_url", ""),
                 "bedrock_server_name": b.get("bedrock_server_name", "FiestaSMP"),
-                "spawn_coordinates": get_spawn_coordinates()
+                "spawn_coordinates": get_spawn_coordinates(),
+                "java_path": SERVER_CONFIG.get("java_path", ""),
+                "active_java": detect_java_version_str()
             }
         })
 
@@ -2315,6 +2593,17 @@ def api_system_settings():
         existing["backup_dir"] = abs_bdir
         SERVER_CONFIG["backup_dir"] = abs_bdir
 
+    if "java_path" in data:
+        j_req = str(data.get("java_path") or "").strip()
+        if not j_req or j_req.lower() in ("default", "system", "auto"):
+            existing.pop("java_path", None)
+            SERVER_CONFIG.pop("java_path", None)
+        else:
+            resolved = shutil.which(j_req) or (j_req if os.path.isfile(j_req) and os.access(j_req, os.X_OK) else None)
+            if resolved:
+                existing["java_path"] = resolved
+                SERVER_CONFIG["java_path"] = resolved
+
     try:
         with open(target_cfg, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
@@ -2328,7 +2617,9 @@ def api_system_settings():
             "server_dir": SERVER_DIR,
             "service_name": SERVICE_NAME,
             "screen_session": SCREEN_SESSION,
-            "backup_dir": get_backup_dir()
+            "backup_dir": get_backup_dir(),
+            "java_path": SERVER_CONFIG.get("java_path", ""),
+            "active_java": detect_java_version_str()
         }
     })
 

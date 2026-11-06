@@ -215,6 +215,79 @@ class ServerSettingsCustomizationTests(unittest.TestCase):
             res = self._post('/api/system/settings', {"service_name": "hacked"})
             self.assertEqual(res.status_code, 403)
 
+    def test_multi_jre_switcher_api(self):
+        self._login()
+        # 1. GET /api/system/java
+        res_get = self.client.get('/api/system/java')
+        self.assertEqual(res_get.status_code, 200)
+        d_get = res_get.get_json()
+        self.assertTrue(d_get.get('success'))
+        self.assertIn('java', d_get)
+        self.assertIn('available', d_get)
+        self.assertIsInstance(d_get['available'], list)
+
+        # 2. POST with invalid binary path
+        res_inv = self._post('/api/system/java', {"java_path": "/invalid/nonexistent/java/bin"})
+        self.assertEqual(res_inv.status_code, 400)
+
+        # 3. POST with test_only flag on valid binary
+        host_java = shutil.which("java") or "/usr/bin/java"
+        res_test = self._post('/api/system/java', {"java_path": host_java, "test_only": True})
+        self.assertEqual(res_test.status_code, 200)
+        self.assertTrue(res_test.get_json().get('success'))
+        # Config should NOT have changed
+        self.assertNotIn("java_path", portal_app.SERVER_CONFIG)
+
+        # 4. POST to switch to valid binary
+        res_switch = self._post('/api/system/java', {"java_path": host_java})
+        self.assertEqual(res_switch.status_code, 200)
+        self.assertEqual(portal_app.SERVER_CONFIG.get("java_path"), host_java)
+
+        # Verify detect_java_bin() now returns the configured binary
+        self.assertEqual(portal_app.detect_java_bin(), host_java)
+
+        # 5. POST to reset to default
+        res_reset = self._post('/api/system/java', {"java_path": "default"})
+        self.assertEqual(res_reset.status_code, 200)
+        self.assertNotIn("java_path", portal_app.SERVER_CONFIG)
+
+        # 6. Unauthorized subuser should receive 403
+        mock_users = {
+            "helper": {
+                "username": "helper",
+                "password_hash": "scrypt:dummy",
+                "role": "helper",
+                "permissions": ["chat"],
+                "status": "active"
+            }
+        }
+        with patch.object(portal_app, 'load_users', return_value=mock_users), \
+             patch.object(portal_app, 'session_password_version', return_value="v1"):
+            with self.client.session_transaction() as sess:
+                sess['logged_in'] = True
+                sess['user'] = 'helper'
+                sess['role'] = 'helper'
+                sess['permissions'] = ['chat']
+                sess['csrf_token'] = self.csrf_token
+                sess['password_version'] = "v1"
+            res_denied = self._post('/api/system/java', {"java_path": host_java})
+            self.assertEqual(res_denied.status_code, 403)
+
+    def test_api_connect_dynip_fallback(self):
+        self._login()
+        res = self.client.get('/api/connect/dynip')
+        self.assertEqual(res.status_code, 200)
+        d = res.get_json()
+        self.assertTrue(d.get('success'))
+        self.assertIn('public_ip', d)
+        self.assertIn('java_port', d)
+        self.assertIn('dynip_java', d)
+        self.assertIn('bedrock_port', d)
+        self.assertIn('dynip_bedrock', d)
+        self.assertIn('domain', d)
+        self.assertTrue(d['dynip_java'].endswith(f":{d['java_port']}"))
+        self.assertTrue(d['dynip_bedrock'].endswith(f":{d['bedrock_port']}"))
+
 
 if __name__ == '__main__':
     unittest.main()
