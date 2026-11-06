@@ -257,10 +257,67 @@ Fetches current branding configuration.
       "header_icon": "win7",
       "header_icon_custom": "",
       "footer_text": "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
-      "browser_title": "FIESTA-LINK | FS-GATEWAY-PRO Console"
+      "browser_title": "FIESTA-LINK | FS-GATEWAY-PRO Console",
+      "server_domain": "fiesta.debarkak.xyz",
+      "public_site_url": "https://open-fiestasmp.github.io",
+      "bedrock_server_name": "FiestaSMP"
     }
   }
   ```
 
 ### `POST /api/branding`
-Updates panel branding settings (Admin only).
+Updates panel branding settings (Admin only). Accepts `brand_name`, `tagline`, `model_number`, `browser_title`, `footer_text`, `server_desc`, `header_icon`, `header_icon_custom`, `server_domain`, `public_site_url`, and `bedrock_server_name`.
+
+---
+
+### `GET /api/world/spawn`
+Fetches the active world spawn coordinates and arrival parameters.
+
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "spawn": {
+      "x": -58423,
+      "y": 69,
+      "z": -9669,
+      "dimension": "minecraft:overworld",
+      "radius": 0
+    }
+  }
+  ```
+
+### `POST /api/world/spawn`
+Updates world spawn coordinates and synchronizes in-game world spawn (`setworldspawn`) when the server is online.
+
+- **Payload**:
+  ```json
+  {
+    "x": 0,
+    "y": 64,
+    "z": 0,
+    "dimension": "minecraft:overworld",
+    "radius": 0
+  }
+  ```
+
+---
+
+### `GET /api/system/settings`
+Returns gateway server environment paths, screen session, systemd daemon name, and backup directory.
+
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "settings": {
+      "server_dir": "/home/ubuntu/fiesta",
+      "service_name": "fiesta",
+      "screen_session": "fiesta",
+      "backup_dir": "/home/ubuntu/backups"
+    }
+  }
+  ```
+
+### `POST /api/system/settings`
+Updates server environment paths in `config.json` (Owner only). Accepts `server_dir`, `service_name`, `screen_session`, and `backup_dir`.

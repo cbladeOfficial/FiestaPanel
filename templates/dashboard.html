@@ -2277,6 +2277,21 @@
       background: linear-gradient(to bottom, #f26666 0%, #cc3333 100%);
     }
 
+    /* Disabled State for Action & Control Buttons */
+    button:disabled,
+    button[disabled],
+    .btn-classic:disabled,
+    .btn-classic[disabled],
+    .btn-satin-green:disabled,
+    .btn-satin-green[disabled],
+    .btn-danger-red:disabled,
+    .btn-danger-red[disabled] {
+      opacity: 0.45 !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      filter: grayscale(85%) !important;
+    }
+
     /* Common Card / Panel Containers */
     .modal-inner-box {
       background: var(--workspace-bg);
@@ -3486,6 +3501,7 @@
             <option value="custom">Custom Palette (Studio)</option>
           </select>
           <button class="btn-theme-quick" onclick="openThemeStudio()" title="Open Theme Studio &amp; Customizer">[ Theme Studio ]</button>
+          <a id="header-public-site-link" href="{{ branding.public_site_url if (branding and branding.public_site_url is not none) else 'https://open-fiestasmp.github.io' }}" target="_blank" class="btn-theme-quick" title="View Official Website" style="text-decoration: none; display: {% if branding and branding.public_site_url == '' %}none{% else %}inline-flex{% endif %}; align-items: center; gap: 3px;">[ Public Site &nearr; ]</a>
           <div class="win7-title-controls" style="display: none;">
             <button class="win7-btn-min" title="Minimize Window" type="button" onclick="windowToggleMin()"></button>
             <button class="win7-btn-max" title="Maximize Window" type="button" onclick="windowToggleMax()"></button>
@@ -3724,9 +3740,9 @@
                   <td class="label-col">Service Control:</td>
                   <td class="val-col">
                     <div style="display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                      <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('start')">[ ▶ Start ]</button>
-                      <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('restart')">[ ↻ Restart ]</button>
-                      <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('stop')">[ ■ Stop ]</button>
+                      <button id="btn-server-start" class="btn-classic btn-power-start" data-power-action="start" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('start')">[ ▶ Start ]</button>
+                      <button id="btn-server-restart" class="btn-classic btn-power-restart" data-power-action="restart" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('restart')" {% if not server_running %}disabled{% endif %}>[ ↻ Restart ]</button>
+                      <button id="btn-server-stop" class="btn-classic btn-power-stop" data-power-action="stop" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442; padding: 1px 7px; font-size: 10.5px; height: 21px; line-height: 19px;" onclick="confirmServerPower('stop')" {% if not server_running %}disabled{% endif %}>[ ■ Stop ]</button>
                     </div>
                   </td>
                 </tr>
@@ -3824,7 +3840,7 @@
                 <tr class="status-row-1">
                   <td class="label-col">Online Players:</td>
                   <td class="val-col">
-                    <strong id="val-online-players" style="color: var(--help-sub-text, #006622); font-size: 13px;">0</strong> / <span id="val-max-players">69</span>
+                    <strong id="val-online-players" style="color: var(--help-sub-text, #006622); font-size: 13px;">0</strong> / <span id="val-max-players">20</span>
                     <span id="val-player-sample" class="inline-hint"></span>
                   </td>
                 </tr>
@@ -4311,15 +4327,51 @@
             </tr>
           </table>
 
-          <div class="section-sub-header">World Spawn Coordinates</div>
+          <div class="section-sub-header">World Spawn Coordinates &amp; Arrival Settings</div>
+          <p style="margin-bottom: 8px; font-size: 11px; color: var(--text-sub);">
+            Configure the world spawn coordinates used for incoming player arrivals and the "Send to Spawn" player action.
+          </p>
           <table class="form-layout-table">
             <tr>
-              <td class="label-col">Current Active Spawn:</td>
-              <td class="val-col"><strong>X: -58423, Y: 69, Z: -9669</strong> (Overworld)</td>
+              <td class="label-col">Spawn Coordinates (X, Y, Z):</td>
+              <td class="val-col">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <span>X:</span>
+                  <input type="number" id="spawn-input-x" class="tp-input-text" style="width: 85px;" value="-58423">
+                  <span>Y:</span>
+                  <input type="number" id="spawn-input-y" class="tp-input-text" style="width: 65px;" value="69">
+                  <span>Z:</span>
+                  <input type="number" id="spawn-input-z" class="tp-input-text" style="width: 85px;" value="-9669">
+                  <span class="inline-hint">(X, Y, Z block coordinates)</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Dimension:</td>
+              <td class="val-col">
+                <select id="spawn-input-dim" class="tp-input-select" style="width: 190px;">
+                  <option value="minecraft:overworld">Overworld (world)</option>
+                  <option value="minecraft:the_nether">The Nether (world_nether)</option>
+                  <option value="minecraft:the_end">The End (world_the_end)</option>
+                </select>
+              </td>
             </tr>
             <tr>
               <td class="label-col">Spawn Radius:</td>
-              <td class="val-col">0 blocks (Direct precision arrival)</td>
+              <td class="val-col">
+                <input type="number" id="spawn-input-radius" class="tp-input-text" style="width: 70px;" value="0" min="0" max="100">
+                <span class="inline-hint">blocks (0 = exact precision)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Actions:</td>
+              <td class="val-col">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 16px; font-weight: bold;" onclick="saveWorldSpawnCoordinates()">[ Save Spawn Coordinates ]</button>
+                  <button type="button" class="btn-classic" style="height: 26px; padding: 0 12px;" onclick="resetSpawnCoordinatesToOrigin()">[ Reset to (0, 64, 0) ]</button>
+                  <span id="spawn-save-msg" style="margin-left: 8px; font-size: 11px; font-weight: bold;"></span>
+                </div>
+              </td>
             </tr>
           </table>
         </section>
@@ -4515,7 +4567,7 @@
           <div class="section-sub-header" style="margin-top: 18px;">Bedrock One-Click Join &amp; Mobile QR Code</div>
           <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
             <div id="bedrock-qr-container" style="text-align: center;">
-              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3DFiestaSMP%7C127.0.0.1%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
+              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') | urlencode }}%7C127.0.0.1%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
               <div class="inline-hint" style="margin-top: 4px; font-size: 10px;">Scan with Camera</div>
             </div>
             <div style="flex: 1; min-width: 240px;">
@@ -4524,7 +4576,7 @@
                 Players on Android, iOS, Windows Bedrock, or Nintendo Switch can join directly with one tap without manually entering hostnames or ports.
               </p>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <a id="bedrock-direct-link" href="minecraft://?addExternalServer=FiestaSMP|127.0.0.1:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
+                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'FiestaSMP') }}|127.0.0.1:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
                 <button class="btn-classic" onclick="copyBedrockLink()">[ Copy Bedrock Link ]</button>
               </div>
             </div>
@@ -4582,7 +4634,7 @@
           </table>
           <div class="btn-row" style="margin-top: 12px;">
             <button class="btn-satin-green" onclick="applyResourcePackToProps()">[ Apply Settings to server.properties ]</button>
-            <button class="btn-classic" onclick="confirmServerPower('restart')">[ ⟳ Reboot Server to Apply ]</button>
+            <button id="btn-repack-restart" class="btn-classic btn-power-restart" data-power-action="restart" onclick="confirmServerPower('restart')" {% if not server_running %}disabled{% endif %}>[ ⟳ Reboot Server to Apply ]</button>
           </div>
         </section>
 
@@ -4976,9 +5028,9 @@
               <span id="console-uptime" class="inline-hint" style="font-weight: 600; color: #004080; margin-left: 4px;"></span>
             </div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-classic" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ ▶ Start Server ]</button>
-              <button class="btn-classic" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')">[ ↻ Restart Server ]</button>
-              <button class="btn-classic" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')">[ ■ Stop Server ]</button>
+              <button id="btn-console-start" class="btn-classic btn-power-start" data-power-action="start" style="background: linear-gradient(to bottom, #dff0d8 0%, #c8e5bc 100%); border-color: #4cae4c; font-weight: bold; color: #255625;" onclick="confirmServerPower('start')">[ ▶ Start Server ]</button>
+              <button id="btn-console-restart" class="btn-classic btn-power-restart" data-power-action="restart" style="background: linear-gradient(to bottom, #fcf8e3 0%, #f1e7bc 100%); border-color: #eea236; font-weight: bold; color: #8a6d3b;" onclick="confirmServerPower('restart')" {% if not server_running %}disabled{% endif %}>[ ↻ Restart Server ]</button>
+              <button id="btn-console-stop" class="btn-classic btn-power-stop" data-power-action="stop" style="background: linear-gradient(to bottom, #f2dede 0%, #ebcccc 100%); border-color: #d43f3a; font-weight: bold; color: #a94442;" onclick="confirmServerPower('stop')" {% if not server_running %}disabled{% endif %}>[ ■ Stop Server ]</button>
             </div>
           </div>
 
@@ -5449,7 +5501,7 @@
 
             <div class="btn-row">
               <button class="btn-satin-green" style="height: 28px; padding: 0 20px;" onclick="saveGuiProperties()">[ Save Parameter Settings ]</button>
-              <button class="btn-classic" style="height: 28px;" onclick="confirmServerPower('restart')">[ ↻ Reboot Server to Apply ]</button>
+              <button id="btn-props-restart" class="btn-classic btn-power-restart" data-power-action="restart" style="height: 28px;" onclick="confirmServerPower('restart')" {% if not server_running %}disabled{% endif %}>[ ↻ Reboot Server to Apply ]</button>
             </div>
           </div>
 
@@ -5598,7 +5650,7 @@
               </div>
             </div>
             <div class="btn-row" id="reboot-btn-row">
-              <button class="btn-danger-red" style="height: 28px; padding: 0 24px; font-size: 12px;" onclick="executeReboot()">[ ↻ Reboot Server ]</button>
+              <button id="btn-reboot-exec" class="btn-danger-red btn-power-restart" data-power-action="restart" style="height: 28px; padding: 0 24px; font-size: 12px;" onclick="executeReboot()" {% if not server_running %}disabled{% endif %}>[ ↻ Reboot Server ]</button>
             </div>
           </div>
         </section>
@@ -5609,23 +5661,31 @@
           <table class="form-layout-table">
             <tr>
               <td class="label-col">Processor Units:</td>
-              <td class="val-col">4 Cores</td>
+              <td class="val-col"><span id="sys-info-cpu">Detecting...</span></td>
             </tr>
             <tr>
               <td class="label-col">Physical Memory:</td>
-              <td class="val-col">24.0 GB</td>
+              <td class="val-col"><span id="sys-info-ram">Detecting...</span></td>
             </tr>
             <tr>
               <td class="label-col">Operating System:</td>
-              <td class="val-col">Linux</td>
+              <td class="val-col"><span id="sys-info-os">Detecting...</span></td>
             </tr>
             <tr>
               <td class="label-col">Java Virtual Machine:</td>
-              <td class="val-col">OpenJDK 64-Bit Server VM</td>
+              <td class="val-col"><span id="sys-info-jvm">Detecting...</span></td>
             </tr>
             <tr>
               <td class="label-col">Screen Session:</td>
-              <td class="val-col"><code>fiesta</code> (/home/ubuntu/fiesta/start.sh)</td>
+              <td class="val-col"><code id="sys-info-screen">Detecting...</code></td>
+            </tr>
+            <tr>
+              <td class="label-col">Minecraft Server Folder:</td>
+              <td class="val-col"><code id="sys-info-serverdir">Detecting...</code></td>
+            </tr>
+            <tr>
+              <td class="label-col">Server Backups Folder:</td>
+              <td class="val-col"><code id="sys-info-backupdir">Detecting...</code></td>
             </tr>
             <tr>
               <td class="label-col">Auto-Start on Reboot:</td>
@@ -5633,6 +5693,48 @@
                 <span id="sys-autostart-badge" style="display:inline-block; margin-right:8px; padding:2px 8px; border-radius:3px; font-weight:bold; font-size:11px; background:#64748b; color:#fff;">Detecting...</span>
                 <span id="sys-autostart-details" style="color:var(--text-sub); font-size:11px; margin-right:10px;"></span>
                 <button type="button" id="btn-toggle-autostart" class="btn-classic" onclick="toggleAutoStart()" style="padding:2px 10px; font-size:11px; cursor:pointer;">[ Configure Auto-Start ]</button>
+              </td>
+            </tr>
+          </table>
+
+          <div class="section-sub-header" style="margin-top: 20px;">Gateway Server Paths &amp; Service Configuration</div>
+          <p style="margin-bottom: 8px; font-size: 11px; color: var(--text-sub);">
+            Configure your Minecraft server directory, background daemon service, console screen session, and backup storage folder.
+          </p>
+          <table class="form-layout-table">
+            <tr>
+              <td class="label-col">Server Directory Path:</td>
+              <td class="val-col">
+                <input type="text" id="sys-cfg-server-dir" class="tp-input-text" style="width: 380px;" placeholder="/path/to/minecraft/server">
+                <span class="inline-hint">Absolute path to server root folder</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Systemd Service Name:</td>
+              <td class="val-col">
+                <input type="text" id="sys-cfg-service-name" class="tp-input-text" style="width: 220px;" placeholder="e.g. fiesta or minecraft">
+                <span class="inline-hint">Name of systemd unit (optional if running standalone)</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Terminal Screen Session:</td>
+              <td class="val-col">
+                <input type="text" id="sys-cfg-screen-session" class="tp-input-text" style="width: 220px;" placeholder="e.g. fiesta or minecraft">
+                <span class="inline-hint">Screen session name for interactive console commands</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Server Backups Directory:</td>
+              <td class="val-col">
+                <input type="text" id="sys-cfg-backup-dir" class="tp-input-text" style="width: 380px;" placeholder="/path/to/backups">
+                <span class="inline-hint">Folder where automated and manual backups are saved</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-col">Save Configuration:</td>
+              <td class="val-col">
+                <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 18px; font-weight: bold;" onclick="saveServerEnvSettings()">[ Save Server Settings ]</button>
+                <span id="sys-cfg-save-msg" style="margin-left: 8px; font-size: 11px; font-weight: bold;"></span>
               </td>
             </tr>
           </table>
@@ -5741,6 +5843,27 @@
                 <td class="val-col">
                   <input type="text" id="brand-input-footer" class="tp-input-text" style="width: 480px;" value="{{ branding.footer_text if branding else 'Made by Fiesta and it\'s developers, Mockup UI of Legacy TP-Link Portal' }}" oninput="updateLiveBrandingPreview()" placeholder="Footer attribution text">
                   <span class="inline-hint">Footer text at bottom of every page</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Public Server Website URL:</td>
+                <td class="val-col">
+                  <input type="text" id="brand-input-website" class="tp-input-text" style="width: 480px;" value="{{ branding.public_site_url if (branding and branding.public_site_url is not none) else 'https://open-fiestasmp.github.io' }}" placeholder="https://yourserver.com (leave empty to hide button)">
+                  <span class="inline-hint">Target URL for header [ Public Site ↗ ] button &amp; login link (leave blank to hide)</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Bedrock Edition Server Name:</td>
+                <td class="val-col">
+                  <input type="text" id="brand-input-bedrock-name" class="tp-input-text" style="width: 280px;" value="{{ branding.bedrock_server_name if branding else 'FiestaSMP' }}" placeholder="e.g. FiestaSMP">
+                  <span class="inline-hint">Display name used when Bedrock players connect via QR Code or One-Click Join</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="label-col">Public Server Domain / IP:</td>
+                <td class="val-col">
+                  <input type="text" id="brand-input-domain" class="tp-input-text" style="width: 280px;" value="{{ branding.server_domain if branding else '' }}" placeholder="e.g. mc.yourserver.net">
+                  <span class="inline-hint">Public gateway hostname for player connections</span>
                 </td>
               </tr>
             </table>
@@ -6781,6 +6904,7 @@ def on_action(ctx, action_name, payload):
     let activeView = 'status-overview';
     let activeConfig = 'server.properties';
     let allPlayersData = [];
+    let currentBranding = {{ (branding or {}) | tojson }};
 
     // Contextual Help Definitions
     const HELP_DOCS = {
@@ -6851,7 +6975,7 @@ def on_action(ctx, action_name, payload):
           <div class="help-sub">Weather Mode</div>
           <p class="help-text">Clear sky stops rainfall immediately. Thunderstorm enables lightning and reduced visibility.</p>
           <div class="help-sub">World Spawn</div>
-          <p class="help-text">The default arrival coordinate for all incoming members is fixed at X: -58423, Y: 69, Z: -9669.</p>
+          <p class="help-text">Arrival coordinates for incoming members and the "Send to Spawn" action can be configured directly in World Controls.</p>
         `
       },
       'world-broadcast': {
@@ -6977,7 +7101,7 @@ def on_action(ctx, action_name, payload):
         title: 'File Manager Help',
         body: `
           <div class="help-sub">Server Directory Explorer</div>
-          <p class="help-text">Browse directories, edit text files, upload scripts and jars, and delete files inside <code>/home/ubuntu/fiesta/</code>.</p>
+          <p class="help-text">Browse directories, edit text files, upload scripts and jars, and delete files inside your configured server directory.</p>
           <div class="help-sub">Safety Backups</div>
           <p class="help-text">Modifying files through the editor automatically creates an inline <code>.bak</code> snapshot before overwriting.</p>
         `
@@ -7000,7 +7124,7 @@ def on_action(ctx, action_name, payload):
         title: 'Reboot Help',
         body: `
           <div class="help-sub">Service Reboot</div>
-          <p class="help-text">Gracefully terminates the server loop, saves all world chunks, and prompts systemd to restart the <code>fiesta.service</code> daemon.</p>
+          <p class="help-text">Gracefully terminates the server loop, saves all world chunks, and prompts systemd to restart the server daemon.</p>
         `
       },
       'sys-info': {
@@ -7141,6 +7265,7 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'plugins-search') { renderSearchTargetState(); const inp = document.getElementById('plugin-search-input'); if (inp) inp.focus(); }
       if (viewId === 'plugins-disabled') loadCurrentDisabledAddons();
       if (viewId === 'plugins-upload') updateUploadTargetDisplay();
+      if (viewId === 'world-control') loadWorldSpawnCoordinates();
       if (viewId === 'network-props') loadServerProps();
       if (viewId === 'network-geyser') renderBedrockConnectAndQr();
       if (viewId === 'network-resourcepack') loadResourcePackInfo();
@@ -7151,7 +7276,7 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'sys-backups') loadBackups();
       if (viewId === 'sys-branding') loadBrandingForm();
       if (viewId === 'sys-themes') loadThemeStudio();
-      if (viewId === 'sys-info') loadAutoStartInfo();
+      if (viewId === 'sys-info') loadSystemInfo();
       if (viewId === 'diag-console') { loadConsoleLogArchiveList(); pollLogs(); loadConsoleDiagnostics(); }
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
@@ -7286,8 +7411,59 @@ def on_action(ctx, action_name, payload):
       }
     }
 
+    // ── Server Power Control State Manager ──────────────────────
+    function updateServerPowerButtons(isOnline) {
+      const stopButtons = new Set([
+        ...document.querySelectorAll('#btn-server-stop, #btn-console-stop, .btn-power-stop, [data-power-action="stop"]'),
+        ...document.querySelectorAll('button[onclick*="confirmServerPower(\'stop\')"]'),
+        ...document.querySelectorAll('button[onclick*=\'confirmServerPower("stop")\']')
+      ]);
+
+      stopButtons.forEach(btn => {
+        if (!btn) return;
+        btn.disabled = !isOnline;
+        if (!isOnline) {
+          btn.setAttribute('disabled', 'disabled');
+          btn.title = 'Server is stopped (Offline)';
+        } else {
+          btn.removeAttribute('disabled');
+          btn.title = 'Stop Server';
+        }
+      });
+
+      const restartButtons = new Set([
+        ...document.querySelectorAll('#btn-server-restart, #btn-console-restart, #btn-reboot-exec, #btn-props-restart, #btn-repack-restart, .btn-power-restart, [data-power-action="restart"]'),
+        ...document.querySelectorAll('button[onclick*="confirmServerPower(\'restart\')"]'),
+        ...document.querySelectorAll('button[onclick*=\'confirmServerPower("restart")\']'),
+        ...document.querySelectorAll('button[onclick*="executeReboot"]')
+      ]);
+
+      restartButtons.forEach(btn => {
+        if (!btn) return;
+        btn.disabled = !isOnline;
+        if (!isOnline) {
+          btn.setAttribute('disabled', 'disabled');
+          btn.title = 'Server is stopped (Offline)';
+        } else {
+          btn.removeAttribute('disabled');
+          btn.title = 'Restart / Reboot Server';
+        }
+      });
+    }
+
+    // Compatibility alias: support #btn-stop and #btn-restart queries
+    try {
+      const _origGetElementById = document.getElementById.bind(document);
+      document.getElementById = function(id) {
+        if (id === 'btn-stop') return _origGetElementById('btn-server-stop') || _origGetElementById('btn-stop');
+        if (id === 'btn-restart') return _origGetElementById('btn-server-restart') || _origGetElementById('btn-restart');
+        if (id === 'btn-start') return _origGetElementById('btn-server-start') || _origGetElementById('btn-start');
+        return _origGetElementById(id);
+      };
+    } catch (e) {}
+
     // ── High-Precision Zero-Lag Running Timer ───────────────────
-    let isServerRunning = false;
+    let isServerRunning = {{ 'true' if server_running else 'false' }};
     let serverUptimeBaseSeconds = 0;
     let localSyncTimestamp = 0;
 
@@ -7377,12 +7553,14 @@ def on_action(ctx, action_name, payload):
         mDisk.style.width = `${Math.min(100, d.disk_percent)}%`;
 
         // Uptime & Running Timer sync
-        isServerRunning = !!d.server_running;
+        const isOnline = !!(d.server_running || (d.mc_ping && d.mc_ping.online) || d.service_active);
+        isServerRunning = isOnline;
         if (isServerRunning) {
           serverUptimeBaseSeconds = Number(d.uptime_seconds) || 0;
           localSyncTimestamp = Date.now();
         }
         renderUptime();
+        updateServerPowerButtons(isOnline);
 
         // Engine State & PID
         const mcStateEl = document.getElementById('st-mc-state');
@@ -7410,7 +7588,7 @@ def on_action(ctx, action_name, payload):
         // Live players
         if (d.mc_ping) {
           document.getElementById('val-online-players').textContent = d.mc_ping.players_online || 0;
-          document.getElementById('val-max-players').textContent = d.mc_ping.players_max || 69;
+          document.getElementById('val-max-players').textContent = d.mc_ping.players_max || 20;
           const sample = d.mc_ping.player_sample || [];
           document.getElementById('val-player-sample').textContent = sample.length ? `(Active: ${sample.join(', ')})` : '(No players connected)';
           if (d.mc_ping.ping_ms > 0) {
@@ -9809,12 +9987,20 @@ def on_action(ctx, action_name, payload):
 
     // ── Server Power Controls ───────────────────────────────────
     async function confirmServerPower(action) {
+      if (['stop', 'restart'].includes(action) && !isServerRunning) {
+        showBannerAlert('Server is currently stopped. Please start the server first.', true);
+        return;
+      }
       const actions = {
         'start': 'Start the Minecraft server service?',
         'stop': 'STOP the Minecraft server? All connected players will be disconnected and world data will be saved.',
         'restart': 'RESTART the Minecraft server? World data will be saved and the server will reboot.'
       };
       if (!confirm(actions[action] || `Execute server power ${action}?`)) return;
+
+      if (action === 'stop' || action === 'restart') {
+        updateServerPowerButtons(false);
+      }
 
       try {
         const res = await fetch('/api/server/power', {
@@ -9827,6 +10013,7 @@ def on_action(ctx, action_name, payload):
         setTimeout(pollStatus, 1500);
       } catch (e) {
         showBannerAlert('Power command dispatch failed.', true);
+        setTimeout(pollStatus, 500);
       }
     }
 
@@ -10726,7 +10913,8 @@ def on_action(ctx, action_name, payload):
     function renderBedrockConnectAndQr() {
       const host = window.location.hostname || '127.0.0.1';
       const port = '19132';
-      const connectUrl = `minecraft://?addExternalServer=FiestaSMP|${host}:${port}`;
+      const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'FiestaSMP';
+      const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:${port}`;
 
       const linkEl = document.getElementById('bedrock-direct-link');
       if (linkEl) linkEl.href = connectUrl;
@@ -10739,7 +10927,8 @@ def on_action(ctx, action_name, payload):
 
     function copyBedrockLink() {
       const host = window.location.hostname || '127.0.0.1';
-      const connectUrl = `minecraft://?addExternalServer=FiestaSMP|${host}:19132`;
+      const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'FiestaSMP';
+      const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:19132`;
       navigator.clipboard.writeText(connectUrl);
       showBannerAlert('Bedrock One-Click Connect URL copied to clipboard!');
     }
@@ -11286,7 +11475,12 @@ def on_action(ctx, action_name, payload):
 
     // ── Reboot Routine ──────────────────────────────────────────
     function executeReboot() {
+      if (!isServerRunning) {
+        showBannerAlert('Server is currently stopped. Please start the server first.', true);
+        return;
+      }
       if (!confirm('Are you sure you want to reboot the Minecraft server now?')) return;
+      updateServerPowerButtons(false);
       triggerAction('restart');
 
       document.getElementById('reboot-btn-row').style.display = 'none';
@@ -13474,12 +13668,16 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         if (d.success && d.branding) {
           const b = d.branding;
+          currentBranding = b;
           if (document.getElementById('brand-input-name')) document.getElementById('brand-input-name').value = b.brand_name || '';
           if (document.getElementById('brand-input-tagline')) document.getElementById('brand-input-tagline').value = b.tagline || '';
           if (document.getElementById('brand-input-model')) document.getElementById('brand-input-model').value = b.model_number || '';
           if (document.getElementById('brand-input-title')) document.getElementById('brand-input-title').value = b.browser_title || '';
           if (document.getElementById('brand-input-serverdesc')) document.getElementById('brand-input-serverdesc').value = b.server_desc || '';
           if (document.getElementById('brand-input-footer')) document.getElementById('brand-input-footer').value = b.footer_text || '';
+          if (document.getElementById('brand-input-website')) document.getElementById('brand-input-website').value = b.public_site_url !== undefined ? b.public_site_url : 'https://open-fiestasmp.github.io';
+          if (document.getElementById('brand-input-bedrock-name')) document.getElementById('brand-input-bedrock-name').value = b.bedrock_server_name || 'FiestaSMP';
+          if (document.getElementById('brand-input-domain')) document.getElementById('brand-input-domain').value = b.server_domain || '';
           if (document.getElementById('brand-input-icon')) document.getElementById('brand-input-icon').value = b.header_icon || 'tplink';
           if (document.getElementById('brand-input-custom-icon')) document.getElementById('brand-input-custom-icon').value = b.header_icon_custom || '';
 
@@ -13537,6 +13735,9 @@ def on_action(ctx, action_name, payload):
         browser_title: document.getElementById('brand-input-title')?.value.trim() || 'FIESTA-LINK | FS-GATEWAY-PRO Console',
         server_desc: document.getElementById('brand-input-serverdesc')?.value.trim() || 'Server Gateway Console',
         footer_text: document.getElementById('brand-input-footer')?.value.trim() || "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
+        public_site_url: document.getElementById('brand-input-website') ? document.getElementById('brand-input-website').value.trim() : '',
+        bedrock_server_name: document.getElementById('brand-input-bedrock-name')?.value.trim() || 'FiestaSMP',
+        server_domain: document.getElementById('brand-input-domain')?.value.trim() || '',
         header_icon: document.getElementById('brand-input-icon')?.value.trim() || 'tplink',
         header_icon_custom: document.getElementById('brand-input-custom-icon')?.value.trim() || ''
       };
@@ -13549,6 +13750,7 @@ def on_action(ctx, action_name, payload):
         });
         const d = await res.json();
         if (d.success) {
+          currentBranding = d.branding || payload;
           // Immediately update active UI elements in top header & footer
           const dName = document.getElementById('disp-brand-name');
           const dSub = document.getElementById('disp-brand-sub');
@@ -13563,6 +13765,20 @@ def on_action(ctx, action_name, payload):
           if (dIcon) dIcon.innerHTML = renderIconHtml(payload.header_icon, payload.header_icon_custom);
           document.title = payload.browser_title;
           updateBrowserTabIcon(payload.header_icon, payload.header_icon_custom);
+
+          // Update header public site link
+          const pubLink = document.getElementById('header-public-site-link');
+          if (pubLink) {
+            if (payload.public_site_url) {
+              pubLink.href = payload.public_site_url;
+              pubLink.style.display = 'inline-flex';
+            } else {
+              pubLink.style.display = 'none';
+            }
+          }
+
+          // Update Bedrock connect link & QR code
+          renderBedrockConnectAndQr();
 
           showBannerAlert('Portal branding, icon, and identity updated successfully!');
         } else {
@@ -13589,6 +13805,7 @@ def on_action(ctx, action_name, payload):
           const dFooter = document.getElementById('disp-brand-footer');
           const dIcon = document.getElementById('disp-brand-icon');
           if (d.branding) {
+            currentBranding = d.branding;
             if (dName) dName.textContent = d.branding.brand_name;
             if (dSub) dSub.textContent = d.branding.tagline;
             if (dModel) dModel.textContent = d.branding.model_number;
@@ -13596,6 +13813,17 @@ def on_action(ctx, action_name, payload):
             if (dIcon) dIcon.innerHTML = renderIconHtml(d.branding.header_icon, d.branding.header_icon_custom);
             document.title = d.branding.browser_title;
             updateBrowserTabIcon(d.branding.header_icon, d.branding.header_icon_custom);
+
+            const pubLink = document.getElementById('header-public-site-link');
+            if (pubLink) {
+              if (d.branding.public_site_url) {
+                pubLink.href = d.branding.public_site_url;
+                pubLink.style.display = 'inline-flex';
+              } else {
+                pubLink.style.display = 'none';
+              }
+            }
+            renderBedrockConnectAndQr();
           }
           showBannerAlert('Portal branding reset to defaults!');
         } else {
@@ -15094,8 +15322,190 @@ def on_action(ctx, action_name, payload):
       }
     }
 
+    // ── World Spawn Coordinates Manager ──────────────────────────
+    async function loadWorldSpawnCoordinates() {
+      try {
+        const res = await fetch('/api/world/spawn');
+        const d = await res.json();
+        if (d.success && d.spawn) {
+          const s = d.spawn;
+          const xEl = document.getElementById('spawn-input-x');
+          const yEl = document.getElementById('spawn-input-y');
+          const zEl = document.getElementById('spawn-input-z');
+          const dimEl = document.getElementById('spawn-input-dim');
+          const radEl = document.getElementById('spawn-input-radius');
+          if (xEl) xEl.value = s.x !== undefined ? s.x : -58423;
+          if (yEl) yEl.value = s.y !== undefined ? s.y : 69;
+          if (zEl) zEl.value = s.z !== undefined ? s.z : -9669;
+          if (dimEl) dimEl.value = s.dimension || 'minecraft:overworld';
+          if (radEl) radEl.value = s.radius !== undefined ? s.radius : 0;
+        }
+      } catch (e) {
+        console.error('Failed to load world spawn coordinates:', e);
+      }
+    }
+
+    async function saveWorldSpawnCoordinates() {
+      const msgEl = document.getElementById('spawn-save-msg');
+      const x = parseInt(document.getElementById('spawn-input-x')?.value, 10);
+      const y = parseInt(document.getElementById('spawn-input-y')?.value, 10);
+      const z = parseInt(document.getElementById('spawn-input-z')?.value, 10);
+      const dim = document.getElementById('spawn-input-dim')?.value || 'minecraft:overworld';
+      const rad = parseInt(document.getElementById('spawn-input-radius')?.value || '0', 10);
+
+      if (isNaN(x) || isNaN(y) || isNaN(z)) {
+        if (msgEl) {
+          msgEl.textContent = 'Coordinates X, Y, and Z must be valid integers.';
+          msgEl.style.color = '#ef4444';
+        }
+        showBannerAlert('Coordinates X, Y, and Z must be valid integers.', true);
+        return;
+      }
+
+      if (msgEl) {
+        msgEl.textContent = 'Saving...';
+        msgEl.style.color = '#0284c7';
+      }
+
+      try {
+        const res = await fetch('/api/world/spawn', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ x, y, z, dimension: dim, radius: rad })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (msgEl) {
+            msgEl.textContent = d.message || 'Spawn coordinates saved!';
+            msgEl.style.color = '#22c55e';
+          }
+          showBannerAlert(d.message || 'World spawn coordinates updated successfully!');
+        } else {
+          if (msgEl) {
+            msgEl.textContent = d.message || 'Failed to save spawn coordinates.';
+            msgEl.style.color = '#ef4444';
+          }
+          showBannerAlert(d.message || 'Failed to save spawn coordinates.', true);
+        }
+      } catch (e) {
+        if (msgEl) {
+          msgEl.textContent = 'Network error saving spawn coordinates.';
+          msgEl.style.color = '#ef4444';
+        }
+        showBannerAlert('Network error saving spawn coordinates: ' + e, true);
+      }
+    }
+
+    function resetSpawnCoordinatesToOrigin() {
+      const xEl = document.getElementById('spawn-input-x');
+      const yEl = document.getElementById('spawn-input-y');
+      const zEl = document.getElementById('spawn-input-z');
+      const radEl = document.getElementById('spawn-input-radius');
+      if (xEl) xEl.value = 0;
+      if (yEl) yEl.value = 64;
+      if (zEl) zEl.value = 0;
+      if (radEl) radEl.value = 0;
+      saveWorldSpawnCoordinates();
+    }
+
+    // ── System Information & Server Environment Manager ──────────
+    async function loadSystemInfo() {
+      await loadAutoStartInfo();
+      try {
+        const [resSettings, resStatus] = await Promise.all([
+          fetch('/api/system/settings'),
+          fetch('/api/status')
+        ]);
+        const dSettings = await resSettings.json();
+        const dStatus = await resStatus.json();
+
+        // Hardware & Platform Specs
+        const cpuEl = document.getElementById('sys-info-cpu');
+        const ramEl = document.getElementById('sys-info-ram');
+        const osEl = document.getElementById('sys-info-os');
+        const jvmEl = document.getElementById('sys-info-jvm');
+        const scrEl = document.getElementById('sys-info-screen');
+        const sdirEl = document.getElementById('sys-info-serverdir');
+        const bdirEl = document.getElementById('sys-info-backupdir');
+
+        if (cpuEl) cpuEl.textContent = (dStatus.cpu_count || 4) + ' Cores';
+        if (ramEl) {
+          const totalGb = dStatus.ram_total_mb ? (dStatus.ram_total_mb / 1024).toFixed(1) : '24.0';
+          ramEl.textContent = totalGb + ' GB';
+        }
+        if (osEl) osEl.textContent = dStatus.platform || dStatus.os_platform || 'Linux';
+        if (jvmEl) jvmEl.textContent = dStatus.java_version || 'OpenJDK 64-Bit Server VM';
+
+        const s = dSettings.settings || {};
+        if (scrEl) scrEl.textContent = s.screen_session || 'fiesta';
+        if (sdirEl) sdirEl.textContent = s.server_dir || '/home/ubuntu/fiesta';
+        if (bdirEl) bdirEl.textContent = s.backup_dir || '/home/ubuntu/backups';
+
+        // Populate Config Form Inputs
+        const inSdir = document.getElementById('sys-cfg-server-dir');
+        const inSvc = document.getElementById('sys-cfg-service-name');
+        const inScr = document.getElementById('sys-cfg-screen-session');
+        const inBdir = document.getElementById('sys-cfg-backup-dir');
+
+        if (inSdir) inSdir.value = s.server_dir || '';
+        if (inSvc) inSvc.value = s.service_name || '';
+        if (inScr) inScr.value = s.screen_session || '';
+        if (inBdir) inBdir.value = s.backup_dir || '';
+      } catch (e) {
+        console.error('Failed to load system environment settings:', e);
+      }
+    }
+
+    async function saveServerEnvSettings() {
+      const msgEl = document.getElementById('sys-cfg-save-msg');
+      const server_dir = document.getElementById('sys-cfg-server-dir')?.value.trim();
+      const service_name = document.getElementById('sys-cfg-service-name')?.value.trim();
+      const screen_session = document.getElementById('sys-cfg-screen-session')?.value.trim();
+      const backup_dir = document.getElementById('sys-cfg-backup-dir')?.value.trim();
+
+      if (msgEl) {
+        msgEl.textContent = 'Saving...';
+        msgEl.style.color = '#0284c7';
+      }
+
+      try {
+        const res = await fetch('/api/system/settings', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            server_dir,
+            service_name,
+            screen_session,
+            backup_dir
+          })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (msgEl) {
+            msgEl.textContent = d.message || 'Saved successfully!';
+            msgEl.style.color = '#22c55e';
+          }
+          showBannerAlert('Gateway server paths and service configuration saved to config.json!');
+          loadSystemInfo();
+        } else {
+          if (msgEl) {
+            msgEl.textContent = d.message || 'Failed to save settings.';
+            msgEl.style.color = '#ef4444';
+          }
+          showBannerAlert(d.message || 'Failed to save settings.', true);
+        }
+      } catch (e) {
+        if (msgEl) {
+          msgEl.textContent = 'Network error saving settings.';
+          msgEl.style.color = '#ef4444';
+        }
+        showBannerAlert('Network error saving settings: ' + e, true);
+      }
+    }
+
     // Initialize timers & console interceptors
     initConsoleLinkInterceptor();
+    updateServerPowerButtons(isServerRunning);
     pollStatus();
     loadConsoleLogArchiveList();
     pollLogs();
@@ -15105,6 +15515,8 @@ def on_action(ctx, action_name, payload):
     loadPanelAddons(false);
     checkSoftwareUpdateReminder();
     loadAutoStartInfo();
+    loadSystemInfo();
+    loadWorldSpawnCoordinates();
     loadEvents();
     setInterval(loadEvents, 60000); // Poll/refresh scheduled events & reminders every minute
     setInterval(renderUptime, 1000); // High-precision local 1-second ticker (zero latency & zero lag)

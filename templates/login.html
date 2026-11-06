@@ -865,6 +865,11 @@
           <span class="label">Bedrock Edition IP:</span>
           <span class="val" id="login-bedrock-ip">{{ branding.server_domain or 'play.your-server.net' }}:19132</span>
         </div>
+        {% if not branding or (branding.public_site_url != "") %}
+        <div id="login-public-site-container" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--info-border); text-align: center;">
+          <a id="login-public-site-link" href="{{ (branding.public_site_url if branding and branding.public_site_url is not none else 'https://open-fiestasmp.github.io') }}" target="_blank" style="font-size: 11px; font-weight: bold; color: var(--info-val); text-decoration: none;">&larr; Return to {{ branding.brand_name if branding else 'Official SMP' }} Website</a>
+        </div>
+        {% endif %}
       </div>
 
       <div class="footer-note">

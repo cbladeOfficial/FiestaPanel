@@ -63,6 +63,14 @@ app.config.update(SESSION_COOKIE_SECURE=True, SESSION_COOKIE_HTTPONLY=True, SESS
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 
+DEFAULT_SPAWN_COORDINATES = {
+    "x": -58423,
+    "y": 69,
+    "z": -9669,
+    "dimension": "minecraft:overworld",
+    "radius": 0
+}
+
 def load_server_config():
     is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
     cfg = {
@@ -73,7 +81,9 @@ def load_server_config():
         "screen_session": "fiesta",
         "host": "0.0.0.0" if is_docker else "127.0.0.1",
         "port": 8080,
-        "autostart": True
+        "autostart": True,
+        "backup_dir": "/home/ubuntu/backups" if os.path.isdir("/home/ubuntu/backups") else os.path.join(os.path.dirname("/home/ubuntu/fiesta"), "backups"),
+        "spawn_coordinates": DEFAULT_SPAWN_COORDINATES.copy()
     }
     target_cfg = CONFIG_FILE
     if not os.path.exists(target_cfg) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "config.json")):
@@ -81,7 +91,9 @@ def load_server_config():
     if os.path.exists(target_cfg):
         try:
             with open(target_cfg, "r", encoding="utf-8") as f:
-                cfg.update(json.load(f))
+                loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    cfg.update(loaded)
         except Exception:
             pass
 
@@ -98,6 +110,12 @@ def load_server_config():
         sname = os.environ.get(f"{prefix}SERVICE_NAME")
         if sname:
             cfg["service_name"] = sname
+        ssess = os.environ.get(f"{prefix}SCREEN_SESSION")
+        if ssess:
+            cfg["screen_session"] = ssess
+        bdir = os.environ.get(f"{prefix}BACKUP_DIR")
+        if bdir:
+            cfg["backup_dir"] = bdir
         host = os.environ.get(f"{prefix}HOST")
         if host:
             cfg["host"] = host
@@ -118,6 +136,48 @@ ADMIN_PASS = SERVER_CONFIG["admin_pass"]
 SERVER_DIR = SERVER_CONFIG["server_dir"]
 SERVICE_NAME = SERVER_CONFIG["service_name"]
 SCREEN_SESSION = SERVER_CONFIG.get("screen_session", "fiesta")
+
+def get_backup_dir():
+    bdir = SERVER_CONFIG.get("backup_dir")
+    if bdir:
+        return os.path.abspath(bdir)
+    parent = os.path.dirname(os.path.realpath(SERVER_DIR))
+    candidate = os.path.join(parent, "backups")
+    if os.path.exists(candidate):
+        return candidate
+    return os.path.join(SERVER_DIR, "backups")
+
+def get_spawn_coordinates():
+    spawn = SERVER_CONFIG.get("spawn_coordinates")
+    if isinstance(spawn, dict) and "x" in spawn and "y" in spawn and "z" in spawn:
+        try:
+            return {
+                "x": int(spawn.get("x", DEFAULT_SPAWN_COORDINATES["x"])),
+                "y": int(spawn.get("y", DEFAULT_SPAWN_COORDINATES["y"])),
+                "z": int(spawn.get("z", DEFAULT_SPAWN_COORDINATES["z"])),
+                "dimension": str(spawn.get("dimension", DEFAULT_SPAWN_COORDINATES["dimension"])),
+                "radius": int(spawn.get("radius", DEFAULT_SPAWN_COORDINATES["radius"]))
+            }
+        except (ValueError, TypeError):
+            pass
+    return DEFAULT_SPAWN_COORDINATES.copy()
+
+def save_spawn_coordinates(coords):
+    SERVER_CONFIG["spawn_coordinates"] = coords
+    target_cfg = CONFIG_FILE
+    existing = {}
+    if os.path.exists(target_cfg):
+        try:
+            with open(target_cfg, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except Exception:
+            existing = {}
+    existing["spawn_coordinates"] = coords
+    try:
+        with open(target_cfg, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=2)
+    except Exception as e:
+        print("Failed to save spawn coordinates to config:", e)
 
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 MCASSETS_DIR = os.path.join(STATIC_DIR, "mcassets")
@@ -206,6 +266,14 @@ class ServerRunner:
         self.pid_file = os.path.join(self.server_dir, ".fiesta_server.pid")
         self.runtime_config_file = os.path.join(self.server_dir, "runtime_config.json")
         self.lock = threading.Lock()
+        self.on_state_change = []
+
+    def _notify_state(self, is_running):
+        try:
+            for cb in getattr(self, "on_state_change", []):
+                cb(is_running)
+        except Exception:
+            pass
 
     def _detect_systemd(self):
         if not IS_LINUX or not shutil.which("systemctl") or not self.service_name:
@@ -315,6 +383,7 @@ class ServerRunner:
                 try:
                     res = subprocess.run(["sudo", "systemctl", "start", self.service_name], capture_output=True, text=True, timeout=10)
                     if res.returncode == 0:
+                        self._notify_state(True)
                         return True, f"Started {self.service_name} via systemd."
                 except Exception:
                     pass
@@ -351,6 +420,7 @@ class ServerRunner:
             except Exception:
                 pass
 
+            self._notify_state(True)
             return True, f"Server process launched directly (PID: {self.proc.pid})."
 
     def stop(self):
@@ -387,6 +457,7 @@ class ServerRunner:
                 except Exception:
                     pass
 
+            self._notify_state(False)
             return True, "Server shutdown initiated."
 
     def restart(self):
@@ -468,7 +539,9 @@ DEFAULT_BRANDING = {
     "server_desc": "Server Gateway Console",
     "header_icon": "tplink",
     "header_icon_custom": "",
-    "server_domain": ""
+    "server_domain": "",
+    "public_site_url": "https://open-fiestasmp.github.io",
+    "bedrock_server_name": "FiestaSMP"
 }
 
 HEADER_ICONS = {
@@ -528,44 +601,47 @@ def save_branding(data):
     with open(BRANDING_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
-ALLOWED_CONFIGS = {
-    "server.properties": os.path.join(SERVER_DIR, "server.properties"),
-    "bukkit.yml": os.path.join(SERVER_DIR, "bukkit.yml"),
-    "spigot.yml": os.path.join(SERVER_DIR, "spigot.yml"),
-    "purpur.yml": os.path.join(SERVER_DIR, "purpur.yml"),
-    "paper-global.yml": os.path.join(SERVER_DIR, "config", "paper-global.yml"),
-    "paper-world-defaults.yml": os.path.join(SERVER_DIR, "config", "paper-world-defaults.yml"),
-    "commands.yml": os.path.join(SERVER_DIR, "commands.yml"),
-    "permissions.yml": os.path.join(SERVER_DIR, "permissions.yml"),
-    "help.yml": os.path.join(SERVER_DIR, "help.yml"),
-    "floodgate/config.yml": os.path.join(SERVER_DIR, "plugins", "floodgate", "config.yml"),
-    "Geyser-Spigot/config.yml": os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
-    "LuckPerms/config.yml": os.path.join(SERVER_DIR, "plugins", "LuckPerms", "config.yml"),
-    "CoreProtect/config.yml": os.path.join(SERVER_DIR, "plugins", "CoreProtect", "config.yml"),
-    "Chunky/config.yml": os.path.join(SERVER_DIR, "plugins", "Chunky", "config.yml"),
-    "WorldEdit/config.yml": os.path.join(SERVER_DIR, "plugins", "WorldEdit", "config.yml"),
-    "ViaVersion/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaVersion", "config.yml"),
-    "ViaBackwards/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaBackwards", "config.yml"),
-    "ViaRewind/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaRewind", "config.yml"),
-    "Vault/config.yml": os.path.join(SERVER_DIR, "plugins", "Vault", "config.yml"),
-    "Essentials/config.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "config.yml"),
-    "Essentials/spawn.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "spawn.yml"),
-    "Essentials/kits.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "kits.yml"),
-    "Essentials/custom_items.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "custom_items.yml"),
-    "Essentials/worth.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "worth.yml"),
-    "AuthMe/config.yml": os.path.join(SERVER_DIR, "plugins", "AuthMe", "config.yml"),
-    "AuthMe/spawn.yml": os.path.join(SERVER_DIR, "plugins", "AuthMe", "spawn.yml"),
-    "TAB/config.yml": os.path.join(SERVER_DIR, "plugins", "TAB", "config.yml"),
-    "DeluxeMenus/config.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "config.yml"),
-    "DeluxeMenus/main_menu.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "gui_menus", "main_menu.yml"),
-    "GriefPrevention/config.yml": os.path.join(SERVER_DIR, "plugins", "GriefPreventionData", "config.yml"),
-    "UltimateAntiBot/config.yml": os.path.join(SERVER_DIR, "plugins", "UltimateAntiBot", "config.yml"),
-    "ChestShop/config.yml": os.path.join(SERVER_DIR, "plugins", "ChestShop", "config.yml"),
-    "SkinsRestorer/config.yml": os.path.join(SERVER_DIR, "plugins", "SkinsRestorer", "config.yml"),
-    "DecentHolograms/config.yml": os.path.join(SERVER_DIR, "plugins", "DecentHolograms", "config.yml"),
-    "EzAuction/auction.yml": os.path.join(SERVER_DIR, "plugins", "EzAuction", "auction.yml"),
-    "PlaceholderAPI/config.yml": os.path.join(SERVER_DIR, "plugins", "PlaceholderAPI", "config.yml")
-}
+def get_allowed_configs():
+    return {
+        "server.properties": os.path.join(SERVER_DIR, "server.properties"),
+        "bukkit.yml": os.path.join(SERVER_DIR, "bukkit.yml"),
+        "spigot.yml": os.path.join(SERVER_DIR, "spigot.yml"),
+        "purpur.yml": os.path.join(SERVER_DIR, "purpur.yml"),
+        "paper-global.yml": os.path.join(SERVER_DIR, "config", "paper-global.yml"),
+        "paper-world-defaults.yml": os.path.join(SERVER_DIR, "config", "paper-world-defaults.yml"),
+        "commands.yml": os.path.join(SERVER_DIR, "commands.yml"),
+        "permissions.yml": os.path.join(SERVER_DIR, "permissions.yml"),
+        "help.yml": os.path.join(SERVER_DIR, "help.yml"),
+        "floodgate/config.yml": os.path.join(SERVER_DIR, "plugins", "floodgate", "config.yml"),
+        "Geyser-Spigot/config.yml": os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
+        "LuckPerms/config.yml": os.path.join(SERVER_DIR, "plugins", "LuckPerms", "config.yml"),
+        "CoreProtect/config.yml": os.path.join(SERVER_DIR, "plugins", "CoreProtect", "config.yml"),
+        "Chunky/config.yml": os.path.join(SERVER_DIR, "plugins", "Chunky", "config.yml"),
+        "WorldEdit/config.yml": os.path.join(SERVER_DIR, "plugins", "WorldEdit", "config.yml"),
+        "ViaVersion/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaVersion", "config.yml"),
+        "ViaBackwards/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaBackwards", "config.yml"),
+        "ViaRewind/config.yml": os.path.join(SERVER_DIR, "plugins", "ViaRewind", "config.yml"),
+        "Vault/config.yml": os.path.join(SERVER_DIR, "plugins", "Vault", "config.yml"),
+        "Essentials/config.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "config.yml"),
+        "Essentials/spawn.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "spawn.yml"),
+        "Essentials/kits.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "kits.yml"),
+        "Essentials/custom_items.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "custom_items.yml"),
+        "Essentials/worth.yml": os.path.join(SERVER_DIR, "plugins", "Essentials", "worth.yml"),
+        "AuthMe/config.yml": os.path.join(SERVER_DIR, "plugins", "AuthMe", "config.yml"),
+        "AuthMe/spawn.yml": os.path.join(SERVER_DIR, "plugins", "AuthMe", "spawn.yml"),
+        "TAB/config.yml": os.path.join(SERVER_DIR, "plugins", "TAB", "config.yml"),
+        "DeluxeMenus/config.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "config.yml"),
+        "DeluxeMenus/main_menu.yml": os.path.join(SERVER_DIR, "plugins", "DeluxeMenus", "gui_menus", "main_menu.yml"),
+        "GriefPrevention/config.yml": os.path.join(SERVER_DIR, "plugins", "GriefPreventionData", "config.yml"),
+        "UltimateAntiBot/config.yml": os.path.join(SERVER_DIR, "plugins", "UltimateAntiBot", "config.yml"),
+        "ChestShop/config.yml": os.path.join(SERVER_DIR, "plugins", "ChestShop", "config.yml"),
+        "SkinsRestorer/config.yml": os.path.join(SERVER_DIR, "plugins", "SkinsRestorer", "config.yml"),
+        "DecentHolograms/config.yml": os.path.join(SERVER_DIR, "plugins", "DecentHolograms", "config.yml"),
+        "EzAuction/auction.yml": os.path.join(SERVER_DIR, "plugins", "EzAuction", "auction.yml"),
+        "PlaceholderAPI/config.yml": os.path.join(SERVER_DIR, "plugins", "PlaceholderAPI", "config.yml")
+    }
+
+ALLOWED_CONFIGS = get_allowed_configs()
 
 def login_required(f):
     @wraps(f)
@@ -580,8 +656,9 @@ def login_required(f):
 def send_mc_command(cmd):
     try:
         clean_cmd = cmd.replace('"', '\\"').replace("'", "\\'").strip()
+        screen_name = SCREEN_SESSION or SERVER_CONFIG.get("screen_session", "fiesta")
         subprocess.run(
-            ["screen", "-p", "0", "-S", "fiesta", "-X", "eval", f'stuff "{clean_cmd}\\015"'],
+            ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{clean_cmd}\\015"'],
             check=True
         )
         return True, f"Executed: {cmd}"
@@ -811,16 +888,53 @@ def execute_ip_pardon(target):
         send_mc_command(f"pardon-ip {target}")
         return True, f"Dispatched IP pardon for {target}"
 
+def get_server_properties_dict():
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    props = {}
+    if os.path.exists(props_path):
+        try:
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        props[k.strip()] = v.strip()
+        except Exception:
+            pass
+    return props
+
 def ping_mc():
-    """Queries live Minecraft server on 127.0.0.1:25565 via native SLP handshake."""
+    """Queries live Minecraft server via native SLP handshake using server-port from properties."""
+    props = get_server_properties_dict()
+    mc_port = 25565
+    try:
+        mc_port = int(props.get("server-port", 25565))
+    except (ValueError, TypeError):
+        pass
+
+    def_ver = "Minecraft Server"
+    meta_file = os.path.join(SERVER_DIR, "installed_software.json")
+    if os.path.exists(meta_file):
+        try:
+            with open(meta_file, "r", encoding="utf-8") as mf:
+                def_ver = json.load(mf).get("label") or def_ver
+        except Exception:
+            pass
+
+    def_max_players = 20
+    try:
+        def_max_players = int(props.get("max-players", 20))
+    except (ValueError, TypeError):
+        pass
+
     try:
         t0 = time.time()
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(1.5)
-        s.connect(('127.0.0.1', 25565))
+        s.connect(('127.0.0.1', mc_port))
 
         host = '127.0.0.1'.encode('utf-8')
-        data = b'\x00' + b'\xff\x05' + bytes([len(host)]) + host + struct.pack('>H', 25565) + b'\x01'
+        data = b'\x00' + b'\xff\x05' + bytes([len(host)]) + host + struct.pack('>H', mc_port) + b'\x01'
         s.sendall(bytes([len(data)]) + data)
         s.sendall(b'\x01\x00')
 
@@ -850,9 +964,9 @@ def ping_mc():
         return {
             'online': True,
             'ping_ms': ms,
-            'version': info.get('version', {}).get('name', 'Purpur 1.21.11'),
+            'version': info.get('version', {}).get('name', def_ver),
             'players_online': info.get('players', {}).get('online', 0),
-            'players_max': info.get('players', {}).get('max', 0),
+            'players_max': info.get('players', {}).get('max', def_max_players),
             'player_sample': [p.get('name') for p in info.get('players', {}).get('sample', []) if 'name' in p],
             'motd': info.get('description', {}).get('text', '') if isinstance(info.get('description'), dict) else str(info.get('description', ''))
         }
@@ -861,11 +975,11 @@ def ping_mc():
             'online': False,
             'ping_ms': -1,
             'error': str(e),
-            'version': 'Purpur 1.21.11 (Offline)',
+            'version': f"{def_ver} (Offline)",
             'players_online': 0,
-            'players_max': 0,
+            'players_max': def_max_players,
             'player_sample': [],
-            'motd': ''
+            'motd': props.get('motd', '')
         }
 
 # Initialize FiestaPanel Addons & Extension Engine
@@ -940,6 +1054,45 @@ try:
 except Exception as e:
     app.logger.warning(f"Error during addon_manager initialization: {e}")
 
+_last_known_server_running = None
+_state_notification_lock = threading.Lock()
+
+def check_and_notify_server_state(force_state=None):
+    global _last_known_server_running
+    with _state_notification_lock:
+        current_state = force_state if force_state is not None else server_runner.is_running()
+        if _last_known_server_running is None:
+            # Seed initial state without broadcasting spurious alerts on panel boot
+            _last_known_server_running = current_state
+            return
+
+        if current_state and not _last_known_server_running:
+            _last_known_server_running = True
+            try:
+                addon_manager.trigger_event("server_start")
+                addon_manager.trigger_event("server_online")
+            except Exception as err:
+                app.logger.error(f"Error dispatching server_start addon event: {err}")
+
+        elif not current_state and _last_known_server_running:
+            _last_known_server_running = False
+            try:
+                addon_manager.trigger_event("server_stop")
+            except Exception as err:
+                app.logger.error(f"Error dispatching server_stop addon event: {err}")
+
+server_runner.on_state_change = [check_and_notify_server_state]
+
+def _server_state_monitor_loop():
+    while True:
+        try:
+            time.sleep(3)
+            check_and_notify_server_state()
+        except Exception:
+            pass
+
+threading.Thread(target=_server_state_monitor_loop, daemon=True).start()
+
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
     if request.method == "POST":
@@ -996,7 +1149,8 @@ def dashboard():
         user=session.get("user", "admin"),
         role=session.get("role", "owner"),
         permissions=session.get("permissions", ["all"]),
-        branding=load_branding()
+        branding=load_branding(),
+        server_running=server_runner.is_running()
     )
 
 LATEST_PAPER_VERSION_CACHE = {"version": "26.3", "ts": 0}
@@ -1121,8 +1275,9 @@ def api_status():
 
     service_active = False
     try:
-        res = subprocess.run(["sudo", "systemctl", "is-active", "fiesta"], capture_output=True, text=True, timeout=2)
-        service_active = (res.stdout.strip() == "active")
+        if SERVICE_NAME:
+            res = subprocess.run(["sudo", "systemctl", "is-active", SERVICE_NAME], capture_output=True, text=True, timeout=2)
+            service_active = (res.stdout.strip() == "active")
     except Exception:
         pass
 
@@ -1131,6 +1286,7 @@ def api_status():
         "service_active": service_active,
         "pid": mc_pid,
         "cpu_usage": cpu_percent,
+        "cpu_count": psutil.cpu_count(logical=True) or 1,
         "ram_used_mb": round(mem.used / (1024 * 1024), 1),
         "ram_total_mb": round(mem.total / (1024 * 1024), 1),
         "ram_percent": mem.percent,
@@ -1151,6 +1307,10 @@ def api_status():
         "server_installed": jar_exists,
         "latest_paper_version": get_latest_paper_version(),
         "server_dir": SERVER_DIR,
+        "service_name": SERVICE_NAME,
+        "screen_session": SCREEN_SESSION,
+        "backup_dir": get_backup_dir(),
+        "spawn_coordinates": get_spawn_coordinates(),
         "java_version": detect_java_version_str(),
         "runtime_config": server_runner.load_runtime_config(),
         "mc_ping": ping_info
@@ -1173,12 +1333,16 @@ def api_server_power():
         return jsonify({"success": True, "message": "Server startup sequence dispatched."})
 
     elif action == "stop":
+        if not server_runner.is_running():
+            return jsonify({"success": False, "message": "Server is already stopped. Cannot stop server."}), 400
         def stop_worker():
             server_runner.stop()
         threading.Thread(target=stop_worker, daemon=True).start()
         return jsonify({"success": True, "message": "World data saved; server shutdown dispatched."})
 
     elif action == "restart":
+        if not server_runner.is_running():
+            return jsonify({"success": False, "message": "Server is already stopped. Cannot restart server."}), 400
         def restart_worker():
             server_runner.restart()
         threading.Thread(target=restart_worker, daemon=True).start()
@@ -1388,6 +1552,7 @@ def api_player_action():
         success, msg = execute_ip_pardon(player)
         return jsonify({"success": success, "message": msg})
 
+    coords = get_spawn_coordinates()
     cmd_map = {
         "op": f"op {player}",
         "deop": f"deop {player}",
@@ -1403,7 +1568,7 @@ def api_player_action():
         "heal": f"heal {player}",
         "feed": f"feed {player}",
         "clear": f"clear {player}",
-        "tp_spawn": f"tp {player} -58423 69 -9669",
+        "tp_spawn": f"tp {player} {coords['x']} {coords['y']} {coords['z']}",
         "msg": f"msg {player} &6[Admin]&f {param}"
     }
 
@@ -1957,6 +2122,8 @@ def api_save_branding():
     header_icon = data.get("header_icon", cur.get("header_icon", "tplink")).strip()
     header_icon_custom = data.get("header_icon_custom", cur.get("header_icon_custom", "")).strip()
     server_domain = data.get("server_domain", cur.get("server_domain", "")).strip()
+    public_site_url = data.get("public_site_url", cur.get("public_site_url", "https://open-fiestasmp.github.io")).strip()
+    bedrock_server_name = data.get("bedrock_server_name", cur.get("bedrock_server_name", "FiestaSMP")).strip()
 
     if not brand_name:
         return jsonify({"success": False, "message": "Brand name cannot be blank."}), 400
@@ -1970,7 +2137,9 @@ def api_save_branding():
         "server_desc": server_desc,
         "header_icon": header_icon,
         "header_icon_custom": header_icon_custom,
-        "server_domain": server_domain
+        "server_domain": server_domain,
+        "public_site_url": public_site_url,
+        "bedrock_server_name": bedrock_server_name
     }
     save_branding(new_branding)
     return jsonify({"success": True, "message": "Portal branding updated successfully!", "branding": new_branding})
@@ -2007,6 +2176,139 @@ def api_reset_branding():
 
     save_branding(DEFAULT_BRANDING.copy())
     return jsonify({"success": True, "message": "Branding reset to factory default.", "branding": DEFAULT_BRANDING.copy()})
+
+@app.route("/api/world/spawn", methods=["GET", "POST"])
+@login_required
+def api_world_spawn():
+    if request.method == "GET":
+        return jsonify({"success": True, "spawn": get_spawn_coordinates()})
+
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Parameter management required."}), 403
+
+    data = request.get_json() or {}
+    try:
+        x = int(data.get("x", DEFAULT_SPAWN_COORDINATES["x"]))
+        y = int(data.get("y", DEFAULT_SPAWN_COORDINATES["y"]))
+        z = int(data.get("z", DEFAULT_SPAWN_COORDINATES["z"]))
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "message": "Coordinates X, Y, and Z must be valid integers."}), 400
+
+    dimension = str(data.get("dimension", DEFAULT_SPAWN_COORDINATES["dimension"])).strip()
+    try:
+        radius = max(0, int(data.get("radius", DEFAULT_SPAWN_COORDINATES["radius"])))
+    except (ValueError, TypeError):
+        radius = 0
+
+    new_spawn = {
+        "x": x,
+        "y": y,
+        "z": z,
+        "dimension": dimension,
+        "radius": radius
+    }
+    save_spawn_coordinates(new_spawn)
+
+    cmd_msg = ""
+    if server_runner.is_running():
+        try:
+            ok, _ = send_mc_command(f"setworldspawn {x} {y} {z}")
+            if ok:
+                cmd_msg = " and synchronized with in-game world"
+        except Exception:
+            pass
+
+    return jsonify({
+        "success": True,
+        "message": f"World spawn updated to X: {x}, Y: {y}, Z: {z}{cmd_msg}!",
+        "spawn": new_spawn
+    })
+
+@app.route("/api/system/settings", methods=["GET", "POST"])
+@login_required
+def api_system_settings():
+    global SERVER_DIR, SERVICE_NAME, SCREEN_SESSION, SERVER_CONFIG, ALLOWED_CONFIGS
+
+    if request.method == "GET":
+        b = load_branding()
+        return jsonify({
+            "success": True,
+            "settings": {
+                "server_dir": SERVER_DIR,
+                "service_name": SERVICE_NAME,
+                "screen_session": SCREEN_SESSION,
+                "backup_dir": get_backup_dir(),
+                "server_domain": b.get("server_domain", ""),
+                "public_site_url": b.get("public_site_url", ""),
+                "bedrock_server_name": b.get("bedrock_server_name", "FiestaSMP"),
+                "spawn_coordinates": get_spawn_coordinates()
+            }
+        })
+
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and session.get("role") != "owner":
+        return jsonify({"success": False, "message": "Permission denied: Owner privileges required to update server environment."}), 403
+
+    data = request.get_json() or {}
+    s_dir = (data.get("server_dir") or "").strip()
+    svc_name = (data.get("service_name") or "").strip()
+    scr_name = (data.get("screen_session") or "").strip()
+    b_dir = (data.get("backup_dir") or "").strip()
+
+    target_cfg = CONFIG_FILE
+    existing = {}
+    if os.path.exists(target_cfg):
+        try:
+            with open(target_cfg, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except Exception:
+            existing = {}
+
+    if s_dir:
+        abs_sdir = os.path.abspath(s_dir)
+        os.makedirs(abs_sdir, exist_ok=True)
+        existing["server_dir"] = abs_sdir
+        SERVER_DIR = abs_sdir
+        SERVER_CONFIG["server_dir"] = abs_sdir
+        server_runner.server_dir = abs_sdir
+        ALLOWED_CONFIGS.clear()
+        ALLOWED_CONFIGS.update(get_allowed_configs())
+
+    if svc_name:
+        existing["service_name"] = svc_name
+        SERVICE_NAME = svc_name
+        SERVER_CONFIG["service_name"] = svc_name
+        server_runner.service_name = svc_name
+
+    if scr_name:
+        existing["screen_session"] = scr_name
+        SCREEN_SESSION = scr_name
+        SERVER_CONFIG["screen_session"] = scr_name
+        server_runner.screen_session = scr_name
+
+    if b_dir:
+        abs_bdir = os.path.abspath(b_dir)
+        os.makedirs(abs_bdir, exist_ok=True)
+        existing["backup_dir"] = abs_bdir
+        SERVER_CONFIG["backup_dir"] = abs_bdir
+
+    try:
+        with open(target_cfg, "w", encoding="utf-8") as f:
+            json.dump(existing, f, indent=2)
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Failed to persist config: {str(e)}"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": "Gateway server environment configuration updated and saved to config.json!",
+        "settings": {
+            "server_dir": SERVER_DIR,
+            "service_name": SERVICE_NAME,
+            "screen_session": SCREEN_SESSION,
+            "backup_dir": get_backup_dir()
+        }
+    })
 
 # ── Sub-Users & Access Control APIs (Aternos Style) ───────────
 @app.route("/api/access/users", methods=["GET"])
@@ -2552,7 +2854,8 @@ def api_software_rollback():
     try:
         send_mc_command("save-all")
         time.sleep(1)
-        subprocess.run(["sudo", "systemctl", "stop", "fiesta"])
+        if SERVICE_NAME:
+            subprocess.run(["sudo", "systemctl", "stop", SERVICE_NAME])
         time.sleep(1)
 
         current_tmp = os.path.join(SERVER_DIR, "server.jar.pre_rollback")
@@ -2564,7 +2867,8 @@ def api_software_rollback():
             try: os.remove(meta_path)
             except Exception: pass
 
-        subprocess.run(["sudo", "systemctl", "start", "fiesta"])
+        if SERVICE_NAME:
+            subprocess.run(["sudo", "systemctl", "start", SERVICE_NAME])
         return jsonify({"success": True, "message": "Successfully rolled back to previous server jar and restarted service."})
     except Exception as e:
         return jsonify({"success": False, "message": f"Rollback failed: {str(e)}"}), 500
@@ -3918,19 +4222,36 @@ def api_panel_addons_template_download():
 @app.route("/api/backups")
 @login_required
 def api_get_backups():
-    paths = ['/home/ubuntu/*.tar.gz', '/home/ubuntu/*.tar.zst', '/home/ubuntu/backups/*.tar.*', '/home/ubuntu/backups/*.zip', '/home/ubuntu/*.zip']
+    bdir = get_backup_dir()
+    search_dirs = [bdir]
+    s_backups = os.path.join(SERVER_DIR, "backups")
+    if s_backups not in search_dirs and os.path.isdir(s_backups):
+        search_dirs.append(s_backups)
+    for legacy in ['/home/ubuntu', '/home/ubuntu/backups']:
+        if legacy not in search_dirs and os.path.isdir(legacy):
+            search_dirs.append(legacy)
+
     files = []
-    for p in paths:
-        for f in glob.glob(p):
-            if os.path.isfile(f):
-                stat = os.stat(f)
-                files.append({
-                    'filename': os.path.basename(f),
-                    'path': f,
-                    'size_mb': round(stat.st_size / (1024 * 1024), 1),
-                    'size_gb': round(stat.st_size / (1024 * 1024 * 1024), 2),
-                    'mtime': datetime.datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-                })
+    seen_paths = set()
+    patterns = ['*.tar.gz', '*.tar.zst', '*.tar.*', '*.zip']
+    for d in search_dirs:
+        if not os.path.isdir(d):
+            continue
+        for pat in patterns:
+            for f in glob.glob(os.path.join(d, pat)):
+                if os.path.isfile(f) and f not in seen_paths:
+                    seen_paths.add(f)
+                    try:
+                        stat = os.stat(f)
+                        files.append({
+                            'filename': os.path.basename(f),
+                            'path': f,
+                            'size_mb': round(stat.st_size / (1024 * 1024), 1),
+                            'size_gb': round(stat.st_size / (1024 * 1024 * 1024), 2),
+                            'mtime': datetime.datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                        })
+                    except Exception:
+                        pass
     files.sort(key=lambda x: x['mtime'], reverse=True)
     return jsonify({"backups": files, "total": len(files)})
 
@@ -3943,7 +4264,7 @@ def api_create_backup():
 
     def backup_task():
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_dir = SERVER_CONFIG.get("backup_dir") or os.path.join(os.path.dirname(SERVER_DIR), "backups")
+        backup_dir = get_backup_dir()
         os.makedirs(backup_dir, exist_ok=True)
         target_tar = os.path.join(backup_dir, f"fiesta_backup_{ts}.tar.gz")
         send_mc_command("save-all")
@@ -3962,7 +4283,12 @@ def api_create_backup():
 def api_download_backup():
     filename = request.args.get("filename", "").strip()
     safe_name = os.path.basename(filename)
-    for folder in ['/home/ubuntu', '/home/ubuntu/backups']:
+    bdir = get_backup_dir()
+    search_dirs = [bdir, os.path.join(SERVER_DIR, "backups"), SERVER_DIR, os.path.dirname(SERVER_DIR)]
+    for legacy in ['/home/ubuntu', '/home/ubuntu/backups']:
+        if legacy not in search_dirs and os.path.isdir(legacy):
+            search_dirs.append(legacy)
+    for folder in search_dirs:
         p = os.path.join(folder, safe_name)
         if os.path.isfile(p):
             return send_file(p, as_attachment=True, download_name=safe_name)
@@ -4489,7 +4815,7 @@ def api_worlds_download():
     if not abs_path or not os.path.isdir(abs_path):
         return jsonify({"success": False, "message": "World directory not found"}), 404
 
-    backup_dir = "/home/ubuntu/backups"
+    backup_dir = get_backup_dir()
     os.makedirs(backup_dir, exist_ok=True)
     zip_filename = f"{world_name}_{int(time.time())}.zip"
     zip_path = os.path.join(backup_dir, zip_filename)
@@ -4527,7 +4853,7 @@ def api_worlds_upload():
         return jsonify({"success": False, "message": "Invalid world target"}), 400
 
     # Auto-snapshot before replacing
-    backup_dir = "/home/ubuntu/backups"
+    backup_dir = get_backup_dir()
     os.makedirs(backup_dir, exist_ok=True)
     if os.path.exists(abs_world):
         snap_path = os.path.join(backup_dir, f"pre_upload_{target_world}_{int(time.time())}.zip")
@@ -4598,7 +4924,7 @@ def api_worlds_reset_dimension():
     target_dir_name = "world_nether" if dim == "nether" else ("world_the_end" if dim == "the_end" else "world")
     abs_dir = os.path.join(SERVER_DIR, target_dir_name)
 
-    backup_dir = "/home/ubuntu/backups"
+    backup_dir = get_backup_dir()
     os.makedirs(backup_dir, exist_ok=True)
     if os.path.exists(abs_dir):
         snap_path = os.path.join(backup_dir, f"reset_snap_{dim}_{int(time.time())}.zip")
@@ -4681,7 +5007,7 @@ def api_worlds_generate():
 
     abs_world = os.path.join(SERVER_DIR, world_name)
     if os.path.isdir(abs_world):
-        backup_dir = "/home/ubuntu/backups"
+        backup_dir = get_backup_dir()
         os.makedirs(backup_dir, exist_ok=True)
         snap_path = os.path.join(backup_dir, f"pre_gen_{world_name}_{int(time.time())}.zip")
         try:
@@ -5087,6 +5413,8 @@ def api_action():
     param = data.get("param", "")
 
     if action == "restart":
+        if not server_runner.is_running():
+            return jsonify({"success": False, "message": "Server is already stopped. Cannot restart server."}), 400
         def restart_worker():
             time.sleep(1)
             server_runner.restart()
