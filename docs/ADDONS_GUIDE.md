@@ -348,10 +348,10 @@ FiestaPanel includes an integrated **Plugin Store** (`/api/panel-addons/store`) 
 - **Panel Theme Customizer & Custom CSS Studio**: DOM style injector and wallpaper manager.
 
 To submit your community addon to the official catalog:
-1. Fork [`https://github.com/open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel).
-2. Add your addon definition and bundled files to `addons/repo/repository.json` (and `addon_manager.py:STORE_CATALOG`).
-3. Open a Pull Request titled `feat(addon): add <your_addon_name>`.
-4. Once merged, it becomes instantly available in the in-panel Plugin Store across all installations!
+1. Export or package your addon files as a `.zip` bundle (`addon.json`, `main.py`, `tab.html`, `README.md`).
+2. Submit your `.zip` bundle via a Pull Request to [`https://github.com/open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) or send it to the Fiesta team on our Discord server.
+3. The **FiestaSMP core team will review, security-audit, test, and approve the sent .zip file**.
+4. Once approved, the team publishes your addon to the official store catalog, making it available for One-Click install across all installations worldwide!
 
 ---
 

@@ -121,23 +121,29 @@ Every FiestaPanel addon is a lightweight folder with:
 
 Refer to the [**Addon Developer Guide**](docs/ADDONS_GUIDE.md) for full specifications and templates.
 
-### 2. Publishing to the Official In-Panel Store
-To make your plugin discoverable for all FiestaPanel users with One-Click in-panel installation:
-1. **Fork the Repository**: Fork [`open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) on GitHub.
-2. **Add Your Definition**: Add your addon entry to `addons/repo/repository.json` (and `addon_manager.py:STORE_CATALOG`), including your metadata, settings schema, dependencies, and bundled files (`main.py`, `tab.html`, `README.md`).
-3. **Open a Pull Request**: Submit a PR titled `feat(addon): add <your_addon_name>`.
-4. **Instant Distribution**: Once merged into `main`, your addon is immediately indexed in the official catalog (`/api/panel-addons/store`) and available for One-Click install in every FiestaPanel installation under **Panel Extensions / Store -> Plugin Store**.
+### 2. Publishing to the Official In-Panel Plugin Store
+
+To protect all FiestaPanel installations from security vulnerabilities and bugs, direct publishing to the official repository is locked for Fiesta team administrators. Community extensions are published through a verification and approval workflow:
+
+1. **Package Your Addon as a ZIP**:
+   Export your addon directly from your server's FiestaPanel UI or compress your folder:
+   ```bash
+   zip -r my_plugin.zip addon.json main.py tab.html README.md
+   ```
+2. **Submit Your Package for Review**:
+   - **GitHub Pull Request**: Fork [`open-fiestasmp/FiestaPanel`](https://github.com/open-fiestasmp/FiestaPanel) on GitHub and open a Pull Request attaching your `.zip` bundle or adding your files to `addons/repo/repository.json`.
+   - **Send via Discord**: Join the official FiestaSMP Discord community and send your `.zip` archive to the core team.
+3. **Core Team Review & Approval**:
+   - The **FiestaSMP core team will review, security-audit, test, and approve the sent .zip file**.
+   - External server administrators cannot publish directly to the global store without this approval.
+4. **Global Distribution**:
+   - Once approved, the team deploys the addon to the official Plugin Store catalog (`addons/repo/repository.json`).
+   - Your addon immediately becomes available for One-Click install across all FiestaPanel instances worldwide under **Panel Extensions / Store -> Plugin Store**!
 
 ### 3. Direct Community Distribution (.zip or URL)
-You do not need to wait for a Pull Request to share your plugins with the community:
-- **Package as ZIP**: Bundle your addon folder into a standard zip archive:
-  ```bash
-  zip -r my_plugin.zip addon.json main.py tab.html README.md
-  ```
-- **One-Click Installation by Users**:
-  - **Upload in Web UI**: Users navigate to **Panel Extensions / Store -> Upload Package (.jar / .zip)** in their dashboard and upload the archive.
-  - **Install from URL**: Paste any direct download link (e.g., GitHub Releases asset).
-  - **Direct Folder**: Drop the folder directly into the server's `addons/<my_plugin>/` directory and click **[ Reload Addons ]**.
+If you wish to test your addon or distribute it independently without official store verification:
+- Users navigate to **Panel Extensions / Store -> Installed Addons -> Upload Package (.zip)** in their dashboard to install your archive directly.
+- Users can also install from a direct download link or drop the folder directly into `addons/<my_plugin>/`.
 
 ---
 
