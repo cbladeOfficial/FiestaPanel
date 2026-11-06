@@ -4567,10 +4567,16 @@ def get_fiesta_dev_key():
     if cfg_key:
         return cfg_key
     try:
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        target = CONFIG_FILE
+        if not os.path.exists(target) and DATA_DIR != BASE_DIR and os.path.exists(os.path.join(BASE_DIR, "config.json")):
+            target = os.path.join(BASE_DIR, "config.json")
+        if os.path.exists(target):
+            with open(target, "r", encoding="utf-8") as f:
                 c = json.load(f)
-                return str(c.get("fiesta_dev_key", "")).strip()
+                val = str(c.get("fiesta_dev_key", "")).strip()
+                if val:
+                    SERVER_CONFIG["fiesta_dev_key"] = val
+                    return val
     except Exception:
         pass
     return ""
