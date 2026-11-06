@@ -6343,7 +6343,7 @@
               </div>
 
               <!-- Carousel Slide Body -->
-              <div id="featured-carousel-slides" style="padding: 16px 20px; background: linear-gradient(to bottom, rgba(2, 132, 199, 0.04), rgba(0,0,0,0.01));">
+              <div id="featured-carousel-slides" style="padding: 14px 20px; background: linear-gradient(to bottom, rgba(2, 132, 199, 0.04), rgba(0,0,0,0.01)); min-height: 104px; box-sizing: border-box; display: flex; align-items: center;">
                 <!-- Injected dynamically via renderFeaturedSlide() -->
               </div>
 
@@ -15093,18 +15093,18 @@ def on_action(ctx, action_name, payload):
       const installsCount = stats.install_count !== undefined ? stats.install_count : (item.installed ? 1 : 0);
 
       container.innerHTML = `
-        <div style="display: flex; gap: 18px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; gap: 18px; align-items: center; justify-content: space-between; flex-wrap: wrap; width: 100%;">
           <div style="display: flex; gap: 14px; align-items: center; flex: 1; min-width: 280px;">
             <div style="width: 52px; height: 52px; border-radius: 8px; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
               ${iconHtml}
             </div>
-            <div>
+            <div style="flex: 1; min-width: 0;">
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 3px;">
-                <h3 style="margin: 0; font-size: 15px; color: var(--text-bold, #0f172a);">${escapeHtml(item.name)}</h3>
-                <span class="inline-badge" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; font-size: 10px;">${escapeHtml(item.category || 'Tools')}</span>
-                <span class="inline-badge" style="background: #e2e8f0; color: #334155; font-size: 10px;">v${escapeHtml(item.version || '1.0.0')}</span>
+                <h3 style="margin: 0; font-size: 15px; color: var(--text-bold, #0f172a); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px;">${escapeHtml(item.name)}</h3>
+                <span class="inline-badge" style="background: rgba(2, 132, 199, 0.15); color: #0284c7; font-size: 10px; flex-shrink: 0;">${escapeHtml(item.category || 'Tools')}</span>
+                <span class="inline-badge" style="background: #e2e8f0; color: #334155; font-size: 10px; flex-shrink: 0;">v${escapeHtml(item.version || '1.0.0')}</span>
               </div>
-              <p style="margin: 0 0 5px 0; font-size: 12px; color: var(--text-main, #334155); line-height: 1.4; max-width: 680px;">
+              <p style="margin: 0 0 5px 0; font-size: 12px; color: var(--text-main, #334155); line-height: 1.45; height: calc(1.45em * 2); max-width: 720px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; word-break: break-word;" title="${escapeQuotes(item.summary || item.description || '')}">
                 ${escapeHtml(item.summary || item.description || '')}
               </p>
               <div style="font-size: 11px; color: var(--text-sub, #64748b); display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -15119,7 +15119,7 @@ def on_action(ctx, action_name, payload):
               </div>
             </div>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 140px;">
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; min-width: 140px; flex-shrink: 0;">
             ${isInstalled ? `
               <button class="btn-classic" style="color: var(--banner-success-text, #15803d); font-weight: bold; background: var(--banner-success-bg, rgba(34, 197, 94, 0.12)); border-color: rgba(34, 197, 94, 0.4); padding: 5px 14px; font-size: 11.5px;" onclick="openPanelAddonTab('${escapeQuotes(item.id)}', '${escapeQuotes(item.name)}')">
                 [ Installed • Open ]
