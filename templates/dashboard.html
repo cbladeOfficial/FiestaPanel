@@ -2756,7 +2756,30 @@
       text-overflow: ellipsis;
     }
 
-    /* Software Switcher Cards */
+    /* Software Switcher Cards Grid & Symmetry */
+    .software-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 1200px) {
+      .software-cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    @media (max-width: 768px) {
+      .software-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 520px) {
+      .software-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     .software-card {
       background: var(--card-bg, #ffffff);
       border: 2px solid var(--card-border, #c0c0c0);
@@ -2767,6 +2790,12 @@
       user-select: none;
       transition: all 0.12s;
       border-radius: 2px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      min-height: 108px;
+      box-sizing: border-box;
     }
     .software-card:hover {
       border-color: var(--card-hover-border, #74b21d);
@@ -2775,11 +2804,14 @@
     .software-card.active {
       border-color: var(--card-hover-border, #74b21d);
       background: var(--card-active-bg, #eef6e8);
-    }
-    .software-card.active {
-      border-color: var(--card-hover-border, #74b21d);
-      background: var(--card-active-bg, #eef6e8);
       box-shadow: 0 0 0 1px var(--card-hover-border, #74b21d);
+    }
+    .sw-card-badge-slot {
+      min-height: 18px;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* Permission Pills / Badges */
@@ -5623,52 +5655,91 @@
             Select a software engine below. Your world data, plugins, and player inventories in <code>/world</code> remain completely preserved. Existing <code>server.jar</code> is backed up automatically.
           </div>
 
-          <!-- Software Type Cards (Aternos Style Full Suite) -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px;">
+          <!-- Software Type Cards (Aternos Style Full Suite - Symmetrical 12 Engine Grid) -->
+          <div class="software-cards-grid">
             <div class="software-card active" data-sw="purpur" onclick="selectSoftwareType('purpur', this)">
-              <div style="font-weight: bold; font-size: 13px; color: var(--sec-bar-bg, #74b21d);">Purpur</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Paper fork with extreme performance &amp; gameplay config. Recommended.</div>
-              <span class="badge-status online" style="font-size: 8px; margin-top: 6px; display: inline-block;">Current</span>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: var(--sec-bar-bg, #74b21d);">Purpur</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Paper fork with extreme performance &amp; gameplay config. Recommended.</div>
+              </div>
+              <div class="sw-card-badge-slot"><span class="badge-status online" style="font-size: 8px;">Current</span></div>
             </div>
             <div class="software-card" data-sw="paper" onclick="selectSoftwareType('paper', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #1e824c;">Paper</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Industry standard high-performance software with native plugin support.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #1e824c;">Paper</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Industry standard high-performance software with native plugin support.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="fabric" onclick="selectSoftwareType('fabric', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #375a7f;">Fabric</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Modular lightweight modding loader (Lithium, Sodium, FerriteCore).</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #375a7f;">Fabric</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Modular lightweight modding loader (Lithium, Sodium, FerriteCore).</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="forge" onclick="selectSoftwareType('forge', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #b45309;">Forge</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">The classic comprehensive modded Minecraft server platform.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #b45309;">Forge</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">The classic comprehensive modded Minecraft server platform.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="neoforge" onclick="selectSoftwareType('neoforge', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #d97706;">NeoForge</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Modern modded Minecraft server platform &amp; Forge successor. Rich mod ecosystem.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #d97706;">NeoForge</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Modern modded Minecraft server platform &amp; Forge successor. Rich mod ecosystem.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="quilt" onclick="selectSoftwareType('quilt', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #7c3aed;">Quilt</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Modern, modular, open-source loader compatible with most Fabric mods.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #7c3aed;">Quilt</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Modern, modular, open-source loader compatible with most Fabric mods.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="vanilla" onclick="selectSoftwareType('vanilla', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #885500;">Vanilla</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Pure official Mojang server jar without plugin optimizations.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #885500;">Vanilla</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Pure official Mojang server jar without plugin optimizations.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="spigot" onclick="selectSoftwareType('spigot', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #c0392b;">Spigot</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Classic CraftBukkit server software for legacy plugin compatibility.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #c0392b;">Spigot</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Classic CraftBukkit server software for legacy plugin compatibility.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="bedrock" onclick="selectSoftwareType('bedrock', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #0284c7;">Bedrock (BDS)</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Official Mojang Bedrock Dedicated Server for iOS, Android, Win10, Consoles.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #0284c7;">Bedrock (BDS)</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Official Mojang Bedrock Dedicated Server for iOS, Android, Win10, Consoles.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="velocity" onclick="selectSoftwareType('velocity', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #059669;">Velocity</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Next-generation high performance, secure Minecraft proxy platform.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #059669;">Velocity</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Next-generation high performance, secure Minecraft proxy platform.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
             <div class="software-card" data-sw="bungeecord" onclick="selectSoftwareType('bungeecord', this)">
-              <div style="font-weight: bold; font-size: 13px; color: #e11d48;">BungeeCord</div>
-              <div style="font-size: 9px; color: #666; margin-top: 3px;">Classic proxy software uniting multiple servers into a unified network.</div>
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #e11d48;">BungeeCord</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Classic proxy software uniting multiple servers into a unified network.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
+            </div>
+            <div class="software-card" data-sw="folia" onclick="selectSoftwareType('folia', this)">
+              <div>
+                <div style="font-weight: bold; font-size: 13px; color: #0891b2;">Folia</div>
+                <div style="font-size: 9px; color: #666; margin-top: 3px; line-height: 1.25;">Paper fork with multithreaded regionized ticking for extreme player scale.</div>
+              </div>
+              <div class="sw-card-badge-slot"></div>
             </div>
           </div>
 
@@ -10583,12 +10654,56 @@ def on_action(ctx, action_name, payload):
       }
     }
 
+    // ── Installed Plugins & Mods Caches and Addon Matching ──
+    window.installedPluginsCache = [];
+    window.installedModsCache = [];
+
+    function normAddonStem(s) {
+      if (!s) return '';
+      s = s.toLowerCase().replace(/\.jar(\.bak)?$/, '').replace(/\.bak$/, '');
+      s = s.replace(/\+.*$/, '');
+      s = s.replace(/[-_]mc1\.\d+(\.\d+)*/g, '');
+      s = s.replace(/[-_]1\.\d+(\.\d+)?[-_]/g, '-');
+      s = s.replace(/[-_](bukkit|paper|spigot|fabric|forge|neoforge|quilt)([-_]|$)/g, '-');
+      s = s.replace(/[-_]v?\d+(\.\d+)+([-_a-z0-9]+)?$/g, '');
+      s = s.replace(/[-_]\d+$/g, '');
+      return s.replace(/[^a-z0-9]+/g, '');
+    }
+
+    function findInstalledAddonMatch(title, projectId, filename, isMods) {
+      const cache = isMods ? (window.installedModsCache || []) : (window.installedPluginsCache || []);
+      if (!cache || !cache.length) return null;
+
+      const cStems = [];
+      [filename, title, projectId].forEach(item => {
+        if (item && isNaN(item)) {
+          const st = normAddonStem(item);
+          if (st.length >= 3) cStems.push(st);
+        }
+      });
+
+      if (filename) {
+        const fnLow = filename.toLowerCase();
+        const exact = cache.find(item => item.filename && item.filename.toLowerCase() === fnLow);
+        if (exact) return exact;
+      }
+
+      for (const c of cache) {
+        const fst = normAddonStem(c.filename || c.name);
+        if (fst && cStems.includes(fst)) {
+          return c;
+        }
+      }
+      return null;
+    }
+
     // ── Installed Plugins ──
     async function loadPlugins() {
       try {
         const res = await fetch('/api/plugins');
         if (!res.ok) return;
         const d = await res.json();
+        window.installedPluginsCache = d.plugins || [];
         const tbody = document.getElementById('active-plugins-table-body');
         if (!d.plugins || !d.plugins.length) {
           tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">No active plugins found in /plugins/.</td></tr>';
@@ -10631,6 +10746,7 @@ def on_action(ctx, action_name, payload):
         const res = await fetch('/api/mods');
         if (!res.ok) return;
         const d = await res.json();
+        window.installedModsCache = d.mods || [];
         const tbody = document.getElementById('active-plugins-table-body');
         if (!d.mods || !d.mods.length) {
           tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #888;">No active mods found in /mods/.</td></tr>';
@@ -10860,6 +10976,26 @@ def on_action(ctx, action_name, payload):
           return;
         }
 
+        if (!isModpacks) {
+          if (isMods && (!window.installedModsCache || !window.installedModsCache.length)) {
+            try {
+              const mcRes = await fetch('/api/mods');
+              if (mcRes.ok) {
+                const mcD = await mcRes.json();
+                window.installedModsCache = mcD.mods || [];
+              }
+            } catch (e) {}
+          } else if (!isMods && (!window.installedPluginsCache || !window.installedPluginsCache.length)) {
+            try {
+              const pcRes = await fetch('/api/plugins');
+              if (pcRes.ok) {
+                const pcD = await pcRes.json();
+                window.installedPluginsCache = pcD.plugins || [];
+              }
+            } catch (e) {}
+          }
+        }
+
         statusEl.textContent = `Found ${d.total_hits} ${typeLabel} packages on ${srcDisplay} (showing top results):`;
         tbody.innerHTML = d.hits.map(p => {
           const icon = p.icon_url ? `<img src="${escapeHtml(p.icon_url)}" style="width:32px; height:32px; object-fit:contain; border-radius:3px;">` : `<div style="width:32px; height:32px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#666; font-size:10px;">${isModpacks ? 'PACK' : 'JAR'}</div>`;
@@ -10902,6 +11038,12 @@ def on_action(ctx, action_name, payload):
           const dlUrlAttr = p.download_url ? encodeURIComponent(p.download_url) : '';
           const fnAttr = p.filename ? escapeHtml(p.filename) : '';
 
+          const installedMatch = !isModpacks ? findInstalledAddonMatch(p.title, p.project_id, p.filename, isMods) : null;
+          let installedBadge = '';
+          if (installedMatch) {
+            installedBadge = `<span style="background:var(--banner-success-bg, #dcfce7); border:1px solid var(--banner-success-border, #86efac); color:var(--banner-success-text, #15803d); padding:1px 6px; border-radius:3px; font-size:9px; font-weight:bold; margin-left:6px;" title="Installed file: ${escapeHtml(installedMatch.filename)}">✓ Installed (${escapeHtml(installedMatch.filename)})</span>`;
+          }
+
           let actionButtons = '';
           if (isModpacks) {
             actionButtons = `
@@ -10911,7 +11053,12 @@ def on_action(ctx, action_name, payload):
               </div>
             `;
           } else {
-            const dlBtnLabel = (isMods && currentModLoaderFilter === 'neoforge') ? '[ Download NeoForge .jar ]' : '[ Download .jar ]';
+            let dlBtnLabel = '[ Download .jar ]';
+            if (installedMatch) {
+              dlBtnLabel = '[ ⟳ Update .jar ]';
+            } else if (isMods && currentModLoaderFilter === 'neoforge') {
+              dlBtnLabel = '[ Download NeoForge .jar ]';
+            }
             actionButtons = `
               <div style="display:flex; gap:4px; justify-content:center;">
                 <button class="btn-classic" style="padding: 2px 6px; font-size: 10px; height: 24px;" onclick="openProjectVersionsModal('${p.project_id}', '${escapeHtml(p.title)}', ${isMods}, false, '${pSource}')">[ Versions ]</button>
@@ -10924,7 +11071,7 @@ def on_action(ctx, action_name, payload):
             <tr>
               <td style="text-align: center; vertical-align: middle;">${icon}</td>
               <td>
-                <strong style="font-size: 12px; color: var(--help-sub-text, #006622);">${escapeHtml(p.title)}</strong> ${sourceBadge}<br>
+                <strong style="font-size: 12px; color: var(--help-sub-text, #006622);">${escapeHtml(p.title)}</strong> ${sourceBadge}${installedBadge}<br>
                 <span style="color: #666; font-size: 10px;">by ${escapeHtml(p.author)}</span>
                 ${loaderBadges}
               </td>
@@ -10943,16 +11090,16 @@ def on_action(ctx, action_name, payload):
       }
     }
 
-    async function installCurrentOnlineAddon(projectId, title, source, encUrl, filename) {
+    async function installCurrentOnlineAddon(projectId, title, source, encUrl, filename, isOverwrite) {
       const isMods = currentSearchAddonMode === 'mods';
       const endpoint = isMods ? '/api/mod/install_online' : '/api/plugin/install_online';
       const btn = document.getElementById(`btn-dl-${projectId}`);
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Downloading...';
+        btn.textContent = isOverwrite ? 'Updating...' : 'Downloading...';
         btn.style.opacity = '0.7';
       }
-      showBannerAlert(`Downloading release for "${title}" into /${isMods ? 'mods' : 'plugins'}/...`);
+      showBannerAlert(`${isOverwrite ? 'Updating' : 'Downloading'} release for "${title}" into /${isMods ? 'mods' : 'plugins'}/...`);
 
       const dlUrl = encUrl ? decodeURIComponent(encUrl) : '';
       try {
@@ -10965,10 +11112,26 @@ def on_action(ctx, action_name, payload):
             loader: isMods ? currentModLoaderFilter : undefined,
             source: source || currentRepoSource || 'modrinth',
             download_url: dlUrl || undefined,
-            filename: filename || undefined
+            filename: filename || undefined,
+            overwrite: !!isOverwrite,
+            force: !!isOverwrite
           })
         });
         const d = await res.json();
+        if (res.status === 409 || d.already_exists) {
+          const confirmMsg = `${d.message || `An existing version (${d.existing_file || 'installed'}) is already on the server.`}\n\nDo you want to overwrite and replace it with the new version?`;
+          if (confirm(confirmMsg)) {
+            return installCurrentOnlineAddon(projectId, title, source, encUrl, filename, true);
+          } else {
+            showBannerAlert('Installation cancelled. Existing addon kept.');
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = '[ ⟳ Update .jar ]';
+              btn.style.opacity = '1';
+            }
+            return;
+          }
+        }
         if (d.success) {
           showBannerAlert(d.message);
           if (btn) {
@@ -10976,6 +11139,7 @@ def on_action(ctx, action_name, payload):
             btn.style.background = '#008822';
             btn.style.color = '#ffffff';
           }
+          if (isMods) loadMods(); else loadPlugins();
         } else {
           showBannerAlert(d.message || 'Download failed.', true);
           if (btn) {
@@ -11096,7 +11260,26 @@ def on_action(ctx, action_name, payload):
             body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, filename: filename, source: source })
           });
           const d = await res.json();
+          if (res.status === 409 || d.already_exists) {
+            const confirmMsg = `${d.message || `An existing version (${d.existing_file || 'installed'}) is already on the server.`}\n\nDo you want to overwrite and replace it with this version?`;
+            if (confirm(confirmMsg)) {
+              showBannerAlert(`Replacing existing mod with ${filename}...`);
+              const retryRes = await fetch('/api/mod/install_online', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, filename: filename, source: source, overwrite: true, force: true })
+              });
+              const retryD = await retryRes.json();
+              showBannerAlert(retryD.message, !retryD.success);
+              if (retryD.success) loadMods();
+              return;
+            } else {
+              showBannerAlert('Installation cancelled. Existing mod kept.');
+              return;
+            }
+          }
           showBannerAlert(d.message, !d.success);
+          if (d.success) loadMods();
         } catch (e) {
           showBannerAlert('Network error downloading mod version.', true);
         }
@@ -11110,7 +11293,26 @@ def on_action(ctx, action_name, payload):
             body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, filename: filename, source: source })
           });
           const d = await res.json();
+          if (res.status === 409 || d.already_exists) {
+            const confirmMsg = `${d.message || `An existing version (${d.existing_file || 'installed'}) is already on the server.`}\n\nDo you want to overwrite and replace it with this version?`;
+            if (confirm(confirmMsg)) {
+              showBannerAlert(`Replacing existing plugin with ${filename}...`);
+              const retryRes = await fetch('/api/plugin/install_online', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, filename: filename, source: source, overwrite: true, force: true })
+              });
+              const retryD = await retryRes.json();
+              showBannerAlert(retryD.message, !retryD.success);
+              if (retryD.success) loadPlugins();
+              return;
+            } else {
+              showBannerAlert('Installation cancelled. Existing plugin kept.');
+              return;
+            }
+          }
           showBannerAlert(d.message, !d.success);
+          if (d.success) loadPlugins();
         } catch (e) {
           showBannerAlert('Network error downloading plugin version.', true);
         }
@@ -13840,6 +14042,19 @@ def on_action(ctx, action_name, payload):
           rollBtn.style.display = 'none';
         }
 
+        const curSwLower = (d.info.software || 'purpur').toLowerCase();
+        document.querySelectorAll('.software-cards-grid .software-card').forEach(c => {
+          const swKey = c.getAttribute('data-sw');
+          const slot = c.querySelector('.sw-card-badge-slot');
+          if (slot) {
+            if (swKey && curSwLower.includes(swKey)) {
+              slot.innerHTML = '<span class="badge-status online" style="font-size: 8px;">Current</span>';
+            } else {
+              slot.innerHTML = '';
+            }
+          }
+        });
+
         const verSelect = document.getElementById('sw-version-select');
         if (!verSelect.options || verSelect.options.length <= 1) {
           selectSoftwareType(selectedSoftware);
@@ -13873,7 +14088,8 @@ def on_action(ctx, action_name, payload):
         'spigot': 'Spigot (CraftBukkit Core)',
         'bedrock': 'Bedrock Dedicated Server (BDS)',
         'velocity': 'Velocity (Modern High-Perf Proxy)',
-        'bungeecord': 'BungeeCord (Multi-Server Proxy)'
+        'bungeecord': 'BungeeCord (Multi-Server Proxy)',
+        'folia': 'Folia (Multithreaded Paper Fork)'
       };
       document.getElementById('sw-chosen-name').textContent = displayNames[swName] || swName.toUpperCase();
       loadSoftwareVersions(swName);

@@ -3078,26 +3078,27 @@ def resolve_software_download(software, version, build="latest"):
         download_url = f"https://api.purpurmc.org/v2/purpur/{version}/{build}/download"
         return download_url, f"purpur-{version}-{build}.jar", f"Purpur {version} (Build #{build})"
 
-    elif software == "paper":
-        url_meta = f"https://fill.papermc.io/v3/projects/paper/versions/{version}"
+    elif software in ("paper", "folia"):
+        proj = software
+        url_meta = f"https://fill.papermc.io/v3/projects/{proj}/versions/{version}"
         req = urllib.request.Request(url_meta, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req, timeout=5) as r:
             d = json.loads(r.read())
             builds = d.get("builds", [])
             if not builds:
-                raise ValueError(f"No builds found for Paper {version}")
+                raise ValueError(f"No builds found for {proj.capitalize()} {version}")
             target_build = max(builds, key=lambda b: int(b) if str(b).isdigit() else 0) if build == "latest" else build
 
-        url_build = f"https://fill.papermc.io/v3/projects/paper/versions/{version}/builds/{target_build}"
+        url_build = f"https://fill.papermc.io/v3/projects/{proj}/versions/{version}/builds/{target_build}"
         req_b = urllib.request.Request(url_build, headers={"User-Agent": get_panel_user_agent(include_email=False)})
         with urllib.request.urlopen(req_b, timeout=5) as r_b:
             d_b = json.loads(r_b.read())
             dl_info = d_b.get("downloads", {}).get("server:default", {})
             download_url = dl_info.get("url")
-            filename = dl_info.get("name", f"paper-{version}-{target_build}.jar")
+            filename = dl_info.get("name", f"{proj}-{version}-{target_build}.jar")
             if not download_url:
-                raise ValueError(f"No download URL found for Paper {version} build {target_build}")
-            return download_url, filename, f"Paper {version} (Build #{target_build})"
+                raise ValueError(f"No download URL found for {proj.capitalize()} {version} build {target_build}")
+            return download_url, filename, f"{proj.capitalize()} {version} (Build #{target_build})"
 
     elif software == "vanilla":
         req = urllib.request.Request("https://launchermeta.mojang.com/mc/game/version_manifest_v2.json", headers={"User-Agent": get_panel_user_agent(include_email=False)})
@@ -3303,8 +3304,8 @@ def api_software_versions():
                 d = json.loads(r.read())
                 raw_vers = d.get("versions", [])
                 versions = list(reversed(raw_vers))
-        elif sw == "paper":
-            req = urllib.request.Request("https://fill.papermc.io/v3/projects/paper", headers={"User-Agent": get_panel_user_agent(include_email=False)})
+        elif sw in ("paper", "folia"):
+            req = urllib.request.Request(f"https://fill.papermc.io/v3/projects/{sw}", headers={"User-Agent": get_panel_user_agent(include_email=False)})
             with urllib.request.urlopen(req, timeout=4) as r:
                 d = json.loads(r.read())
                 v_dict = d.get("versions", {})
@@ -3354,6 +3355,8 @@ def api_software_versions():
             versions = ["3.3.0-SNAPSHOT", "3.2.0-SNAPSHOT", "3.1.2-SNAPSHOT"]
         elif sw == "bungeecord":
             versions = ["latest"]
+        elif sw == "folia":
+            versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.4", "1.20.4", "1.19.4"]
         elif sw in ("bedrock", "bds"):
             versions = ["1.21.51.02", "1.21.44.01", "1.21.30.03", "1.20.81.01"]
     except Exception as e:
@@ -3367,6 +3370,8 @@ def api_software_versions():
             versions = ["3.3.0-SNAPSHOT", "3.2.0-SNAPSHOT"]
         elif sw == "bungeecord":
             versions = ["latest"]
+        elif sw == "folia":
+            versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.4", "1.20.4", "1.19.4"]
         elif sw in ("bedrock", "bds"):
             versions = ["1.21.51.02", "1.21.44.01", "1.21.30.03", "1.20.81.01"]
         else:
@@ -4422,6 +4427,78 @@ def resolve_clean_jar_name(initial_name, resp_url, resp_headers=None):
         fn += ".jar"
     return fn
 
+def normalize_addon_stem(name):
+    if not name:
+        return ""
+    s = str(name).strip().lower()
+    for ext in [".jar.bak", ".jar", ".disabled", ".bak", ".zip"]:
+        if s.endswith(ext):
+            s = s[:-len(ext)]
+    s = re.sub(r'\+.*$', '', s)
+    s = re.sub(r'[-_]mc1\.\d+(\.\d+)*', '', s)
+    s = re.sub(r'[-_]1\.\d+(\.\d+)?[-_]', '-', s)
+    s = re.sub(r'[-_](bukkit|paper|spigot|fabric|forge|neoforge|quilt)([-_]|$)', '-', s)
+    s = re.sub(r'[-_]v?\d+(\.\d+)+([-_a-z0-9]+)?$', '', s)
+    s = re.sub(r'[-_]\d+$', '', s)
+    s = re.sub(r'[^a-z0-9]+', '', s)
+    return s
+
+def check_addon_exists(folder_dir, project_name=None, candidate_filename=None, project_id=None):
+    if not folder_dir or not os.path.isdir(folder_dir):
+        return None
+
+    c_names = set()
+    if candidate_filename:
+        c_names.add(os.path.basename(candidate_filename).lower())
+
+    c_stems = set()
+    for item in [candidate_filename, project_name, project_id]:
+        if item and not str(item).isdigit():
+            st = normalize_addon_stem(item)
+            if len(st) >= 3:
+                c_stems.add(st)
+
+    locations = [("active", folder_dir), ("disabled", os.path.join(folder_dir, "disabled"))]
+
+    # 1. Exact filename match check
+    for status, loc in locations:
+        if not os.path.isdir(loc):
+            continue
+        try:
+            for f in os.listdir(loc):
+                if f.lower() in c_names or (f.lower().endswith(".bak") and f[:-4].lower() in c_names):
+                    return {
+                        "matched": True,
+                        "filename": f,
+                        "status": status,
+                        "exact": True,
+                        "path": os.path.join(loc, f)
+                    }
+        except Exception:
+            pass
+
+    # 2. Semantic stem match check
+    for status, loc in locations:
+        if not os.path.isdir(loc):
+            continue
+        try:
+            for f in os.listdir(loc):
+                if not (f.endswith(".jar") or f.endswith(".jar.bak") or f.endswith(".bak")):
+                    continue
+                fst = normalize_addon_stem(f)
+                if fst and fst in c_stems:
+                    return {
+                        "matched": True,
+                        "filename": f,
+                        "status": status,
+                        "exact": False,
+                        "path": os.path.join(loc, f)
+                    }
+        except Exception:
+            pass
+
+    return None
+
 def search_spigot(query, limit=15):
     encoded_q = urllib.parse.quote(query)
     url = f"https://api.spiget.org/v2/search/resources/{encoded_q}?size={limit}"
@@ -4737,13 +4814,31 @@ def api_plugin_install_online():
 
     data = request.get_json() or {}
     project_id = str(data.get("project_id", "")).strip()
+    project_name = str(data.get("name") or data.get("title") or "").strip()
     direct_url = data.get("download_url", "").strip()
     direct_name = data.get("filename", "").strip()
     version_id = str(data.get("version_id", "")).strip()
     source = (data.get("source") or request.args.get("source") or "modrinth").strip().lower()
+    overwrite = bool(data.get("overwrite") or data.get("force"))
 
     if not project_id and not direct_url:
         return jsonify({"success": False, "message": "Project ID or download URL required"}), 400
+
+    plugins_dir = os.path.join(SERVER_DIR, "plugins")
+    os.makedirs(plugins_dir, exist_ok=True)
+
+    # Pre-check if addon already exists before making remote download requests
+    if not overwrite:
+        pre_existing = check_addon_exists(plugins_dir, project_name=project_name, candidate_filename=direct_name, project_id=project_id)
+        if pre_existing:
+            return jsonify({
+                "success": False,
+                "already_exists": True,
+                "existing_file": pre_existing["filename"],
+                "existing_status": pre_existing["status"],
+                "candidate_file": direct_name or project_name or "plugin.jar",
+                "message": f"Plugin '{pre_existing['filename']}' ({pre_existing['status']}) already exists on the server. Do you want to update/replace it?"
+            }), 409
 
     try:
         download_url = direct_url
@@ -4842,8 +4937,17 @@ def api_plugin_install_online():
         if not download_url:
             return jsonify({"success": False, "message": "Failed to determine plugin download URL."}), 404
 
-        plugins_dir = os.path.join(SERVER_DIR, "plugins")
-        os.makedirs(plugins_dir, exist_ok=True)
+        if not overwrite and filename:
+            mid_existing = check_addon_exists(plugins_dir, project_name=project_name, candidate_filename=filename, project_id=project_id)
+            if mid_existing:
+                return jsonify({
+                    "success": False,
+                    "already_exists": True,
+                    "existing_file": mid_existing["filename"],
+                    "existing_status": mid_existing["status"],
+                    "candidate_file": filename,
+                    "message": f"Plugin '{mid_existing['filename']}' ({mid_existing['status']}) already exists on the server. Do you want to update/replace it?"
+                }), 409
 
         dl_req = urllib.request.Request(download_url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 FiestaPanel/1.0"
@@ -4852,16 +4956,39 @@ def api_plugin_install_online():
             final_url = resp.geturl()
             safe_name = resolve_clean_jar_name(filename, final_url, resp.headers)
             dest_path = os.path.join(plugins_dir, safe_name)
+
+            existing_to_replace = check_addon_exists(plugins_dir, project_name=project_name, candidate_filename=safe_name, project_id=project_id)
+            if existing_to_replace and not overwrite:
+                return jsonify({
+                    "success": False,
+                    "already_exists": True,
+                    "existing_file": existing_to_replace["filename"],
+                    "existing_status": existing_to_replace["status"],
+                    "candidate_file": safe_name,
+                    "message": f"Plugin '{existing_to_replace['filename']}' ({existing_to_replace['status']}) already exists on the server. Do you want to update/replace it?"
+                }), 409
+
+            # Clean up old existing jar file if filenames differ and overwrite is confirmed
+            if overwrite and existing_to_replace:
+                old_p = existing_to_replace.get("path")
+                if old_p and os.path.isfile(old_p) and os.path.abspath(old_p) != os.path.abspath(dest_path):
+                    try:
+                        os.remove(old_p)
+                    except Exception:
+                        pass
+
             with open(dest_path, "wb") as out_f:
                 shutil.copyfileobj(resp, out_f)
 
         file_size_kb = round(os.path.getsize(dest_path) / 1024, 1)
 
+        msg = f"Successfully updated and replaced {existing_to_replace['filename']} with {safe_name} ({file_size_kb} KB)! Restart server to load." if (existing_to_replace and overwrite) else f"Successfully downloaded {safe_name} ({file_size_kb} KB)! Restart server to load."
+
         return jsonify({
             "success": True,
             "filename": safe_name,
             "size_kb": file_size_kb,
-            "message": f"Successfully downloaded {safe_name} ({file_size_kb} KB)! Restart server to load."
+            "message": msg
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
@@ -5143,14 +5270,32 @@ def api_mod_install_online():
 
     data = request.get_json() or {}
     project_id = str(data.get("project_id", "")).strip()
+    project_name = str(data.get("name") or data.get("title") or "").strip()
     direct_url = data.get("download_url", "").strip()
     direct_name = data.get("filename", "").strip()
     version_id = str(data.get("version_id", "")).strip()
     target_loader = data.get("loader", "").strip().lower()
     source = (data.get("source") or request.args.get("source") or "modrinth").strip().lower()
+    overwrite = bool(data.get("overwrite") or data.get("force"))
 
     if not project_id and not direct_url:
         return jsonify({"success": False, "message": "Project ID or download URL required"}), 400
+
+    mods_dir = os.path.join(SERVER_DIR, "mods")
+    os.makedirs(mods_dir, exist_ok=True)
+
+    # Pre-check if mod already exists before making remote download requests
+    if not overwrite:
+        pre_existing = check_addon_exists(mods_dir, project_name=project_name, candidate_filename=direct_name, project_id=project_id)
+        if pre_existing:
+            return jsonify({
+                "success": False,
+                "already_exists": True,
+                "existing_file": pre_existing["filename"],
+                "existing_status": pre_existing["status"],
+                "candidate_file": direct_name or project_name or "mod.jar",
+                "message": f"Mod '{pre_existing['filename']}' ({pre_existing['status']}) already exists on the server. Do you want to update/replace it?"
+            }), 409
 
     try:
         download_url = direct_url
@@ -5277,8 +5422,17 @@ def api_mod_install_online():
         if not download_url:
             return jsonify({"success": False, "message": "Failed to determine mod download URL."}), 404
 
-        mods_dir = os.path.join(SERVER_DIR, "mods")
-        os.makedirs(mods_dir, exist_ok=True)
+        if not overwrite and filename:
+            mid_existing = check_addon_exists(mods_dir, project_name=project_name, candidate_filename=filename, project_id=project_id)
+            if mid_existing:
+                return jsonify({
+                    "success": False,
+                    "already_exists": True,
+                    "existing_file": mid_existing["filename"],
+                    "existing_status": mid_existing["status"],
+                    "candidate_file": filename,
+                    "message": f"Mod '{mid_existing['filename']}' ({mid_existing['status']}) already exists on the server. Do you want to update/replace it?"
+                }), 409
 
         dl_req = urllib.request.Request(download_url, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 FiestaPanel/1.0"
@@ -5287,16 +5441,39 @@ def api_mod_install_online():
             final_url = resp.geturl()
             safe_name = resolve_clean_jar_name(filename, final_url, resp.headers)
             dest_path = os.path.join(mods_dir, safe_name)
+
+            existing_to_replace = check_addon_exists(mods_dir, project_name=project_name, candidate_filename=safe_name, project_id=project_id)
+            if existing_to_replace and not overwrite:
+                return jsonify({
+                    "success": False,
+                    "already_exists": True,
+                    "existing_file": existing_to_replace["filename"],
+                    "existing_status": existing_to_replace["status"],
+                    "candidate_file": safe_name,
+                    "message": f"Mod '{existing_to_replace['filename']}' ({existing_to_replace['status']}) already exists on the server. Do you want to update/replace it?"
+                }), 409
+
+            # Clean up old existing jar file if filenames differ and overwrite is confirmed
+            if overwrite and existing_to_replace:
+                old_p = existing_to_replace.get("path")
+                if old_p and os.path.isfile(old_p) and os.path.abspath(old_p) != os.path.abspath(dest_path):
+                    try:
+                        os.remove(old_p)
+                    except Exception:
+                        pass
+
             with open(dest_path, "wb") as out_f:
                 shutil.copyfileobj(resp, out_f)
 
         file_size_kb = round(os.path.getsize(dest_path) / 1024, 1)
         loader_note = f" (for {target_loader})" if target_loader and target_loader not in ["all", "any"] else ""
+        msg = f"Successfully updated and replaced {existing_to_replace['filename']} with {safe_name}{loader_note} ({file_size_kb} KB)! Restart server to load." if (existing_to_replace and overwrite) else f"Successfully downloaded mod {safe_name}{loader_note} ({file_size_kb} KB)! Restart server to load."
+
         return jsonify({
             "success": True,
             "filename": safe_name,
             "size_kb": file_size_kb,
-            "message": f"Successfully downloaded mod {safe_name}{loader_note} ({file_size_kb} KB)! Restart server to load."
+            "message": msg
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
