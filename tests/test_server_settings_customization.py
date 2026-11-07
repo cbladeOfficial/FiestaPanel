@@ -294,6 +294,54 @@ class ServerSettingsCustomizationTests(unittest.TestCase):
         self.assertTrue(d['dynip_java'].endswith(f":{d['java_port']}"))
         self.assertTrue(d['dynip_bedrock'].endswith(f":{d['bedrock_port']}"))
 
+    def test_effective_server_domain_auto_detection(self):
+        self._login()
+        # 1. When server_domain is empty, it adopts the incoming dashboard URL host header (via X-Forwarded-Host or direct Host)
+        with patch.object(portal_app, 'load_branding', return_value={"server_domain": ""}), \
+             patch.dict(portal_app.SERVER_CONFIG, {"server_domain": ""}, clear=False):
+            res = self.client.get('/api/connect/dynip', headers={"X-Forwarded-Host": "dashboard.myserver.org:8080"})
+            self.assertEqual(res.status_code, 200)
+            d = res.get_json()
+            self.assertEqual(d.get("domain"), "dashboard.myserver.org")
+
+            # Direct Host without reverse proxy
+            with portal_app.app.test_request_context('/', base_url='http://panel.directserver.net:8080/'):
+                eff = portal_app.get_effective_server_domain()
+                self.assertEqual(eff, "panel.directserver.net")
+
+        # 2. When server_domain has an explicit domain, that domain is respected
+        with patch.object(portal_app, 'load_branding', return_value={"server_domain": "play.fiestasmp.com"}):
+            res = self.client.get('/api/connect/dynip', headers={"X-Forwarded-Host": "dashboard.myserver.org:8080"})
+            self.assertEqual(res.status_code, 200)
+            d = res.get_json()
+            self.assertEqual(d.get("domain"), "play.fiestasmp.com")
+
+    def test_panel_port_editable_in_system_settings(self):
+        self._login(role="owner", permissions=["all"])
+        res = self.client.get('/api/system/settings')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn('panel_port', data['settings'])
+
+        # Update panel_port
+        res_post = self._post('/api/system/settings', {"panel_port": 8888})
+        self.assertEqual(res_post.status_code, 200)
+        post_data = res_post.get_json()
+        self.assertTrue(post_data.get('success'))
+        self.assertEqual(post_data['settings']['panel_port'], 8888)
+        self.assertEqual(portal_app.get_panel_port(), 8888)
+
+    def test_server_properties_port_editable(self):
+        self._login(role="owner", permissions=["all"])
+        props_file = os.path.join(portal_app.SERVER_DIR, "server.properties")
+        os.makedirs(portal_app.SERVER_DIR, exist_ok=True)
+        with open(props_file, "w") as f:
+            f.write("server-port=25565\nmotd=A Minecraft Server\nmax-players=20\n")
+
+        res_post = self._post('/api/server/properties', {"server-port": 25577, "max-players": 50})
+        self.assertEqual(res_post.status_code, 200)
+        self.assertEqual(portal_app.get_server_port(), 25577)
+
 
 if __name__ == '__main__':
     unittest.main()

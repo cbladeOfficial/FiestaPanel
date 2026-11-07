@@ -52,8 +52,11 @@ if errorlevel 1 exit /b 1
 if not exist "config.json" (
     set "FIESTA_SETUP_MC_PATH=%MC_PATH%"
     set "FIESTA_SETUP_PORT=%PORT%"
-    venv\Scripts\python.exe -c "import os,json; cfg={'admin_user':'admin','server_dir':os.path.abspath(os.environ['FIESTA_SETUP_MC_PATH']),'service_name':'','screen_session':'','host':'0.0.0.0','port':int(os.environ['FIESTA_SETUP_PORT'])}; f=open('config.json','x',encoding='utf-8'); json.dump(cfg,f,indent=2); f.close()"
+    venv\Scripts\python.exe -c "import os,json; cfg={'admin_user':'admin','server_dir':os.path.abspath(os.environ['FIESTA_SETUP_MC_PATH']),'service_name':'','screen_session':'','host':'0.0.0.0','port':int(os.environ['FIESTA_SETUP_PORT']),'server_domain':'localhost'}; f=open('config.json','x',encoding='utf-8'); json.dump(cfg,f,indent=2); f.close()"
     if errorlevel 1 exit /b 1
+)
+if not exist "branding.json" (
+    venv\Scripts\python.exe -c "import json; b={'brand_name':'FIESTA-LINK','tagline':'The Reliable Choice','model_number':'Model No. FS-GATEWAY-PRO','browser_title':'FiestaPanel | Console','footer_text':'Made by Fiesta and its developers, Mockup UI of Legacy TP-Link Portal','server_desc':'Gateway Console','header_icon':'tplink','header_icon_custom':'','server_domain':'localhost'}; f=open('branding.json','w',encoding='utf-8'); json.dump(b,f,indent=2); f.close()"
 )
 
 echo [4/4] Creating desktop / quick launcher...

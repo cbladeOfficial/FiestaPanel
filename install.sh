@@ -208,22 +208,27 @@ echo -e "${COLOR_CYAN}[4/6] Checking credentials and config.json...${COLOR_RESET
 SETUP_FLAGS=()
 if [ "$UNATTENDED" = true ]; then SETUP_FLAGS+=(--non-interactive); fi
 "$TARGET_INSTALL_DIR/venv/bin/python3" "$TARGET_INSTALL_DIR/setup_admin.py" --data-dir "$TARGET_INSTALL_DIR" "${SETUP_FLAGS[@]}"
+
+# Detect Public IP / Server Address
+PUBLIC_IP=$(curl -s -m 3 https://api.ipify.org 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "127.0.0.1")
+
 if [ ! -f "$TARGET_INSTALL_DIR/config.json" ]; then
-    FIESTA_SETUP_MC_DIR="$FINAL_MC_DIR" FIESTA_SETUP_PORT="$FINAL_PORT" FIESTA_SETUP_AUTOSTART="$FINAL_AUTOSTART" \
+    FIESTA_SETUP_MC_DIR="$FINAL_MC_DIR" FIESTA_SETUP_PORT="$FINAL_PORT" FIESTA_SETUP_AUTOSTART="$FINAL_AUTOSTART" FIESTA_SETUP_PUBLIC_IP="$PUBLIC_IP" \
       "$TARGET_INSTALL_DIR/venv/bin/python3" - "$TARGET_INSTALL_DIR/config.json" <<'PYCONFIG'
 import json, os, sys
 config = {'admin_user': 'admin', 'server_dir': os.environ['FIESTA_SETUP_MC_DIR'],
           'service_name': 'minecraft', 'screen_session': 'fiesta',
           'host': '0.0.0.0', 'port': int(os.environ['FIESTA_SETUP_PORT']),
-          'autostart': os.environ.get('FIESTA_SETUP_AUTOSTART', 'true').lower() == 'true'}
+          'autostart': os.environ.get('FIESTA_SETUP_AUTOSTART', 'true').lower() == 'true',
+          'server_domain': os.environ.get('FIESTA_SETUP_PUBLIC_IP', '127.0.0.1')}
 with open(sys.argv[1], 'x', encoding='utf-8') as f:
     json.dump(config, f, indent=2)
 PYCONFIG
 fi
 
-# Ensure default branding
+# Ensure default branding with initial server domain
 if [ ! -f "$TARGET_INSTALL_DIR/branding.json" ]; then
-cat > "$TARGET_INSTALL_DIR/branding.json" << 'EOF'
+cat > "$TARGET_INSTALL_DIR/branding.json" << EOF
 {
   "brand_name": "FIESTA-LINK",
   "tagline": "The Reliable Choice",
@@ -232,7 +237,8 @@ cat > "$TARGET_INSTALL_DIR/branding.json" << 'EOF'
   "footer_text": "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal",
   "server_desc": "Gateway Console",
   "header_icon": "tplink",
-  "header_icon_custom": ""
+  "header_icon_custom": "",
+  "server_domain": "$PUBLIC_IP"
 }
 EOF
 fi

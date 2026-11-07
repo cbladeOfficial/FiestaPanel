@@ -3786,7 +3786,7 @@
                       <!-- Display Mode -->
                       <div id="st-server-domain-display" style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
                         <span style="display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex: 1 1 auto;">
-                          <strong id="st-server-domain" style="color: var(--help-sub-text, #006622); font-size: 12px; word-break: break-all; line-height: 1.2;">{{ branding.server_domain or 'play.your-server.net' }}</strong>
+                          <strong id="st-server-domain" style="color: var(--help-sub-text, #006622); font-size: 12px; word-break: break-all; line-height: 1.2;">{{ branding.server_domain or server_domain or 'localhost' }}</strong>
                           {% if role in ['owner', 'administrator'] or 'all' in permissions %}
                             <button type="button" class="btn-classic" style="height: 18px; line-height: 10px; font-size: 9.5px; padding: 0 5px; font-weight: bold; color: #0284c7; flex-shrink: 0;" onclick="openEditServerDomain()" title="Edit Domain (Admins Only)">[ Edit ]</button>
                           {% endif %}
@@ -3796,7 +3796,7 @@
                       <!-- Editor Mode -->
                       {% if role in ['owner', 'administrator'] or 'all' in permissions %}
                       <div id="st-server-domain-editor" style="display: none; align-items: center; gap: 4px; flex-wrap: wrap; width: 100%;">
-                        <input type="text" id="input-server-domain" class="ctrl-input" style="flex: 1 1 120px; min-width: 100px; max-width: 180px; font-size: 11px; height: 20px; padding: 0 5px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="mc.yourdomain.com">
+                        <input type="text" id="input-server-domain" class="ctrl-input" style="flex: 1 1 120px; min-width: 100px; max-width: 180px; font-size: 11px; height: 20px; padding: 0 5px; box-sizing: border-box;" value="{{ branding.server_domain or '' }}" placeholder="{{ server_domain or 'mc.yourdomain.com' }}">
                         <button type="button" class="btn-satin-green" style="height: 20px; line-height: 18px; font-size: 10px; padding: 0 6px; font-weight: bold; flex-shrink: 0;" onclick="saveServerDomain()">[ Save ]</button>
                         <button type="button" class="btn-classic" style="height: 20px; line-height: 18px; font-size: 10px; padding: 0 6px; font-weight: bold; flex-shrink: 0;" onclick="cancelEditServerDomain()">[ Cancel ]</button>
                       </div>
@@ -3818,11 +3818,11 @@
                 </tr>
                 <tr class="status-row-3">
                   <td class="label-col">Bedrock Port:</td>
-                  <td class="val-col">19132 <span class="inline-hint">(UDP via Geyser)</span></td>
+                  <td class="val-col"><span id="st-bedrock-port-val">{{ bedrock_port or 19132 }}</span> <span class="inline-hint">(UDP via Geyser)</span></td>
                 </tr>
                 <tr class="status-row-4">
                   <td class="label-col">Web Console Port:</td>
-                  <td class="val-col">8080 <span class="inline-hint">(Reverse-proxied)</span></td>
+                  <td class="val-col"><span id="st-web-port-val">{{ panel_port or 8080 }}</span> <span class="inline-hint">(Web Console)</span></td>
                 </tr>
                 </tbody>
               </table>
@@ -3844,13 +3844,13 @@
                   <td class="label-col">System Memory:</td>
                   <td class="val-col">
                     <div class="meter-container"><div id="meter-ram" class="meter-bar"></div></div>
-                    <span id="val-ram" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0.0 / 24.0 GB (0%)</span>
+                    <span id="val-ram" style="font-weight: bold; margin-left: 6px; font-size: 11px;">0.0 / {{ total_ram_gb or '--' }} GB (0%)</span>
                   </td>
                 </tr>
                 <tr class="status-row-3">
                   <td class="label-col">JVM Process RSS:</td>
                   <td class="val-col">
-                    <strong id="val-jvm">0 MB</strong> <span class="inline-hint">(Max Heap: 12.0 GB)</span>
+                    <strong id="val-jvm">0 MB</strong> <span class="inline-hint" id="val-jvm-hint">(Max Heap: {{ max_heap or '4.0 GB' }})</span>
                   </td>
                 </tr>
                 <tr class="status-row-4">
@@ -4622,6 +4622,10 @@
               <td class="val-col"><input type="text" id="prop-motd" style="width: 320px;"></td>
             </tr>
             <tr>
+              <td class="label-col">Server Port:</td>
+              <td class="val-col"><input type="number" id="prop-server-port" style="width: 80px;" min="1" max="65535" placeholder="25565"> <span class="inline-hint">(Java Edition port, default: 25565)</span></td>
+            </tr>
+            <tr>
               <td class="label-col">Max Players:</td>
               <td class="val-col"><input type="text" id="prop-max-players" style="width: 80px;"></td>
             </tr>
@@ -4677,7 +4681,7 @@
           <table class="form-layout-table">
             <tr>
               <td class="label-col">Bedrock Listener Port:</td>
-              <td class="val-col">19132 <span class="inline-hint">(UDP)</span></td>
+              <td class="val-col"><span id="tab-bedrock-port-val">{{ bedrock_port or 19132 }}</span> <span class="inline-hint">(UDP)</span></td>
             </tr>
             <tr>
               <td class="label-col">Transport Protocol:</td>
@@ -4703,7 +4707,7 @@
           <div class="section-sub-header" style="margin-top: 18px;">Bedrock One-Click Join &amp; Mobile QR Code</div>
           <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
             <div id="bedrock-qr-container" style="text-align: center;">
-              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') | urlencode }}%7C{{ (branding.server_domain or 'localhost') | urlencode }}%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
+              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') | urlencode }}%7C{{ (branding.server_domain or server_domain or 'localhost') | urlencode }}%3A{{ bedrock_port or 19132 }}" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
               <div class="inline-hint" style="margin-top: 4px; font-size: 10px;">Scan with Camera</div>
             </div>
             <div style="flex: 1; min-width: 240px;">
@@ -4712,7 +4716,7 @@
                 Players on Android, iOS, Windows Bedrock, or Nintendo Switch can join directly with one tap without manually entering hostnames or ports.
               </p>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') }}|{{ (branding.server_domain or 'localhost') }}:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
+                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') }}|{{ (branding.server_domain or server_domain or 'localhost') }}:{{ bedrock_port or 19132 }}" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
                 <button class="btn-classic" onclick="copyBedrockLink()">[ Copy Bedrock Link ]</button>
               </div>
             </div>
@@ -5622,6 +5626,13 @@
                 </td>
               </tr>
               <tr>
+                <td class="label-col">Server Network Port:</td>
+                <td class="val-col">
+                  <input type="number" id="gui-prop-server-port" min="1" max="65535" style="width: 80px;" placeholder="25565">
+                  <span class="inline-hint">(Java Edition server-port, default: 25565)</span>
+                </td>
+              </tr>
+              <tr>
                 <td class="label-col">Maximum Player Capacity:</td>
                 <td class="val-col">
                   <input type="number" id="gui-prop-max-players" min="1" max="1000" style="width: 80px;">
@@ -6130,9 +6141,16 @@
               </td>
             </tr>
             <tr>
+              <td class="label-col">Web Console Port:</td>
+              <td class="val-col">
+                <input type="number" id="sys-cfg-panel-port" class="tp-input-text" style="width: 120px;" min="1" max="65535" placeholder="8080">
+                <span class="inline-hint">HTTP port for FiestaPanel web dashboard (default: 8080)</span>
+              </td>
+            </tr>
+            <tr>
               <td class="label-col">API / User-Agent Email:</td>
               <td class="val-col">
-                <input type="email" id="sys-cfg-admin-email" class="tp-input-text" style="width: 280px;" placeholder="admin@yourserver.net">
+                <input type="email" id="sys-cfg-admin-email" class="tp-input-text" style="width: 280px;" placeholder="admin@server.local">
                 <span class="inline-hint">Contact email sent in outbound User-Agent headers (Modrinth / Asset sync)</span>
               </td>
             </tr>
@@ -6268,7 +6286,7 @@
               <tr>
                 <td class="label-col">Public Server Domain / IP:</td>
                 <td class="val-col">
-                  <input type="text" id="brand-input-domain" class="tp-input-text" style="width: 280px;" value="{{ branding.server_domain if branding else '' }}" placeholder="e.g. mc.yourserver.net">
+                  <input type="text" id="brand-input-domain" class="tp-input-text" style="width: 280px;" value="{{ branding.server_domain if branding else '' }}" placeholder="{{ server_domain or 'e.g. mc.yourdomain.com' }}">
                   <span class="inline-hint">Public gateway hostname for player connections</span>
                 </td>
               </tr>
@@ -7306,7 +7324,7 @@ def on_action(ctx, action_name, payload):
       </div>
       <div class="modal-inner-box" style="padding: 14px;">
         <div style="background: var(--input-bg, #f8fafc); border-left: 3px solid #0284c7; padding: 8px 12px; font-size: 11px; line-height: 1.45; margin-bottom: 12px; color: var(--text-main, #1e293b);">
-          <strong>Why DynIP Fallback?</strong> Some internet service providers, school/campus Wi-Fi, and mobile networks have broken DNS resolvers that fail to resolve Minecraft SRV records or domain aliases. If a player cannot connect with your normal domain (<code>{{ branding.server_domain or 'play.your-server.net' }}</code>), they can use this dynamic numeric IP and port to connect directly without DNS.
+          <strong>Why DynIP Fallback?</strong> Some internet service providers, school/campus Wi-Fi, and mobile networks have broken DNS resolvers that fail to resolve Minecraft SRV records or domain aliases. If a player cannot connect with your normal domain (<code>{{ branding.server_domain or server_domain or 'localhost' }}</code>), they can use this dynamic numeric IP and port to connect directly without DNS.
         </div>
 
         <!-- Java Direct Address -->
@@ -7337,7 +7355,7 @@ def on_action(ctx, action_name, payload):
             </div>
             <div>
               <div style="font-size: 9.5px; color: var(--text-sub, #64748b); margin-bottom: 2px;">Port</div>
-              <input type="text" id="dynip-bedrock-port" readonly class="ctrl-input" style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px; height: 26px; font-weight: bold; background: var(--bg-main, #fff);" value="19132">
+              <input type="text" id="dynip-bedrock-port" readonly class="ctrl-input" style="width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px; height: 26px; font-weight: bold; background: var(--bg-main, #fff);" value="{{ bedrock_port or 19132 }}">
             </div>
             <div style="padding-top: 14px;">
               <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 10px; font-size: 11px;" onclick="copyDynIpBedrock(this)">[ Copy ]</button>
@@ -7944,12 +7962,38 @@ def on_action(ctx, action_name, payload):
     // ── Clipboard Copy Helper ───────────────────────────────────
     function getServerDomain() {
       const el = document.getElementById('st-server-domain');
-      if (el && el.textContent && el.textContent.trim() !== 'play.your-server.net') {
-        return el.textContent.trim();
+      const legacy = ['play.your-server.net', 'mc.yourserver.net', 'mc.example.com', 'play.example.com', ''];
+      if (el && el.textContent) {
+        const txt = el.textContent.trim();
+        if (txt && !legacy.includes(txt)) {
+          return txt;
+        }
       }
       const host = window.location.hostname;
-      return (host === '127.0.0.1' || host === 'localhost') ? 'localhost' : host;
+      return (host === '127.0.0.1' || host === '0.0.0.0') ? 'localhost' : (host || 'localhost');
     }
+
+    // Automatically adapt displayed server domain from current dashboard URL if not configured
+    (function initServerDomainFromDashboardUrl() {
+      const curDomain = "{{ branding.server_domain }}";
+      const legacy = ['play.your-server.net', 'mc.yourserver.net', 'mc.example.com', 'play.example.com', ''];
+      const host = window.location.hostname;
+      if ((!curDomain || legacy.includes(curDomain)) && host) {
+        const el = document.getElementById('st-server-domain');
+        const inputEl = document.getElementById('input-server-domain');
+        const brandInput = document.getElementById('brand-input-domain');
+        if (el && (!el.textContent || legacy.includes(el.textContent.trim()) || el.textContent.trim() === 'localhost')) {
+          el.textContent = host;
+        }
+        if (inputEl && (!inputEl.value || legacy.includes(inputEl.value.trim()))) {
+          inputEl.placeholder = host;
+        }
+        if (brandInput && (!brandInput.value || legacy.includes(brandInput.value.trim()))) {
+          brandInput.placeholder = 'e.g. ' + host;
+        }
+      }
+    })();
+
     function copyServerDomain(btn) {
       copyDomainAddress(getServerDomain(), btn);
     }
@@ -8011,7 +8055,7 @@ def on_action(ctx, action_name, payload):
           const bPort = document.getElementById('dynip-bedrock-port');
           if (jDisplay) jDisplay.value = d.dynip_java || (d.public_ip + ':' + d.java_port);
           if (bIp) bIp.value = d.public_ip || '';
-          if (bPort) bPort.value = d.bedrock_port || 19132;
+          if (bPort) bPort.value = d.bedrock_port || '{{ bedrock_port or 19132 }}';
         }
       } catch (e) {
         console.error('Failed to query DynIP details:', e);
@@ -8031,7 +8075,7 @@ def on_action(ctx, action_name, payload):
 
     function copyDynIpBedrock(btn) {
       const ip = document.getElementById('dynip-bedrock-ip')?.value || '';
-      const port = document.getElementById('dynip-bedrock-port')?.value || '19132';
+      const port = document.getElementById('dynip-bedrock-port')?.value || document.getElementById('st-bedrock-port-val')?.textContent?.trim() || '{{ bedrock_port or 19132 }}';
       copyDomainAddress(`${ip}:${port}`, btn);
     }
 
@@ -8172,6 +8216,22 @@ def on_action(ctx, action_name, payload):
         mRam.className = 'meter-bar' + (d.ram_percent > 85 ? ' danger' : d.ram_percent > 70 ? ' warn' : '');
 
         document.getElementById('val-jvm').textContent = `${d.mc_memory_mb} MB`;
+        const jvmHint = document.getElementById('val-jvm-hint');
+        if (jvmHint && d.runtime_config && d.runtime_config.max_ram) {
+          jvmHint.textContent = `(Max Heap: ${d.runtime_config.max_ram})`;
+        }
+        if (d.mc_port) {
+          const pEl = document.getElementById('st-mc-port-val');
+          if (pEl) pEl.textContent = d.mc_port;
+        }
+        if (d.bedrock_port) {
+          const bEl = document.getElementById('st-bedrock-port-val');
+          if (bEl) bEl.textContent = d.bedrock_port;
+        }
+        if (d.panel_port) {
+          const wEl = document.getElementById('st-web-port-val');
+          if (wEl) wEl.textContent = d.panel_port;
+        }
         document.getElementById('val-disk').textContent = `${d.disk_percent}% Used (${d.disk_used_gb} / ${d.disk_total_gb} GB)`;
         const mDisk = document.getElementById('meter-disk');
         mDisk.style.width = `${Math.min(100, d.disk_percent)}%`;
@@ -11307,7 +11367,8 @@ def on_action(ctx, action_name, payload):
         const p = d.properties;
 
         if (document.getElementById('prop-motd')) document.getElementById('prop-motd').value = p['motd'] || '';
-        if (document.getElementById('prop-max-players')) document.getElementById('prop-max-players').value = p['max-players'] || '69';
+        if (document.getElementById('prop-server-port')) document.getElementById('prop-server-port').value = p['server-port'] || '25565';
+        if (document.getElementById('prop-max-players')) document.getElementById('prop-max-players').value = p['max-players'] || '20';
         if (document.getElementById('prop-view-distance')) document.getElementById('prop-view-distance').value = p['view-distance'] || '10';
         if (document.getElementById('prop-simulation-distance')) document.getElementById('prop-simulation-distance').value = p['simulation-distance'] || '10';
         if (document.getElementById('prop-pvp')) document.getElementById('prop-pvp').value = p['pvp'] || 'true';
@@ -11317,7 +11378,8 @@ def on_action(ctx, action_name, payload):
 
         // Populate GUI parameters if present
         if (document.getElementById('gui-prop-motd')) document.getElementById('gui-prop-motd').value = p['motd'] || '';
-        if (document.getElementById('gui-prop-max-players')) document.getElementById('gui-prop-max-players').value = p['max-players'] || '69';
+        if (document.getElementById('gui-prop-server-port')) document.getElementById('gui-prop-server-port').value = p['server-port'] || '25565';
+        if (document.getElementById('gui-prop-max-players')) document.getElementById('gui-prop-max-players').value = p['max-players'] || '20';
         if (document.getElementById('gui-prop-level-seed')) document.getElementById('gui-prop-level-seed').value = p['level-seed'] || '';
         if (document.getElementById('gui-prop-gamemode')) document.getElementById('gui-prop-gamemode').value = p['gamemode'] || 'survival';
         if (document.getElementById('gui-prop-hardcore')) document.getElementById('gui-prop-hardcore').value = (p['hardcore'] || 'false').toLowerCase();
@@ -11360,6 +11422,7 @@ def on_action(ctx, action_name, payload):
     async function saveGuiProperties() {
       const updates = {
         'motd': document.getElementById('gui-prop-motd').value.trim(),
+        'server-port': document.getElementById('gui-prop-server-port')?.value.trim() || '25565',
         'max-players': document.getElementById('gui-prop-max-players').value.trim(),
         'level-seed': document.getElementById('gui-prop-level-seed').value.trim(),
         'gamemode': document.getElementById('gui-prop-gamemode').value,
@@ -11433,6 +11496,7 @@ def on_action(ctx, action_name, payload):
     async function saveServerProps() {
       const updates = {
         'motd': document.getElementById('prop-motd').value,
+        'server-port': document.getElementById('prop-server-port')?.value.trim() || '25565',
         'max-players': document.getElementById('prop-max-players').value,
         'view-distance': document.getElementById('prop-view-distance').value,
         'simulation-distance': document.getElementById('prop-simulation-distance').value,
@@ -17556,9 +17620,9 @@ def on_action(ctx, action_name, payload):
         const sdirEl = document.getElementById('sys-info-serverdir');
         const bdirEl = document.getElementById('sys-info-backupdir');
 
-        if (cpuEl) cpuEl.textContent = (dStatus.cpu_count || 4) + ' Cores';
+        if (cpuEl) cpuEl.textContent = (dStatus.cpu_count || '--') + ' Cores';
         if (ramEl) {
-          const totalGb = dStatus.ram_total_mb ? (dStatus.ram_total_mb / 1024).toFixed(1) : '24.0';
+          const totalGb = dStatus.ram_total_mb ? (dStatus.ram_total_mb / 1024).toFixed(1) : '{{ total_ram_gb or 4.0 }}';
           ramEl.textContent = totalGb + ' GB';
         }
         if (osEl) osEl.textContent = dStatus.platform || dStatus.os_platform || 'Linux';
@@ -17578,12 +17642,14 @@ def on_action(ctx, action_name, payload):
         const inScr = document.getElementById('sys-cfg-screen-session');
         const inBdir = document.getElementById('sys-cfg-backup-dir');
         const inEmail = document.getElementById('sys-cfg-admin-email');
+        const inPort = document.getElementById('sys-cfg-panel-port');
 
         if (inSdir) inSdir.value = s.server_dir || '';
         if (inSvc) inSvc.value = s.service_name || '';
         if (inScr) inScr.value = s.screen_session || '';
         if (inBdir) inBdir.value = s.backup_dir || '';
         if (inEmail) inEmail.value = s.admin_email || '';
+        if (inPort) inPort.value = s.panel_port || dStatus.panel_port || 8080;
       } catch (e) {
         console.error('Failed to load system environment settings:', e);
       }
@@ -17596,6 +17662,7 @@ def on_action(ctx, action_name, payload):
       const screen_session = document.getElementById('sys-cfg-screen-session')?.value.trim();
       const backup_dir = document.getElementById('sys-cfg-backup-dir')?.value.trim();
       const admin_email = document.getElementById('sys-cfg-admin-email')?.value.trim();
+      const panel_port = document.getElementById('sys-cfg-panel-port')?.value.trim();
 
       if (msgEl) {
         msgEl.textContent = 'Saving...';
@@ -17611,7 +17678,8 @@ def on_action(ctx, action_name, payload):
             service_name,
             screen_session,
             backup_dir,
-            admin_email
+            admin_email,
+            panel_port
           })
         });
         const d = await res.json();

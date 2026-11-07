@@ -27,7 +27,7 @@ import zipfile
 import gzip
 from PIL import Image
 from functools import wraps
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory, Response
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory, Response, has_request_context
 from addon_manager import AddonManager
 from cloud_backups import CloudBackupManager
 import autostart
@@ -1102,6 +1102,116 @@ def get_main_level_name():
     props = get_server_properties_dict()
     return props.get("level-name", "world").strip() or "world"
 
+def get_panel_port():
+    """Retrieve active web panel HTTP port from config or environment."""
+    try:
+        return int(SERVER_CONFIG.get("port") or os.environ.get("GATEWAY_PORT") or os.environ.get("PORT") or 8080)
+    except (ValueError, TypeError):
+        return 8080
+
+_PUBLIC_IP_CACHE = {"ip": None, "expires_at": 0}
+
+def get_server_public_ip():
+    """Retrieve host public IPv4 address with caching."""
+    now = time.time()
+    if _PUBLIC_IP_CACHE["ip"] and now < _PUBLIC_IP_CACHE["expires_at"]:
+        return _PUBLIC_IP_CACHE["ip"]
+
+    for url in ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent(include_email=False)})
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                ip = resp.read().decode("utf-8").strip()
+                if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
+                    _PUBLIC_IP_CACHE["ip"] = ip
+                    _PUBLIC_IP_CACHE["expires_at"] = now + 300
+                    return ip
+        except Exception:
+            continue
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+        local_ip = None
+        for dns_ip in ("1.1.1.1", "8.8.8.8"):
+            try:
+                s.connect((dns_ip, 80))
+                local_ip = s.getsockname()[0]
+                break
+            except Exception:
+                continue
+        if not local_ip:
+            local_ip = socket.gethostbyname(socket.gethostname())
+        s.close()
+        if local_ip and not local_ip.startswith("127."):
+            _PUBLIC_IP_CACHE["ip"] = local_ip
+            _PUBLIC_IP_CACHE["expires_at"] = now + 60
+            return local_ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
+
+def get_bedrock_port():
+    """Detect Bedrock port from Geyser config or return standard 19132."""
+    for gp in [
+        os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
+        os.path.join(SERVER_DIR, "plugins", "Geyser", "config.yml"),
+        os.path.join(SERVER_DIR, "config", "Geyser-Fabric", "config.yml"),
+        os.path.join(SERVER_DIR, "config", "Geyser-NeoForge", "config.yml")
+    ]:
+        if os.path.exists(gp):
+            try:
+                with open(gp, "r", encoding="utf-8") as f:
+                    content = f.read()
+                m = re.search(r"port:\s*(\d+)", content)
+                if m:
+                    return int(m.group(1))
+            except Exception:
+                pass
+    return 19132
+
+def get_effective_server_domain(fallback_to_request=True):
+    """
+    Returns the configured server domain, or automatically detects the current
+    server host / dashboard URL when installed fresh or unconfigured.
+    """
+    b = load_branding()
+    dom = (b.get("server_domain") or SERVER_CONFIG.get("server_domain") or "").strip()
+    legacy = ("play.your-server.net", "mc.yourserver.net", "mc.example.com", "play.example.com")
+    if dom and dom not in legacy:
+        return dom
+
+    # 1. Incoming HTTP request header (dashboard URL hostname)
+    if fallback_to_request and has_request_context():
+        try:
+            forwarded = request.headers.get("X-Forwarded-Host")
+            raw = (forwarded.split(",")[0] if forwarded else request.host).strip()
+            h = raw.split(":")[0].strip()
+            if h and h not in ("0.0.0.0", "localhost", "127.0.0.1", ""):
+                return h
+        except Exception:
+            pass
+
+    # 2. Server public IP
+    try:
+        pub = get_server_public_ip()
+        if pub and pub != "127.0.0.1":
+            return pub
+    except Exception:
+        pass
+
+    # 3. Request host even if localhost
+    if fallback_to_request and has_request_context():
+        try:
+            h = request.host.split(":")[0].strip()
+            if h:
+                return h
+        except Exception:
+            pass
+
+    return "localhost"
+
 def ping_mc():
     """Queries live Minecraft server via native SLP handshake using server-port from properties."""
     props = get_server_properties_dict()
@@ -1353,7 +1463,14 @@ def login_page():
                 msg = "This sub-user account has been disabled."
                 if request.is_json:
                     return jsonify({"success": False, "message": msg}), 403
-                return render_template("login.html", error=msg, branding=load_branding(), mc_port=get_server_port())
+                return render_template(
+                    "login.html",
+                    error=msg,
+                    branding=load_branding(),
+                    server_domain=get_effective_server_domain(),
+                    mc_port=get_server_port(),
+                    bedrock_port=get_bedrock_port()
+                )
             if verify_password(user_entry.get("password_hash"), password):
                 if re.fullmatch(r"[0-9a-f]{64}", user_entry.get("password_hash", "")):
                     user_entry["password_hash"] = hash_password(password)
@@ -1375,9 +1492,22 @@ def login_page():
         if request.is_json:
             return jsonify({"success": False, "message": "Invalid username or password"}), 401
         mc_port = get_server_port()
-        return render_template("login.html", error="Invalid credentials", branding=load_branding(), mc_port=mc_port)
+        return render_template(
+            "login.html",
+            error="Invalid credentials",
+            branding=load_branding(),
+            server_domain=get_effective_server_domain(),
+            mc_port=mc_port,
+            bedrock_port=get_bedrock_port()
+        )
     mc_port = get_server_port()
-    return render_template("login.html", branding=load_branding(), mc_port=mc_port)
+    return render_template(
+        "login.html",
+        branding=load_branding(),
+        server_domain=get_effective_server_domain(),
+        mc_port=mc_port,
+        bedrock_port=get_bedrock_port()
+    )
 
 @app.route("/logout")
 def logout():
@@ -1387,15 +1517,25 @@ def logout():
 @app.route("/")
 @login_required
 def dashboard():
+    rt_cfg = server_runner.load_runtime_config()
+    try:
+        mem_total_gb = round(psutil.virtual_memory().total / (1024 * 1024 * 1024), 1) if psutil else 4.0
+    except Exception:
+        mem_total_gb = 4.0
     return render_template(
         "dashboard.html",
         user=session.get("user", "admin"),
         role=session.get("role", "owner"),
         permissions=session.get("permissions", ["all"]),
         branding=load_branding(),
+        server_domain=get_effective_server_domain(),
         server_running=server_runner.is_running(),
         level_name=get_main_level_name(),
-        mc_port=get_server_port()
+        mc_port=get_server_port(),
+        bedrock_port=get_bedrock_port(),
+        panel_port=get_panel_port(),
+        max_heap=rt_cfg.get("max_ram", "4G"),
+        total_ram_gb=mem_total_gb
     )
 
 LATEST_PAPER_VERSION_CACHE = {"version": "1.21.4", "ts": 0}
@@ -1561,6 +1701,9 @@ def api_status():
         "backup_dir": get_backup_dir(),
         "level_name": get_main_level_name(),
         "mc_port": get_server_port(),
+        "bedrock_port": get_bedrock_port(),
+        "panel_port": get_panel_port(),
+        "server_domain": get_effective_server_domain(),
         "spawn_coordinates": get_spawn_coordinates(),
         "java_version": detect_java_version_str(),
         "runtime_config": server_runner.load_runtime_config(),
@@ -2251,68 +2394,6 @@ def api_mc_assets_sync():
 
 # ── Portal Branding & Customization APIs ──────────────────────
 
-_PUBLIC_IP_CACHE = {"ip": None, "expires_at": 0}
-
-def get_server_public_ip():
-    """Retrieve host public IPv4 address with caching."""
-    now = time.time()
-    if _PUBLIC_IP_CACHE["ip"] and now < _PUBLIC_IP_CACHE["expires_at"]:
-        return _PUBLIC_IP_CACHE["ip"]
-
-    for url in ["https://api.ipify.org", "https://ifconfig.me/ip", "https://icanhazip.com"]:
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent(include_email=False)})
-            with urllib.request.urlopen(req, timeout=2.5) as resp:
-                ip = resp.read().decode("utf-8").strip()
-                if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
-                    _PUBLIC_IP_CACHE["ip"] = ip
-                    _PUBLIC_IP_CACHE["expires_at"] = now + 300
-                    return ip
-        except Exception:
-            continue
-
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0.5)
-        local_ip = None
-        for dns_ip in ("1.1.1.1", "8.8.8.8"):
-            try:
-                s.connect((dns_ip, 80))
-                local_ip = s.getsockname()[0]
-                break
-            except Exception:
-                continue
-        if not local_ip:
-            local_ip = socket.gethostbyname(socket.gethostname())
-        s.close()
-        if local_ip and not local_ip.startswith("127."):
-            _PUBLIC_IP_CACHE["ip"] = local_ip
-            _PUBLIC_IP_CACHE["expires_at"] = now + 60
-            return local_ip
-    except Exception:
-        pass
-
-    return "127.0.0.1"
-
-def get_bedrock_port():
-    """Detect Bedrock port from Geyser config or return standard 19132."""
-    for gp in [
-        os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
-        os.path.join(SERVER_DIR, "plugins", "Geyser", "config.yml"),
-        os.path.join(SERVER_DIR, "config", "Geyser-Fabric", "config.yml"),
-        os.path.join(SERVER_DIR, "config", "Geyser-NeoForge", "config.yml")
-    ]:
-        if os.path.exists(gp):
-            try:
-                with open(gp, "r", encoding="utf-8") as f:
-                    content = f.read()
-                m = re.search(r"port:\s*(\d+)", content)
-                if m:
-                    return int(m.group(1))
-            except Exception:
-                pass
-    return 19132
-
 @app.route("/api/system/java", methods=["GET", "POST"])
 @login_required
 def api_system_java():
@@ -2423,11 +2504,10 @@ def api_system_java():
 @app.route("/api/connect/dynip", methods=["GET"])
 @login_required
 def api_connect_dynip():
-    b = load_branding()
     mc_port = get_server_port()
     bedrock_port = get_bedrock_port()
     pub_ip = get_server_public_ip()
-    domain = b.get("server_domain") or SERVER_CONFIG.get("server_domain") or "mc.example.com"
+    domain = get_effective_server_domain()
 
     return jsonify({
         "success": True,
@@ -2680,7 +2760,8 @@ def api_system_settings():
                 "spawn_coordinates": get_spawn_coordinates(),
                 "java_path": SERVER_CONFIG.get("java_path", ""),
                 "active_java": detect_java_version_str(),
-                "admin_email": get_contact_email()
+                "admin_email": get_contact_email(),
+                "panel_port": get_panel_port()
             }
         })
 
@@ -2751,6 +2832,16 @@ def api_system_settings():
             existing.pop("admin_email", None)
             SERVER_CONFIG.pop("admin_email", None)
 
+    if "panel_port" in data or "port" in data:
+        raw_p = data.get("panel_port") if "panel_port" in data else data.get("port")
+        try:
+            p_val = int(raw_p)
+            if 1 <= p_val <= 65535:
+                existing["port"] = p_val
+                SERVER_CONFIG["port"] = p_val
+        except (ValueError, TypeError):
+            pass
+
     try:
         with open(target_cfg, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2)
@@ -2767,7 +2858,8 @@ def api_system_settings():
             "backup_dir": get_backup_dir(),
             "java_path": SERVER_CONFIG.get("java_path", ""),
             "active_java": detect_java_version_str(),
-            "admin_email": get_contact_email()
+            "admin_email": get_contact_email(),
+            "panel_port": get_panel_port()
         }
     })
 

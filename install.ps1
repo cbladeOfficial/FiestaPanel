@@ -176,6 +176,13 @@ if (-not (Test-Path $DefaultMC)) {
 # Create an owner only when no user store exists; existing accounts are preserved.
 & $VenvPy (Join-Path $InstallDir "setup_admin.py") --data-dir $InstallDir
 if ($LASTEXITCODE -ne 0) { throw "Owner account setup failed." }
+
+$DetectedHost = "localhost"
+try {
+    $ipReq = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 3 -ErrorAction SilentlyContinue)
+    if ($ipReq -and $ipReq -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$') { $DetectedHost = $ipReq.Trim() }
+} catch {}
+
 if (-not (Test-Path $ConfigFile)) {
     $Config = @{
         admin_user = "admin"
@@ -185,8 +192,25 @@ if (-not (Test-Path $ConfigFile)) {
         host = "0.0.0.0"
         port = 8080
         autostart = $EnableAutostart
+        server_domain = $DetectedHost
     }
     $Config | ConvertTo-Json | Set-Content -Path $ConfigFile -Encoding UTF8
+}
+
+$BrandingFile = Join-Path $InstallDir "branding.json"
+if (-not (Test-Path $BrandingFile)) {
+    $Branding = @{
+        brand_name = "FIESTA-LINK"
+        tagline = "The Reliable Choice"
+        model_number = "Model No. FS-GATEWAY-PRO"
+        browser_title = "FiestaPanel | Console"
+        footer_text = "Made by Fiesta and it's developers, Mockup UI of Legacy TP-Link Portal"
+        server_desc = "Gateway Console"
+        header_icon = "tplink"
+        header_icon_custom = ""
+        server_domain = $DetectedHost
+    }
+    $Branding | ConvertTo-Json | Set-Content -Path $BrandingFile -Encoding UTF8
 }
 Write-Host "[✓] Configuration and owner account are ready." -ForegroundColor Green
 
