@@ -131,7 +131,7 @@ Personalize the panel for your server community:
 - **Header Icon Selector**:
   - Choose from 12 built-in icon presets, direct local file upload (PNG, JPG, SVG, WebP, GIF), or custom image/SVG URL.
 - **Theme Selection**:
-  - **Windows 7 Aero**: Faithfully styled using [**7.css**](https://github.com/khang-nd/7.css) by Khang NT (MIT License). Features vibrant electric azure Aero Glass frames, 3D specular reflection buttons, frosted blur (`backdrop-filter`), authentic interactive titlebar window controls (minimize, maximize/restore, close), and Segoe UI typography.
+  - **Windows 7 Aero**: Faithfully styled using [**7.css**](https://github.com/khang-nd/7.css) by Khang NT (MIT License). Features vibrant electric azure Aero Glass frames, 3D specular reflection buttons, frosted blur (`backdrop-filter`), authentic interactive titlebar window controls (minimize, maximize/restore, close), and crisp Arial typography.
   - **TP-Link Classic**: Retro 2000s router web interface.
   - **Windows 98**: Classic desktop bevels and teal aesthetic.
   - **Dark Mode**: Modern OLED dark contrast.

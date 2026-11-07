@@ -69,7 +69,7 @@ SVG_BANNER = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 380" w
 
   <!-- 4. FIESTAPANEL Header (Bold Italic, Centered) -->
   <text x="640" y="246" 
-        font-family="'Liberation Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" 
+        font-family="Arial, 'Liberation Sans', -apple-system, BlinkMacSystemFont, Roboto, sans-serif" 
         font-size="68" 
         font-weight="900" 
         font-style="italic" 
@@ -80,7 +80,7 @@ SVG_BANNER = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 380" w
 
   <!-- 5. Tagline: The Reliable Choice (Centered, Subtitle Mint Tint) -->
   <text x="640" y="295" 
-        font-family="'Liberation Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif" 
+        font-family="Arial, 'Liberation Sans', -apple-system, BlinkMacSystemFont, Roboto, sans-serif" 
         font-size="20" 
         font-weight="700" 
         letter-spacing="3" 
