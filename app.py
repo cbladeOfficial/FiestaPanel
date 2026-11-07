@@ -60,7 +60,13 @@ def _get_secret_key():
 
 app = Flask(__name__)
 app.secret_key = _get_secret_key()
-app.config.update(SESSION_COOKIE_SECURE=True, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", MAX_CONTENT_LENGTH=100 * 1024 * 1024)
+_is_cookie_secure = os.environ.get("SESSION_COOKIE_SECURE", "").lower() in ("1", "true")
+app.config.update(
+    SESSION_COOKIE_SECURE=_is_cookie_secure,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    MAX_CONTENT_LENGTH=2048 * 1024 * 1024
+)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 CONFIG_FILE = os.path.join(DATA_DIR, "config.json")
 
@@ -74,14 +80,39 @@ DEFAULT_SPAWN_COORDINATES = {
 
 def load_server_config():
     is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
-    def_server_dir = "/server" if is_docker else (os.environ.get("MINECRAFT_DIR") or ("/home/ubuntu/fiesta" if os.path.isdir("/home/ubuntu/fiesta") else os.path.join(os.path.expanduser("~"), "minecraft")))
-    def_backup_dir = "/home/ubuntu/backups" if os.path.isdir("/home/ubuntu/backups") else os.path.join(os.path.dirname(def_server_dir), "backups")
+    user_home = os.path.expanduser("~")
+    local_fiesta = os.path.join(user_home, "fiesta")
+    local_mc = os.path.join(user_home, "minecraft")
+    if is_docker:
+        def_server_dir = "/server"
+    elif os.environ.get("MINECRAFT_DIR"):
+        def_server_dir = os.environ.get("MINECRAFT_DIR")
+    elif os.path.isdir(local_fiesta):
+        def_server_dir = local_fiesta
+    elif os.path.isdir(local_mc):
+        def_server_dir = local_mc
+    elif os.path.isdir("/home/ubuntu/fiesta"):
+        def_server_dir = "/home/ubuntu/fiesta"
+    else:
+        def_server_dir = local_mc
+
+    local_backups = os.path.join(user_home, "backups")
+    if os.environ.get("BACKUP_DIR"):
+        def_backup_dir = os.environ.get("BACKUP_DIR")
+    elif os.path.isdir(local_backups):
+        def_backup_dir = local_backups
+    elif os.path.isdir("/home/ubuntu/backups"):
+        def_backup_dir = "/home/ubuntu/backups"
+    else:
+        def_backup_dir = os.path.join(os.path.dirname(def_server_dir), "backups")
+
+    def_svc = "fiesta" if (os.path.isdir(local_fiesta) or os.path.isdir("/home/ubuntu/fiesta")) else "minecraft"
     cfg = {
         "admin_user": "admin",
         "admin_pass": None,
         "server_dir": def_server_dir,
-        "service_name": "fiesta" if os.path.isdir("/home/ubuntu/fiesta") else "minecraft",
-        "screen_session": "fiesta" if os.path.isdir("/home/ubuntu/fiesta") else "minecraft",
+        "service_name": def_svc,
+        "screen_session": def_svc,
         "host": "0.0.0.0" if is_docker else "127.0.0.1",
         "port": 8080,
         "autostart": True,
@@ -144,7 +175,7 @@ ADMIN_USER = SERVER_CONFIG["admin_user"]
 ADMIN_PASS = SERVER_CONFIG["admin_pass"]
 SERVER_DIR = SERVER_CONFIG["server_dir"]
 SERVICE_NAME = SERVER_CONFIG["service_name"]
-SCREEN_SESSION = SERVER_CONFIG.get("screen_session", "fiesta")
+SCREEN_SESSION = SERVER_CONFIG.get("screen_session") or SERVER_CONFIG.get("service_name") or "minecraft"
 
 def get_contact_email():
     """Retrieve user-agent contact email from SERVER_CONFIG or default."""
@@ -414,6 +445,9 @@ class ServerRunner:
     def _detect_systemd(self):
         if not IS_LINUX or not shutil.which("systemctl") or not self.service_name:
             return False
+        # Do not manage or stop the web portal daemon itself
+        if self.service_name in ("fiestapanel", "fiesta-portal"):
+            return False
         try:
             res = subprocess.run(["systemctl", "status", self.service_name], capture_output=True, timeout=2)
             return res.returncode in (0, 3)
@@ -446,7 +480,7 @@ class ServerRunner:
     def is_running(self):
         if self._detect_systemd():
             try:
-                res = subprocess.run(["sudo", "systemctl", "is-active", self.service_name], capture_output=True, text=True, timeout=2)
+                res = subprocess.run(["systemctl", "is-active", self.service_name], capture_output=True, text=True, timeout=2)
                 if res.stdout.strip() == "active":
                     return True
             except Exception:
@@ -549,6 +583,10 @@ class ServerRunner:
                 stderr=subprocess.STDOUT,
                 creationflags=creationflags
             )
+            try:
+                log_out.close()
+            except Exception:
+                pass
 
             try:
                 with open(self.pid_file, "w") as f:
@@ -603,30 +641,14 @@ class ServerRunner:
 
     def send_command(self, cmd):
         clean_cmd = cmd.strip()
-        executed = False
-
         if self.proc and self.proc.stdin and self.proc.poll() is None:
             try:
                 self.proc.stdin.write(f"{clean_cmd}\n".encode("utf-8"))
                 self.proc.stdin.flush()
-                executed = True
-            except Exception:
-                pass
-
-        if not executed and IS_LINUX and shutil.which("screen"):
-            screen_name = self.screen_session or "fiesta"
-            try:
-                cmd_esc = clean_cmd.replace('"', '\"').replace("'", "\'")
-                res = subprocess.run(
-                    ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{cmd_esc}\\015"'],
-                    capture_output=True, timeout=2
-                )
-                if res.returncode == 0:
-                    executed = True
-            except Exception:
-                pass
-
-        return executed, f"Executed: {clean_cmd}" if executed else "Could not dispatch command."
+                return True, f"Executed: {clean_cmd}"
+            except Exception as e:
+                return False, f"Failed writing to stdin: {e}"
+        return False, "Direct process stdin not available."
 
 server_runner = ServerRunner(SERVER_DIR, SERVICE_NAME, SCREEN_SESSION)
 
@@ -804,16 +826,28 @@ def login_required(f):
     return decorated_function
 
 def send_mc_command(cmd):
+    # 1. First attempt via direct process stdin if running as background process
     try:
-        clean_cmd = cmd.replace('"', '\\"').replace("'", "\\'").strip()
-        screen_name = SCREEN_SESSION or SERVER_CONFIG.get("screen_session", "fiesta")
-        subprocess.run(
-            ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{clean_cmd}\\015"'],
-            check=True
-        )
-        return True, f"Executed: {cmd}"
-    except Exception as e:
-        return False, str(e)
+        if "server_runner" in globals() and server_runner and server_runner.proc and server_runner.proc.stdin and server_runner.proc.poll() is None:
+            executed, msg = server_runner.send_command(cmd)
+            if executed:
+                return True, msg
+    except Exception:
+        pass
+
+    # 2. Linux screen dispatch
+    if IS_LINUX and shutil.which("screen"):
+        try:
+            clean_cmd = cmd.replace('"', '\\"').replace("'", "\\'").strip()
+            screen_name = (SERVER_CONFIG.get("screen_session") if isinstance(SERVER_CONFIG, dict) else None) or SCREEN_SESSION or SERVER_CONFIG.get("service_name") or "minecraft"
+            subprocess.run(
+                ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{clean_cmd}\\015"'],
+                check=True
+            )
+            return True, f"Executed: {cmd}"
+        except Exception as e:
+            return False, str(e)
+    return False, "Could not dispatch command: server process is not running or console is inaccessible."
 
 def resolve_player_ip(player_name):
     """
@@ -1053,6 +1087,16 @@ def get_server_properties_dict():
             pass
     return props
 
+def get_server_port(default=25565):
+    """Safely retrieves integer server-port from server.properties with graceful fallback."""
+    try:
+        props = get_server_properties_dict()
+        p = props.get("server-port", default)
+        val = int(str(p).strip())
+        return val if 1 <= val <= 65535 else default
+    except (ValueError, TypeError):
+        return default
+
 def get_main_level_name():
     """Returns the configured level-name from server.properties, defaulting to 'world'."""
     props = get_server_properties_dict()
@@ -1061,11 +1105,7 @@ def get_main_level_name():
 def ping_mc():
     """Queries live Minecraft server via native SLP handshake using server-port from properties."""
     props = get_server_properties_dict()
-    mc_port = 25565
-    try:
-        mc_port = int(props.get("server-port", 25565))
-    except (ValueError, TypeError):
-        pass
+    mc_port = get_server_port(25565)
 
     def_ver = "Minecraft Server"
     meta_file = os.path.join(SERVER_DIR, "installed_software.json")
@@ -1096,7 +1136,10 @@ def ping_mc():
         def read_varint(sock):
             val = 0
             for i in range(5):
-                b = ord(sock.recv(1))
+                chunk = sock.recv(1)
+                if not chunk:
+                    return 0
+                b = ord(chunk)
                 val |= (b & 0x7f) << (7 * i)
                 if not (b & 0x80):
                     break
@@ -1116,6 +1159,14 @@ def ping_mc():
         ms = round((time.time() - t0) * 1000, 1)
 
         info = json.loads(received.decode('utf-8', errors='ignore'))
+        desc_obj = info.get('description', '')
+        if isinstance(desc_obj, dict):
+            motd_txt = desc_obj.get('text', '')
+            if not motd_txt and 'extra' in desc_obj and isinstance(desc_obj['extra'], list):
+                motd_txt = "".join(x.get('text', '') for x in desc_obj['extra'] if isinstance(x, dict))
+        else:
+            motd_txt = str(desc_obj or '')
+
         return {
             'online': True,
             'ping_ms': ms,
@@ -1123,7 +1174,7 @@ def ping_mc():
             'players_online': info.get('players', {}).get('online', 0),
             'players_max': info.get('players', {}).get('max', def_max_players),
             'player_sample': [p.get('name') for p in info.get('players', {}).get('sample', []) if 'name' in p],
-            'motd': info.get('description', {}).get('text', '') if isinstance(info.get('description'), dict) else str(info.get('description', ''))
+            'motd': motd_txt
         }
     except Exception as e:
         return {
@@ -1172,9 +1223,23 @@ def enforce_security():
         session["role"] = user.get("role", "moderator")
         session["permissions"] = user.get("permissions", [])
     if request.method == "GET" and session.get("logged_in"):
-        sensitive = ("/api/files/", "/api/config", "/api/log", "/api/backup", "/api/server/properties", "/api/access/users")
-        if request.path.startswith(sensitive) and session.get("role") != "owner" and "all" not in session.get("permissions", []):
-            return jsonify(error="Owner permission required"), 403
+        perms = session.get("permissions", [])
+        role = session.get("role", "")
+        is_admin = (role in ("owner", "administrator") or "all" in perms)
+        path = request.path
+        if not is_admin:
+            if path.startswith("/api/files/") and "filemanager" not in perms:
+                return jsonify(error="Owner permission required"), 403
+            elif path.startswith("/api/config") and "parameters" not in perms:
+                return jsonify(error="Owner permission required"), 403
+            elif path.startswith("/api/log") and "console" not in perms:
+                return jsonify(error="Owner permission required"), 403
+            elif path.startswith("/api/backup") and "backups" not in perms:
+                return jsonify(error="Owner permission required"), 403
+            elif path.startswith("/api/server/properties") and "parameters" not in perms:
+                return jsonify(error="Owner permission required"), 403
+            elif path.startswith("/api/access/users") and "access" not in perms:
+                return jsonify(error="Owner permission required"), 403
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         if request.path.startswith("/api/player/") and request.is_json:
             data = request.get_json(silent=True) or {}
@@ -1192,17 +1257,32 @@ def enforce_security():
         if not expected or not hmac.compare_digest(expected, supplied):
             return jsonify(error="Invalid CSRF token"), 403
         if request.path.startswith("/api/") and session.get("logged_in"):
-            # High-risk operations default to owner-only; narrow exceptions
-            # are explicitly mapped to existing sub-user permissions.
+            # Operations are mapped to specific sub-user permissions or admin roles
             path = request.path
             permission = None
             if path == "/api/command": permission = "console"
             elif path == "/api/server/power": permission = "power"
+            elif path == "/api/action":
+                act = (request.get_json(silent=True) or {}).get("action", "")
+                permission = "power" if act in ("restart", "stop", "start") else "parameters"
             elif path.startswith("/api/player/"): permission = "players"
+            elif path.startswith("/api/files/"): permission = "filemanager"
+            elif path.startswith("/api/backup"): permission = "backups"
+            elif path.startswith("/api/config") or path == "/api/server/properties" or path == "/api/options": permission = "parameters"
+            elif path.startswith("/api/software/"): permission = "software"
+            elif path.startswith("/api/access/"): permission = "access"
+            elif path == "/api/banned-ips" or path == "/api/whitelist/action": permission = "players"
+            elif path.startswith("/api/plugin/") or path.startswith("/api/mod/") or path.startswith("/api/modpack") or path.startswith("/api/modrinth/"): permission = "filemanager"
+            elif path.startswith("/api/worlds/") or path == "/api/motd": permission = "parameters"
+            elif path.startswith("/api/resourcepack/"): permission = "parameters"
+            elif path.startswith("/api/system/"): permission = "parameters"
+            elif path.startswith("/api/events/"): permission = "events"
             elif path.startswith("/api/panel-addons/") and "/review" in path:
                 permission = "allow_any_logged_in"
             perms = session.get("permissions", [])
-            if permission != "allow_any_logged_in" and session.get("role") != "owner" and "all" not in perms and (not permission or permission not in perms):
+            role = session.get("role", "")
+            is_admin = (role in ("owner", "administrator") or "all" in perms)
+            if permission != "allow_any_logged_in" and not is_admin and (not permission or permission not in perms):
                 return jsonify(error="Owner permission required"), 403
 
 addon_manager = AddonManager(DATA_DIR, BASE_DIR, app, send_mc_command, ping_mc, SERVER_DIR)
@@ -1273,7 +1353,7 @@ def login_page():
                 msg = "This sub-user account has been disabled."
                 if request.is_json:
                     return jsonify({"success": False, "message": msg}), 403
-                return render_template("login.html", error=msg, branding=load_branding(), mc_port=int(get_server_properties_dict().get("server-port", 25565)))
+                return render_template("login.html", error=msg, branding=load_branding(), mc_port=get_server_port())
             if verify_password(user_entry.get("password_hash"), password):
                 if re.fullmatch(r"[0-9a-f]{64}", user_entry.get("password_hash", "")):
                     user_entry["password_hash"] = hash_password(password)
@@ -1294,9 +1374,9 @@ def login_page():
 
         if request.is_json:
             return jsonify({"success": False, "message": "Invalid username or password"}), 401
-        mc_port = int(get_server_properties_dict().get("server-port", 25565))
+        mc_port = get_server_port()
         return render_template("login.html", error="Invalid credentials", branding=load_branding(), mc_port=mc_port)
-    mc_port = int(get_server_properties_dict().get("server-port", 25565))
+    mc_port = get_server_port()
     return render_template("login.html", branding=load_branding(), mc_port=mc_port)
 
 @app.route("/logout")
@@ -1315,10 +1395,10 @@ def dashboard():
         branding=load_branding(),
         server_running=server_runner.is_running(),
         level_name=get_main_level_name(),
-        mc_port=int(get_server_properties_dict().get("server-port", 25565))
+        mc_port=get_server_port()
     )
 
-LATEST_PAPER_VERSION_CACHE = {"version": "26.3", "ts": 0}
+LATEST_PAPER_VERSION_CACHE = {"version": "1.21.4", "ts": 0}
 
 def get_latest_paper_version():
     global LATEST_PAPER_VERSION_CACHE
@@ -1383,7 +1463,11 @@ def api_software_latest():
 def api_status():
     cpu_percent = psutil.cpu_percent(interval=None)
     mem = psutil.virtual_memory()
-    disk = psutil.disk_usage("/")
+    try:
+        disk_target = SERVER_DIR if os.path.exists(SERVER_DIR) else "/"
+        disk = psutil.disk_usage(disk_target)
+    except Exception:
+        disk = psutil.disk_usage("/")
 
     jar_exists = os.path.exists(os.path.join(SERVER_DIR, "server.jar"))
     if not _asset_sync_started and jar_exists:
@@ -1441,7 +1525,7 @@ def api_status():
     service_active = False
     try:
         if SERVICE_NAME:
-            res = subprocess.run(["sudo", "systemctl", "is-active", SERVICE_NAME], capture_output=True, text=True, timeout=2)
+            res = subprocess.run(["systemctl", "is-active", SERVICE_NAME], capture_output=True, text=True, timeout=2)
             service_active = (res.stdout.strip() == "active")
     except Exception:
         pass
@@ -1476,7 +1560,7 @@ def api_status():
         "screen_session": SCREEN_SESSION,
         "backup_dir": get_backup_dir(),
         "level_name": get_main_level_name(),
-        "mc_port": int(get_server_properties_dict().get("server-port", 25565)),
+        "mc_port": get_server_port(),
         "spawn_coordinates": get_spawn_coordinates(),
         "java_version": detect_java_version_str(),
         "runtime_config": server_runner.load_runtime_config(),
@@ -1487,7 +1571,7 @@ def api_status():
 @login_required
 def api_server_power():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "power" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "power" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Power permission required."}), 403
 
     data = request.get_json() or {}
@@ -1548,7 +1632,14 @@ def api_logs_archive():
 @app.route("/api/logs")
 @login_required
 def api_logs():
-    lines_count = int(request.args.get("lines", 100))
+    try:
+        lines_count = int(request.args.get("lines", 100))
+        if lines_count < 1:
+            lines_count = 100
+        elif lines_count > 5000:
+            lines_count = 5000
+    except (ValueError, TypeError):
+        lines_count = 100
     query = request.args.get("q", "").strip().lower()
     level = request.args.get("level", "ALL").upper()
     req_file = request.args.get("file", "latest.log").strip()
@@ -1701,7 +1792,7 @@ def api_players():
 @login_required
 def api_player_action():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "players" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "players" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Player controls permission required."}), 403
 
     data = request.get_json() or {}
@@ -1733,11 +1824,11 @@ def api_player_action():
         "gamemode_spectator": f"gamemode spectator {player}",
         "hardcore_spectator": f"gamemode spectator {player}",
         "kill": f"kill {player}",
-        "heal": f"heal {player}",
-        "feed": f"feed {player}",
+        "heal": f"effect give {player} minecraft:instant_health 1 255",
+        "feed": f"effect give {player} minecraft:saturation 1 255",
         "clear": f"clear {player}",
         "tp_spawn": f"tp {player} {coords['x']} {coords['y']} {coords['z']}",
-        "msg": f"msg {player} &6[Admin]&f {param}"
+        "msg": f"msg {player} [Admin] {param}"
     }
 
     if action in cmd_map:
@@ -1940,13 +2031,18 @@ def api_player_inventory():
 @login_required
 def api_player_inventory_give():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "players" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "players" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Player controls permission required."}), 403
 
     data = request.get_json() or {}
     player = data.get("player", "").strip()
     item = data.get("item", "").strip()
-    count = int(data.get("count", 1))
+    try:
+        count = int(data.get("count", 1))
+        if count < 1: count = 1
+        elif count > 64: count = 64
+    except (ValueError, TypeError):
+        count = 1
 
     if not player or not item:
         return jsonify({"success": False, "message": "Player and item required"}), 400
@@ -1959,7 +2055,7 @@ def api_player_inventory_give():
 @login_required
 def api_player_inventory_clear():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "players" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "players" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Player controls permission required."}), 403
 
     data = request.get_json() or {}
@@ -2178,12 +2274,21 @@ def get_server_public_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0.5)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
+        local_ip = None
+        for dns_ip in ("1.1.1.1", "8.8.8.8"):
+            try:
+                s.connect((dns_ip, 80))
+                local_ip = s.getsockname()[0]
+                break
+            except Exception:
+                continue
+        if not local_ip:
+            local_ip = socket.gethostbyname(socket.gethostname())
         s.close()
-        _PUBLIC_IP_CACHE["ip"] = local_ip
-        _PUBLIC_IP_CACHE["expires_at"] = now + 60
-        return local_ip
+        if local_ip and not local_ip.startswith("127."):
+            _PUBLIC_IP_CACHE["ip"] = local_ip
+            _PUBLIC_IP_CACHE["expires_at"] = now + 60
+            return local_ip
     except Exception:
         pass
 
@@ -2194,6 +2299,8 @@ def get_bedrock_port():
     for gp in [
         os.path.join(SERVER_DIR, "plugins", "Geyser-Spigot", "config.yml"),
         os.path.join(SERVER_DIR, "plugins", "Geyser", "config.yml"),
+        os.path.join(SERVER_DIR, "config", "Geyser-Fabric", "config.yml"),
+        os.path.join(SERVER_DIR, "config", "Geyser-NeoForge", "config.yml")
     ]:
         if os.path.exists(gp):
             try:
@@ -2211,7 +2318,7 @@ def get_bedrock_port():
 def api_system_java():
     if request.method == "POST":
         curr_perms = session.get("permissions", [])
-        if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+        if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
             return jsonify({"success": False, "message": "Permission denied: Administrative privileges required to configure Java runtime."}), 403
 
         data = request.get_json(silent=True) or {}
@@ -2317,11 +2424,10 @@ def api_system_java():
 @login_required
 def api_connect_dynip():
     b = load_branding()
-    props = get_server_properties_dict()
-    mc_port = int(props.get("server-port", 25565))
+    mc_port = get_server_port()
     bedrock_port = get_bedrock_port()
     pub_ip = get_server_public_ip()
-    domain = b.get("server_domain") or "play.your-server.net"
+    domain = b.get("server_domain") or SERVER_CONFIG.get("server_domain") or "mc.example.com"
 
     return jsonify({
         "success": True,
@@ -2356,7 +2462,7 @@ def api_system_autostart():
 @login_required
 def api_upload_branding_icon():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Parameter or Access management required."}), 403
 
     if "icon" not in request.files and "file" not in request.files:
@@ -2436,7 +2542,7 @@ def api_get_branding():
 @login_required
 def api_save_branding():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Parameter or Access management required."}), 403
 
     data = request.get_json() or {}
@@ -2500,7 +2606,7 @@ def api_update_server_domain():
 @login_required
 def api_reset_branding():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied."}), 403
 
     save_branding(DEFAULT_BRANDING.copy())
@@ -2513,7 +2619,7 @@ def api_world_spawn():
         return jsonify({"success": True, "spawn": get_spawn_coordinates()})
 
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Parameter management required."}), 403
 
     data = request.get_json() or {}
@@ -2570,7 +2676,7 @@ def api_system_settings():
                 "backup_dir": get_backup_dir(),
                 "server_domain": b.get("server_domain", ""),
                 "public_site_url": b.get("public_site_url", ""),
-                "bedrock_server_name": b.get("bedrock_server_name", "FiestaSMP"),
+                "bedrock_server_name": b.get("bedrock_server_name") or DEFAULT_BRANDING.get("bedrock_server_name", "Minecraft Server"),
                 "spawn_coordinates": get_spawn_coordinates(),
                 "java_path": SERVER_CONFIG.get("java_path", ""),
                 "active_java": detect_java_version_str(),
@@ -2691,7 +2797,7 @@ def api_get_subusers():
 @login_required
 def api_create_subuser():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Access management required."}), 403
 
     data = request.get_json() or {}
@@ -2725,7 +2831,7 @@ def api_create_subuser():
 @login_required
 def api_update_subuser(username):
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Access management required."}), 403
 
     users = load_users()
@@ -2791,7 +2897,7 @@ def api_change_user_password(username):
 @login_required
 def api_delete_subuser(username):
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "access" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "access" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Access management required."}), 403
 
     users = load_users()
@@ -2934,6 +3040,62 @@ def resolve_software_download(software, version, build="latest"):
         download_url = f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{nf_ver}/neoforge-{nf_ver}-installer.jar"
         return download_url, f"neoforge-{nf_ver}-installer.jar", f"NeoForge {version} ({nf_ver})"
 
+    elif software == "forge":
+        forge_ver = None
+        try:
+            req_f = urllib.request.Request("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json", headers={"User-Agent": get_panel_user_agent(include_email=False)})
+            with urllib.request.urlopen(req_f, timeout=5) as r_f:
+                d_f = json.loads(r_f.read())
+                promos = d_f.get("promos", {})
+                forge_ver = promos.get(f"{version}-recommended") or promos.get(f"{version}-latest")
+        except Exception:
+            pass
+        if not forge_ver:
+            FORGE_FALLBACKS = {
+                "1.21.1": "52.0.37", "1.20.4": "49.0.38", "1.20.2": "48.1.0", "1.20.1": "47.2.0",
+                "1.19.4": "45.2.0", "1.19.2": "43.3.0", "1.18.2": "40.2.0",
+                "1.16.5": "36.2.39", "1.12.2": "14.23.5.2860"
+            }
+            forge_ver = FORGE_FALLBACKS.get(version, "47.2.0")
+        download_url = f"https://maven.minecraftforge.net/net/minecraftforge/forge/{version}-{forge_ver}/forge-{version}-{forge_ver}-installer.jar"
+        return download_url, f"forge-{version}-{forge_ver}-installer.jar", f"Forge {version} ({forge_ver})"
+
+    elif software == "quilt":
+        loader_ver = "0.26.1"
+        try:
+            req_q = urllib.request.Request("https://meta.quiltmc.org/v3/versions/loader", headers={"User-Agent": get_panel_user_agent(include_email=False)})
+            with urllib.request.urlopen(req_q, timeout=5) as r_q:
+                loaders = json.loads(r_q.read())
+                if loaders and isinstance(loaders, list):
+                    loader_ver = loaders[0].get("version", loader_ver)
+        except Exception:
+            pass
+        download_url = f"https://meta.quiltmc.org/v3/versions/loader/{version}/{loader_ver}/server/jar"
+        return download_url, f"quilt-server-mc.{version}-loader.{loader_ver}.jar", f"Quilt {version} (Loader {loader_ver})"
+
+    elif software == "velocity":
+        vel_ver = version if version and version != "latest" else "3.3.0-SNAPSHOT"
+        build_num = "436"
+        try:
+            req_v = urllib.request.Request(f"https://fill.papermc.io/v3/projects/velocity/versions/{vel_ver}", headers={"User-Agent": get_panel_user_agent(include_email=False)})
+            with urllib.request.urlopen(req_v, timeout=5) as r_v:
+                d_v = json.loads(r_v.read())
+                builds = d_v.get("builds", [])
+                build_num = builds[-1] if builds else "436"
+        except Exception:
+            pass
+        download_url = f"https://fill.papermc.io/v3/projects/velocity/versions/{vel_ver}/builds/{build_num}/downloads/velocity-{vel_ver}-{build_num}.jar"
+        return download_url, f"velocity-{vel_ver}-{build_num}.jar", f"Velocity {vel_ver} (Build #{build_num})"
+
+    elif software == "bungeecord":
+        download_url = "https://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar"
+        return download_url, "BungeeCord.jar", "BungeeCord (Latest Stable)"
+
+    elif software in ("bedrock", "bds"):
+        bds_ver = version if version and version != "latest" else "1.21.51.02"
+        download_url = f"https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-{bds_ver}.zip"
+        return download_url, f"bedrock-server-{bds_ver}.zip", f"Bedrock Dedicated Server {bds_ver}"
+
     else:
         raise ValueError(f"Unsupported software engine: {software}")
 
@@ -3042,19 +3204,52 @@ def api_software_versions():
                     except Exception:
                         return [0]
                 versions = sorted(list(mc_set), key=v_key, reverse=True)
+        elif sw == "forge":
+            versions = ["1.21.1", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.19.2", "1.18.2", "1.16.5", "1.12.2"]
+        elif sw == "quilt":
+            versions = ["1.21.4", "1.21.1", "1.20.4", "1.20.1", "1.19.4", "1.18.2"]
+        elif sw == "velocity":
+            versions = ["3.3.0-SNAPSHOT", "3.2.0-SNAPSHOT", "3.1.2-SNAPSHOT"]
+        elif sw == "bungeecord":
+            versions = ["latest"]
+        elif sw in ("bedrock", "bds"):
+            versions = ["1.21.51.02", "1.21.44.01", "1.21.30.03", "1.20.81.01"]
     except Exception as e:
         if sw == "neoforge":
             versions = ["26.3", "26.2", "26.1", "1.21.11", "1.21.10", "1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2"]
+        elif sw == "forge":
+            versions = ["1.21.1", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.19.2", "1.18.2", "1.16.5", "1.12.2"]
+        elif sw == "quilt":
+            versions = ["1.21.4", "1.21.1", "1.20.4", "1.20.1", "1.19.4", "1.18.2"]
+        elif sw == "velocity":
+            versions = ["3.3.0-SNAPSHOT", "3.2.0-SNAPSHOT"]
+        elif sw == "bungeecord":
+            versions = ["latest"]
+        elif sw in ("bedrock", "bds"):
+            versions = ["1.21.51.02", "1.21.44.01", "1.21.30.03", "1.20.81.01"]
         else:
             versions = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10", "1.21.4", "1.20.4", "1.19.4", "1.18.2", "1.16.5"]
 
-    return jsonify({"success": True, "software": sw, "versions": versions})
+    def get_java_req(v_str):
+        if not v_str or v_str == "latest": return "Java 21+"
+        if v_str.startswith("26.") or v_str.startswith("1.21") or v_str.startswith("1.20.5") or v_str.startswith("1.20.6"):
+            return "Java 21+"
+        elif v_str.startswith("1.18") or v_str.startswith("1.19") or v_str.startswith("1.20"):
+            return "Java 17+"
+        elif v_str.startswith("1.17"):
+            return "Java 16"
+        elif any(v_str.startswith(x) for x in ["1.16", "1.15", "1.14", "1.13", "1.12", "1.8", "1.7"]):
+            return "Java 8 / 11"
+        return "Java 17 / 21"
+
+    advisories = {v: get_java_req(v) for v in versions}
+    return jsonify({"success": True, "software": sw, "versions": versions, "java_advisories": advisories})
 
 @app.route("/api/software/install", methods=["POST"])
 @login_required
 def api_software_install():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "software" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "software" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Software management required."}), 403
 
     data = request.get_json() or {}
@@ -3091,16 +3286,42 @@ def api_software_install():
             time.sleep(1)
             shutil.copy2(jar_path, bak_path)
 
-        if software == "neoforge":
+        if data.get("clean_install"):
+            try:
+                create_backup("pre_reinstall_snapshot")
+            except Exception:
+                pass
+            mods_dir = os.path.join(SERVER_DIR, "mods")
+            if os.path.exists(mods_dir):
+                shutil.rmtree(mods_dir, ignore_errors=True)
+                os.makedirs(mods_dir, exist_ok=True)
+            libraries_dir = os.path.join(SERVER_DIR, "libraries")
+            if os.path.exists(libraries_dir):
+                shutil.rmtree(libraries_dir, ignore_errors=True)
+
+        if software in ("neoforge", "forge"):
             java_bin = detect_java_bin()
+            args = [java_bin, "-jar", tmp_path, "--installServer", SERVER_DIR]
+            if software == "neoforge":
+                args.append("--server.jar")
             res = subprocess.run(
-                [java_bin, "-jar", tmp_path, "--installServer", SERVER_DIR, "--server.jar"],
+                args,
                 capture_output=True,
                 text=True,
                 timeout=180
             )
             if res.returncode != 0:
-                raise RuntimeError(f"NeoForge installer failed (code {res.returncode}): {res.stderr or res.stdout}")
+                raise RuntimeError(f"{software.capitalize()} installer failed (code {res.returncode}): {res.stderr or res.stdout}")
+            if os.path.exists(tmp_path):
+                try: os.remove(tmp_path)
+                except Exception: pass
+        elif software in ("bedrock", "bds"):
+            with zipfile.ZipFile(tmp_path, "r") as zf:
+                zf.extractall(SERVER_DIR)
+            bds_bin = os.path.join(SERVER_DIR, "bedrock_server")
+            if os.path.exists(bds_bin):
+                try: os.chmod(bds_bin, 0o755)
+                except Exception: pass
             if os.path.exists(tmp_path):
                 try: os.remove(tmp_path)
                 except Exception: pass
@@ -3157,10 +3378,10 @@ def api_software_install():
             }, f_meta, indent=2)
 
         # Ensure appropriate addon directory exists for software engine
-        if software in ["fabric", "neoforge"]:
+        if software in ["fabric", "neoforge", "forge", "quilt"]:
             os.makedirs(os.path.join(SERVER_DIR, "mods"), exist_ok=True)
             os.makedirs(os.path.join(SERVER_DIR, "mods", "disabled"), exist_ok=True)
-        elif software in ["purpur", "paper", "spigot"]:
+        elif software in ["purpur", "paper", "spigot", "velocity", "bungeecord"]:
             os.makedirs(os.path.join(SERVER_DIR, "plugins"), exist_ok=True)
             os.makedirs(os.path.join(SERVER_DIR, "plugins", "disabled"), exist_ok=True)
 
@@ -3196,7 +3417,7 @@ def api_software_install():
 @login_required
 def api_software_rollback():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "software" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "software" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Software management required."}), 403
 
     jar_path = os.path.join(SERVER_DIR, "server.jar")
@@ -3209,8 +3430,7 @@ def api_software_rollback():
     try:
         send_mc_command("save-all")
         time.sleep(1)
-        if SERVICE_NAME:
-            subprocess.run(["sudo", "systemctl", "stop", SERVICE_NAME])
+        server_runner.stop()
         time.sleep(1)
 
         current_tmp = os.path.join(SERVER_DIR, "server.jar.pre_rollback")
@@ -3222,8 +3442,7 @@ def api_software_rollback():
             try: os.remove(meta_path)
             except Exception: pass
 
-        if SERVICE_NAME:
-            subprocess.run(["sudo", "systemctl", "start", SERVICE_NAME])
+        server_runner.start()
         return jsonify({"success": True, "message": "Successfully rolled back to previous server jar and restarted service."})
     except Exception as e:
         return jsonify({"success": False, "message": f"Rollback failed: {str(e)}"}), 500
@@ -3436,7 +3655,7 @@ def api_broadcast():
 @login_required
 def api_command():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "console" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "console" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Console permission required."}), 403
 
     data = request.get_json() or {}
@@ -3973,107 +4192,477 @@ def api_plugin_upload():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+# ── Multi-Source Addon & Mod Search Helpers (Modrinth / CurseForge / SpigotMC / BukkitDev) ──
+CURSEFORGE_API_KEY = os.environ.get("CURSEFORGE_API_KEY", "$2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm")
+
+def get_cf_download_url(file_obj):
+    if not file_obj or not isinstance(file_obj, dict):
+        return ""
+    if file_obj.get("downloadUrl"):
+        return file_obj["downloadUrl"]
+    fid = file_obj.get("id")
+    fn = file_obj.get("fileName") or "addon.jar"
+    if fid and isinstance(fid, int):
+        return f"https://edge.forgecdn.net/files/{fid // 1000}/{fid % 1000}/{urllib.parse.quote(fn)}"
+    return ""
+
+def resolve_clean_jar_name(initial_name, resp_url, resp_headers=None):
+    fn = ""
+    if initial_name and initial_name.lower().endswith(".jar") and initial_name.lower() != "download.jar":
+        fn = os.path.basename(initial_name)
+    elif resp_headers:
+        try:
+            fn = resp_headers.get_filename() or ""
+        except Exception:
+            fn = ""
+    if not fn or not fn.lower().endswith(".jar") or fn.lower() == "download.jar":
+        path_name = os.path.basename(urllib.parse.urlparse(resp_url).path)
+        if path_name and path_name.lower().endswith(".jar") and path_name.lower() != "download.jar":
+            fn = path_name
+    if not fn or not fn.lower().endswith(".jar") or fn.lower() == "download.jar":
+        base = re.sub(r'[^a-zA-Z0-9_\-\.\(\)\+ ]', '_', initial_name or "addon").strip()
+        fn = f"{base or 'addon'}.jar"
+    fn = re.sub(r'[^a-zA-Z0-9_\-\.\(\)\+ ]', '_', fn)
+    if not fn.lower().endswith(".jar"):
+        fn += ".jar"
+    return fn
+
+def search_spigot(query, limit=15):
+    encoded_q = urllib.parse.quote(query)
+    url = f"https://api.spiget.org/v2/search/resources/{encoded_q}?size={limit}"
+    req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return []
+        raise
+    except Exception:
+        return []
+
+    hits = []
+    for item in data:
+        rid = item.get("id")
+        name = item.get("name", "Unknown")
+        tag = item.get("tag", "")
+        author_id = item.get("author", {}).get("id") if isinstance(item.get("author"), dict) else item.get("author")
+        author_str = f"Spigot #{author_id}" if author_id else "SpigotMC"
+        icon_obj = item.get("icon") or {}
+        icon_url = icon_obj.get("url") if isinstance(icon_obj, dict) and icon_obj.get("url") else ""
+        if icon_url and not icon_url.startswith("http"):
+            icon_url = f"https://www.spigotmc.org/{icon_url}"
+
+        safe_fn = "".join(c for c in name if c.isalnum() or c in (" ", "-", "_")).strip()
+        filename = f"{safe_fn}.jar" if safe_fn else f"spigot-{rid}.jar"
+
+        hits.append({
+            "project_id": str(rid),
+            "slug": str(rid),
+            "title": name,
+            "description": tag,
+            "author": author_str,
+            "downloads": item.get("downloads", 0),
+            "icon_url": icon_url,
+            "categories": ["spigot", "paper", "bukkit"],
+            "source": "spigotmc",
+            "download_url": f"https://api.spiget.org/v2/resources/{rid}/download",
+            "filename": filename
+        })
+    return hits
+
+def search_curseforge(query, class_id=6, loader=None, limit=15, source_name="curseforge"):
+    params = {
+        "gameId": 432,
+        "classId": class_id,
+        "searchFilter": query,
+        "pageSize": limit,
+        "sortField": 2,  # TotalDownloads
+        "sortOrder": "desc"
+    }
+    loader_map = {"forge": 1, "fabric": 4, "quilt": 5, "neoforge": 6}
+    if loader and loader.lower() in loader_map:
+        params["modLoaderType"] = loader_map[loader.lower()]
+
+    url = "https://api.curseforge.com/v1/mods/search?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={
+        "User-Agent": get_panel_user_agent(),
+        "x-api-key": CURSEFORGE_API_KEY,
+        "Accept": "application/json"
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return []
+        raise
+    except Exception:
+        return []
+
+    hits = []
+    for item in data.get("data", []):
+        latest_files = item.get("latestFiles", [])
+        loaders = set()
+        matched_file = None
+        for f in latest_files:
+            gvs = [str(g).lower() for g in f.get("gameVersions", [])]
+            for l in ["fabric", "forge", "neoforge", "quilt"]:
+                if l in gvs:
+                    loaders.add(l)
+            if not matched_file and f.get("fileName", "").endswith(".jar"):
+                if loader and loader.lower() in loader_map:
+                    if loader.lower() in gvs:
+                        matched_file = f
+                else:
+                    matched_file = f
+        if not matched_file and latest_files:
+            matched_file = latest_files[0]
+
+        dl_url = get_cf_download_url(matched_file) if matched_file else ""
+        filename = matched_file.get("fileName") if matched_file else ""
+
+        authors = [a.get("name") for a in item.get("authors", []) if a.get("name")]
+        author_str = ", ".join(authors) if authors else "Unknown"
+        logo_url = (item.get("logo") or {}).get("thumbnailUrl") or (item.get("logo") or {}).get("url") or ""
+
+        hits.append({
+            "project_id": str(item.get("id")),
+            "slug": item.get("slug") or str(item.get("id")),
+            "title": item.get("name") or "Unknown",
+            "description": item.get("summary") or "",
+            "author": author_str,
+            "downloads": item.get("downloadCount", 0),
+            "icon_url": logo_url,
+            "categories": [str(c.get("name")) for c in item.get("categories", [])],
+            "loaders": sorted(list(loaders)),
+            "compatible_neoforge": "neoforge" in loaders,
+            "compatible_fabric": "fabric" in loaders,
+            "compatible_forge": "forge" in loaders,
+            "compatible_quilt": "quilt" in loaders,
+            "versions": [],
+            "source": source_name,
+            "download_url": dl_url,
+            "filename": filename
+        })
+    return hits
+
+def search_bukkitdev(query, limit=15):
+    return search_curseforge(query, class_id=5, loader=None, limit=limit, source_name="bukkitdev")
+
 @app.route("/api/plugins/search")
 @login_required
 def api_plugins_search():
     query = request.args.get("q", "").strip()
+    source = request.args.get("source", "modrinth").strip().lower()
+    try:
+        limit = max(1, min(50, int(request.args.get("limit", 15))))
+    except (ValueError, TypeError):
+        limit = 15
     if not query:
-        return jsonify({"hits": [], "total_hits": 0})
+        return jsonify({"hits": [], "total_hits": 0, "success": True})
 
     try:
-        params = {
-            "query": query,
-            "facets": '[["project_type:plugin"]]',
-            "limit": 15
-        }
-        url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode())
+        if source == "spigotmc":
+            hits = search_spigot(query, limit=limit)
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "source": "spigotmc"})
+        elif source == "bukkitdev":
+            hits = search_bukkitdev(query, limit=limit)
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "source": "bukkitdev"})
+        elif source == "curseforge":
+            hits = search_curseforge(query, class_id=5, limit=limit, source_name="curseforge")
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "source": "curseforge"})
+        else:
+            params = {
+                "query": query,
+                "facets": '[["project_type:plugin"]]',
+                "limit": limit
+            }
+            url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
 
-        hits = []
-        for h in data.get("hits", []):
-            hits.append({
-                "project_id": h.get("project_id"),
-                "slug": h.get("slug"),
-                "title": h.get("title"),
-                "description": h.get("description", ""),
-                "author": h.get("author", "Unknown"),
-                "downloads": h.get("downloads", 0),
-                "icon_url": h.get("icon_url") or "",
-                "categories": h.get("categories", [])
-            })
-        return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits))})
+            hits = []
+            for h in data.get("hits", []):
+                hits.append({
+                    "project_id": h.get("project_id"),
+                    "slug": h.get("slug"),
+                    "title": h.get("title"),
+                    "description": h.get("description", ""),
+                    "author": h.get("author", "Unknown"),
+                    "downloads": h.get("downloads", 0),
+                    "icon_url": h.get("icon_url") or "",
+                    "categories": h.get("categories", []),
+                    "source": "modrinth"
+                })
+            return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits)), "source": "modrinth"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e), "hits": []}), 500
+
+@app.route("/api/modrinth/versions")
+@app.route("/api/plugins/project-versions")
+@app.route("/api/mods/project-versions")
+@login_required
+def api_modrinth_project_versions():
+    project_id = request.args.get("project_id", "").strip()
+    if not project_id or not re.match(r'^[a-zA-Z0-9_\-]+$', project_id):
+        return jsonify({"success": False, "message": "Invalid project_id", "versions": []}), 400
+    source = request.args.get("source", "modrinth").strip().lower()
+
+    if source in ["curseforge", "bukkitdev"]:
+        try:
+            url = f"https://api.curseforge.com/v1/mods/{project_id}/files?pageSize=25"
+            req = urllib.request.Request(url, headers={
+                "User-Agent": get_panel_user_agent(),
+                "x-api-key": CURSEFORGE_API_KEY,
+                "Accept": "application/json"
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw_data = json.loads(resp.read().decode())
+            raw_files = raw_data.get("data", [])
+            versions = []
+            for f in raw_files:
+                dl_url = get_cf_download_url(f)
+                gvs = f.get("gameVersions", [])
+                loaders = [l for l in gvs if l.lower() in ["fabric", "forge", "neoforge", "quilt", "paper", "spigot", "purpur"]]
+                mc_versions = [v for v in gvs if (v.replace(".", "").isdigit() or any(c.isdigit() for c in v)) and not any(k in v.lower() for k in ["forge", "fabric", "client", "server", "quilt"])]
+                rel_type = "release" if f.get("releaseType") == 1 else ("beta" if f.get("releaseType") == 2 else "alpha")
+                versions.append({
+                    "id": str(f.get("id")),
+                    "name": f.get("displayName") or f.get("fileName"),
+                    "version_number": f.get("fileName"),
+                    "game_versions": mc_versions or gvs,
+                    "loaders": loaders,
+                    "version_type": rel_type,
+                    "date_published": (f.get("fileDate") or "")[:10],
+                    "downloads": 0,
+                    "files": [{
+                        "url": dl_url,
+                        "filename": f.get("fileName"),
+                        "primary": True,
+                        "size": f.get("fileLength", 0),
+                        "size_kb": round(f.get("fileLength", 0) / 1024, 1)
+                    }]
+                })
+            return jsonify({"success": True, "versions": versions})
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e), "versions": []}), 500
+
+    if source == "spigotmc":
+        try:
+            url = f"https://api.spiget.org/v2/resources/{project_id}/versions?size=25"
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw_v = json.loads(resp.read().decode())
+            versions = []
+            for v in raw_v:
+                vid = str(v.get("id"))
+                vname = v.get("name") or "v1.0"
+                dl_url = f"https://api.spiget.org/v2/resources/{project_id}/download?version={vid}"
+                fn = f"spigot-{project_id}-{vname}.jar"
+                date_str = ""
+                if v.get("releaseDate"):
+                    try:
+                        date_str = datetime.datetime.fromtimestamp(v.get("releaseDate")).strftime("%Y-%m-%d")
+                    except Exception:
+                        date_str = "N/A"
+                versions.append({
+                    "id": vid,
+                    "name": vname,
+                    "version_number": vname,
+                    "game_versions": ["Spigot / Paper"],
+                    "loaders": ["Spigot", "Paper"],
+                    "version_type": "release",
+                    "date_published": date_str,
+                    "downloads": v.get("downloads", 0),
+                    "files": [{
+                        "url": dl_url,
+                        "filename": fn,
+                        "primary": True,
+                        "size": 0,
+                        "size_kb": 0
+                    }]
+                })
+            versions.reverse()
+            return jsonify({"success": True, "versions": versions})
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e), "versions": []}), 500
+
+    loaders = request.args.get("loaders", "").strip()
+    game_version = request.args.get("game_version", "").strip()
+
+    params = {}
+    if loaders and loaders != "all":
+        loader_list = [l.strip().lower() for l in loaders.split(",") if l.strip()]
+        params["loaders"] = json.dumps(loader_list)
+    if game_version and game_version != "all":
+        params["game_versions"] = json.dumps([game_version])
+
+    url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+
+    req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            raw_versions = json.loads(resp.read().decode())
+        versions = []
+        for v in raw_versions:
+            files = []
+            for f in v.get("files", []):
+                files.append({
+                    "url": f.get("url"),
+                    "filename": f.get("filename"),
+                    "primary": f.get("primary", False),
+                    "size": f.get("size", 0),
+                    "size_kb": round(f.get("size", 0) / 1024, 1)
+                })
+            versions.append({
+                "id": v.get("id"),
+                "name": v.get("name"),
+                "version_number": v.get("version_number"),
+                "game_versions": v.get("game_versions", []),
+                "loaders": v.get("loaders", []),
+                "version_type": v.get("version_type", "release"),
+                "date_published": v.get("date_published", "")[:10],
+                "downloads": v.get("downloads", 0),
+                "files": files
+            })
+        return jsonify({"success": True, "versions": versions})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e), "versions": []}), 500
 
 @app.route("/api/plugin/install_online", methods=["POST"])
 @login_required
 def api_plugin_install_online():
     data = request.get_json() or {}
-    project_id = data.get("project_id", "").strip()
+    project_id = str(data.get("project_id", "")).strip()
+    direct_url = data.get("download_url", "").strip()
+    direct_name = data.get("filename", "").strip()
+    version_id = str(data.get("version_id", "")).strip()
+    source = (data.get("source") or request.args.get("source") or "modrinth").strip().lower()
 
-    if not project_id:
-        return jsonify({"success": False, "message": "Project ID required"}), 400
+    if not project_id and not direct_url:
+        return jsonify({"success": False, "message": "Project ID or download URL required"}), 400
 
     try:
-        loaders = '["paper","spigot","purpur","bukkit"]'
-        url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+        download_url = direct_url
+        filename = direct_name
 
-        versions = []
-        try:
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                versions = json.loads(resp.read().decode())
-        except Exception:
-            pass
+        if not download_url:
+            if source == "spigotmc":
+                if version_id:
+                    download_url = f"https://api.spiget.org/v2/resources/{project_id}/download?version={version_id}"
+                else:
+                    download_url = f"https://api.spiget.org/v2/resources/{project_id}/download"
+                if not filename:
+                    filename = f"spigot-{project_id}.jar"
+            elif source in ["curseforge", "bukkitdev"]:
+                if version_id:
+                    url_f = f"https://api.curseforge.com/v1/mods/{project_id}/files/{version_id}"
+                    req_f = urllib.request.Request(url_f, headers={
+                        "User-Agent": get_panel_user_agent(),
+                        "x-api-key": CURSEFORGE_API_KEY,
+                        "Accept": "application/json"
+                    })
+                    with urllib.request.urlopen(req_f, timeout=8) as resp:
+                        f_info = json.loads(resp.read().decode()).get("data", {})
+                    download_url = get_cf_download_url(f_info)
+                    filename = f_info.get("fileName")
+                if not download_url:
+                    url_files = f"https://api.curseforge.com/v1/mods/{project_id}/files?pageSize=10"
+                    req_files = urllib.request.Request(url_files, headers={
+                        "User-Agent": get_panel_user_agent(),
+                        "x-api-key": CURSEFORGE_API_KEY,
+                        "Accept": "application/json"
+                    })
+                    with urllib.request.urlopen(req_files, timeout=8) as resp:
+                        files_list = json.loads(resp.read().decode()).get("data", [])
+                    target_f = next((f for f in files_list if f.get("fileName", "").endswith(".jar")), None)
+                    if target_f:
+                        download_url = get_cf_download_url(target_f)
+                        filename = target_f.get("fileName")
+            elif source == "modrinth":
+                if version_id:
+                    url_v = f"https://api.modrinth.com/v2/version/{version_id}"
+                    req_v = urllib.request.Request(url_v, headers={"User-Agent": get_panel_user_agent()})
+                    with urllib.request.urlopen(req_v, timeout=8) as resp:
+                        v_info = json.loads(resp.read().decode())
+                    files = v_info.get("files", [])
+                    target_f = next((f for f in files if f.get("primary") and f.get("filename", "").endswith(".jar")), None)
+                    if not target_f:
+                        target_f = next((f for f in files if f.get("filename", "").endswith(".jar")), None)
+                    if target_f:
+                        download_url = target_f.get("url")
+                        filename = target_f.get("filename")
 
-        if not versions:
-            url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": get_panel_user_agent()})
-            with urllib.request.urlopen(req_all, timeout=8) as resp:
-                versions = json.loads(resp.read().decode())
+                if not download_url:
+                    loaders = '["paper","spigot","purpur","bukkit"]'
+                    url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
+                    req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
 
-        if not versions:
-            return jsonify({"success": False, "message": "No release versions found for this plugin."}), 404
+                    versions = []
+                    try:
+                        with urllib.request.urlopen(req, timeout=8) as resp:
+                            versions = json.loads(resp.read().decode())
+                    except Exception:
+                        pass
 
-        target_file = None
-        for v in versions:
-            files = v.get("files", [])
-            for f in files:
-                if f.get("primary", False) and f.get("filename", "").endswith(".jar"):
-                    target_file = f
-                    break
-            if target_file:
-                break
-            for f in files:
-                if f.get("filename", "").endswith(".jar"):
-                    target_file = f
-                    break
-            if target_file:
-                break
+                    if not versions:
+                        url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
+                        req_all = urllib.request.Request(url_all, headers={"User-Agent": get_panel_user_agent()})
+                        with urllib.request.urlopen(req_all, timeout=8) as resp:
+                            versions = json.loads(resp.read().decode())
 
-        if not target_file:
-            return jsonify({"success": False, "message": "No valid .jar file found in project releases."}), 404
+                    if not versions:
+                        return jsonify({"success": False, "message": "No release versions found for this plugin."}), 404
 
-        download_url = target_file.get("url")
-        filename = target_file.get("filename")
+                    target_file = None
+                    for v in versions:
+                        files = v.get("files", [])
+                        for f in files:
+                            if f.get("primary", False) and f.get("filename", "").endswith(".jar"):
+                                target_file = f
+                                break
+                        if target_file:
+                            break
+                        for f in files:
+                            if f.get("filename", "").endswith(".jar"):
+                                target_file = f
+                                break
+                        if target_file:
+                            break
+
+                    if not target_file:
+                        return jsonify({"success": False, "message": "No valid .jar file found in project releases."}), 404
+
+                    download_url = target_file.get("url")
+                    filename = target_file.get("filename")
+
+        if not download_url:
+            return jsonify({"success": False, "message": "Failed to determine plugin download URL."}), 404
 
         plugins_dir = os.path.join(SERVER_DIR, "plugins")
         os.makedirs(plugins_dir, exist_ok=True)
-        dest_path = os.path.join(plugins_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": get_panel_user_agent()})
-        with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
-            shutil.copyfileobj(resp, out_f)
+        dl_req = urllib.request.Request(download_url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 FiestaPanel/1.0"
+        })
+        with urllib.request.urlopen(dl_req, timeout=30) as resp:
+            final_url = resp.geturl()
+            safe_name = resolve_clean_jar_name(filename, final_url, resp.headers)
+            dest_path = os.path.join(plugins_dir, safe_name)
+            with open(dest_path, "wb") as out_f:
+                shutil.copyfileobj(resp, out_f)
 
         file_size_kb = round(os.path.getsize(dest_path) / 1024, 1)
 
         return jsonify({
             "success": True,
-            "filename": filename,
+            "filename": safe_name,
             "size_kb": file_size_kb,
-            "message": f"Successfully downloaded {filename} ({file_size_kb} KB)! Restart server to load."
+            "message": f"Successfully downloaded {safe_name} ({file_size_kb} KB)! Restart server to load."
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
@@ -4262,46 +4851,63 @@ def api_mod_upload():
 @login_required
 def api_mods_search():
     query = request.args.get("q", "").strip()
+    source = request.args.get("source", "modrinth").strip().lower()
     loader = request.args.get("loader", "").strip().lower()
+    try:
+        limit = max(1, min(50, int(request.args.get("limit", 15))))
+    except (ValueError, TypeError):
+        limit = 15
     if not query:
-        return jsonify({"hits": [], "total_hits": 0})
+        return jsonify({"hits": [], "total_hits": 0, "success": True})
 
     try:
-        facets = [["project_type:mod"]]
-        if loader and loader not in ["all", "any"]:
-            facets.append([f"categories:{loader}"])
+        if source == "spigotmc":
+            hits = search_spigot(query, limit=limit)
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "loader": loader, "source": "spigotmc"})
+        elif source == "bukkitdev":
+            hits = search_bukkitdev(query, limit=limit)
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "loader": loader, "source": "bukkitdev"})
+        elif source == "curseforge":
+            hits = search_curseforge(query, class_id=6, loader=loader if loader not in ["all", "any"] else None, limit=limit, source_name="curseforge")
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "loader": loader, "source": "curseforge"})
+        else:
+            facets = [["project_type:mod"]]
+            if loader and loader not in ["all", "any"]:
+                facets.append([f"categories:{loader}"])
 
-        params = {
-            "query": query,
-            "facets": json.dumps(facets),
-            "limit": 15
-        }
-        url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
-        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.loads(resp.read().decode())
+            params = {
+                "query": query,
+                "facets": json.dumps(facets),
+                "limit": limit
+            }
+            url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
 
-        hits = []
-        for h in data.get("hits", []):
-            cats = h.get("categories", [])
-            mod_loaders = [c for c in cats if c in ["neoforge", "fabric", "forge", "quilt"]]
-            hits.append({
-                "project_id": h.get("project_id"),
-                "slug": h.get("slug"),
-                "title": h.get("title"),
-                "description": h.get("description", ""),
-                "author": h.get("author", "Unknown"),
-                "downloads": h.get("downloads", 0),
-                "icon_url": h.get("icon_url") or "",
-                "categories": cats,
-                "loaders": mod_loaders,
-                "compatible_neoforge": "neoforge" in cats,
-                "compatible_fabric": "fabric" in cats,
-                "compatible_forge": "forge" in cats,
-                "versions": h.get("versions", [])[:6],
-                "server_side": h.get("server_side", "")
-            })
-        return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits)), "loader": loader})
+            hits = []
+            for h in data.get("hits", []):
+                cats = h.get("categories", [])
+                mod_loaders = [c for c in cats if c in ["neoforge", "fabric", "forge", "quilt"]]
+                hits.append({
+                    "project_id": h.get("project_id"),
+                    "slug": h.get("slug"),
+                    "title": h.get("title"),
+                    "description": h.get("description", ""),
+                    "author": h.get("author", "Unknown"),
+                    "downloads": h.get("downloads", 0),
+                    "icon_url": h.get("icon_url") or "",
+                    "categories": cats,
+                    "loaders": mod_loaders,
+                    "compatible_neoforge": "neoforge" in cats,
+                    "compatible_fabric": "fabric" in cats,
+                    "compatible_forge": "forge" in cats,
+                    "compatible_quilt": "quilt" in cats,
+                    "versions": h.get("versions", [])[:6],
+                    "server_side": h.get("server_side", ""),
+                    "source": "modrinth"
+                })
+            return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits)), "loader": loader, "source": "modrinth"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e), "hits": []}), 500
 
@@ -4309,95 +4915,426 @@ def api_mods_search():
 @login_required
 def api_mod_install_online():
     data = request.get_json() or {}
-    project_id = data.get("project_id", "").strip()
+    project_id = str(data.get("project_id", "")).strip()
+    direct_url = data.get("download_url", "").strip()
+    direct_name = data.get("filename", "").strip()
+    version_id = str(data.get("version_id", "")).strip()
     target_loader = data.get("loader", "").strip().lower()
+    source = (data.get("source") or request.args.get("source") or "modrinth").strip().lower()
 
-    if not project_id:
-        return jsonify({"success": False, "message": "Project ID required"}), 400
+    if not project_id and not direct_url:
+        return jsonify({"success": False, "message": "Project ID or download URL required"}), 400
 
     try:
-        # Determine target loader from param or server context
-        if not target_loader or target_loader in ["all", "any"]:
-            ctx = detect_addon_context()
-            sw_name = ctx.get("software", "").lower()
-            if "neoforge" in sw_name:
-                target_loader = "neoforge"
-            elif "fabric" in sw_name:
-                target_loader = "fabric"
-            elif "forge" in sw_name:
-                target_loader = "forge"
+        download_url = direct_url
+        filename = direct_name
 
-        versions = []
-        if target_loader and target_loader not in ["all", "any"]:
-            loaders_param = json.dumps([target_loader])
-            url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders_param})
-            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
-            try:
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    versions = json.loads(resp.read().decode())
-            except Exception:
-                pass
+        if not download_url:
+            if source == "spigotmc":
+                if version_id:
+                    download_url = f"https://api.spiget.org/v2/resources/{project_id}/download?version={version_id}"
+                else:
+                    download_url = f"https://api.spiget.org/v2/resources/{project_id}/download"
+                if not filename:
+                    filename = f"spigot-{project_id}.jar"
+            elif source in ["curseforge", "bukkitdev"]:
+                if version_id:
+                    url_f = f"https://api.curseforge.com/v1/mods/{project_id}/files/{version_id}"
+                    req_f = urllib.request.Request(url_f, headers={
+                        "User-Agent": get_panel_user_agent(),
+                        "x-api-key": CURSEFORGE_API_KEY,
+                        "Accept": "application/json"
+                    })
+                    with urllib.request.urlopen(req_f, timeout=8) as resp:
+                        f_info = json.loads(resp.read().decode()).get("data", {})
+                    download_url = get_cf_download_url(f_info)
+                    filename = f_info.get("fileName")
+                if not download_url:
+                    url_files = f"https://api.curseforge.com/v1/mods/{project_id}/files?pageSize=20"
+                    req_files = urllib.request.Request(url_files, headers={
+                        "User-Agent": get_panel_user_agent(),
+                        "x-api-key": CURSEFORGE_API_KEY,
+                        "Accept": "application/json"
+                    })
+                    with urllib.request.urlopen(req_files, timeout=8) as resp:
+                        files_list = json.loads(resp.read().decode()).get("data", [])
+                    matched = None
+                    if target_loader and target_loader not in ["all", "any"]:
+                        for f in files_list:
+                            gvs = [str(g).lower() for g in f.get("gameVersions", [])]
+                            if target_loader in gvs and f.get("fileName", "").endswith(".jar"):
+                                matched = f
+                                break
+                    if not matched:
+                        matched = next((f for f in files_list if f.get("fileName", "").endswith(".jar")), None)
+                    if matched:
+                        download_url = get_cf_download_url(matched)
+                        filename = matched.get("fileName")
+            elif source == "modrinth":
+                if version_id:
+                    url_v = f"https://api.modrinth.com/v2/version/{version_id}"
+                    req_v = urllib.request.Request(url_v, headers={"User-Agent": get_panel_user_agent()})
+                    with urllib.request.urlopen(req_v, timeout=8) as resp:
+                        v_info = json.loads(resp.read().decode())
+                    files = v_info.get("files", [])
+                    target_f = next((f for f in files if f.get("primary") and f.get("filename", "").endswith(".jar")), None)
+                    if not target_f:
+                        target_f = next((f for f in files if f.get("filename", "").endswith(".jar")), None)
+                    if target_f:
+                        download_url = target_f.get("url")
+                        filename = target_f.get("filename")
 
-        if not versions:
-            loaders = '["neoforge","fabric","quilt","forge"]'
-            url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
-            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
-            try:
-                with urllib.request.urlopen(req, timeout=8) as resp:
-                    versions = json.loads(resp.read().decode())
-            except Exception:
-                pass
+                if not download_url:
+                    if not target_loader or target_loader in ["all", "any"]:
+                        ctx = detect_addon_context()
+                        sw_name = ctx.get("software", "").lower()
+                        if "neoforge" in sw_name:
+                            target_loader = "neoforge"
+                        elif "fabric" in sw_name:
+                            target_loader = "fabric"
+                        elif "forge" in sw_name:
+                            target_loader = "forge"
 
-        if not versions:
-            url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
-            req_all = urllib.request.Request(url_all, headers={"User-Agent": get_panel_user_agent()})
-            with urllib.request.urlopen(req_all, timeout=8) as resp:
-                versions = json.loads(resp.read().decode())
+                    versions = []
+                    if target_loader and target_loader not in ["all", "any"]:
+                        loaders_param = json.dumps([target_loader])
+                        url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders_param})
+                        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+                        try:
+                            with urllib.request.urlopen(req, timeout=8) as resp:
+                                versions = json.loads(resp.read().decode())
+                        except Exception:
+                            pass
 
-        if not versions:
-            return jsonify({"success": False, "message": "No release versions found for this mod."}), 404
+                    if not versions:
+                        loaders = '["neoforge","fabric","quilt","forge"]'
+                        url = f"https://api.modrinth.com/v2/project/{project_id}/version?" + urllib.parse.urlencode({"loaders": loaders})
+                        req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+                        try:
+                            with urllib.request.urlopen(req, timeout=8) as resp:
+                                versions = json.loads(resp.read().decode())
+                        except Exception:
+                            pass
 
-        target_file = None
-        for v in versions:
-            files = v.get("files", [])
-            for f in files:
-                if f.get("primary", False) and f.get("filename", "").endswith(".jar"):
-                    target_file = f
-                    break
-            if target_file:
-                break
-            for f in files:
-                if f.get("filename", "").endswith(".jar"):
-                    target_file = f
-                    break
-            if target_file:
-                break
+                    if not versions:
+                        url_all = f"https://api.modrinth.com/v2/project/{project_id}/version"
+                        req_all = urllib.request.Request(url_all, headers={"User-Agent": get_panel_user_agent()})
+                        with urllib.request.urlopen(req_all, timeout=8) as resp:
+                            versions = json.loads(resp.read().decode())
 
-        if not target_file:
-            return jsonify({"success": False, "message": "No valid .jar file found in project releases."}), 404
+                    if not versions:
+                        return jsonify({"success": False, "message": "No release versions found for this mod."}), 404
 
-        download_url = target_file.get("url")
-        filename = target_file.get("filename")
+                    target_file = None
+                    for v in versions:
+                        files = v.get("files", [])
+                        for f in files:
+                            if f.get("primary", False) and f.get("filename", "").endswith(".jar"):
+                                target_file = f
+                                break
+                        if target_file:
+                            break
+                        for f in files:
+                            if f.get("filename", "").endswith(".jar"):
+                                target_file = f
+                                break
+                        if target_file:
+                            break
+
+                    if not target_file:
+                        return jsonify({"success": False, "message": "No valid .jar file found in project releases."}), 404
+
+                    download_url = target_file.get("url")
+                    filename = target_file.get("filename")
+
+        if not download_url:
+            return jsonify({"success": False, "message": "Failed to determine mod download URL."}), 404
 
         mods_dir = os.path.join(SERVER_DIR, "mods")
         os.makedirs(mods_dir, exist_ok=True)
-        dest_path = os.path.join(mods_dir, filename)
 
-        dl_req = urllib.request.Request(download_url, headers={"User-Agent": get_panel_user_agent()})
-        with urllib.request.urlopen(dl_req, timeout=30) as resp, open(dest_path, "wb") as out_f:
-            shutil.copyfileobj(resp, out_f)
+        dl_req = urllib.request.Request(download_url, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 FiestaPanel/1.0"
+        })
+        with urllib.request.urlopen(dl_req, timeout=30) as resp:
+            final_url = resp.geturl()
+            safe_name = resolve_clean_jar_name(filename, final_url, resp.headers)
+            dest_path = os.path.join(mods_dir, safe_name)
+            with open(dest_path, "wb") as out_f:
+                shutil.copyfileobj(resp, out_f)
 
         file_size_kb = round(os.path.getsize(dest_path) / 1024, 1)
-
         loader_note = f" (for {target_loader})" if target_loader and target_loader not in ["all", "any"] else ""
         return jsonify({
             "success": True,
-            "filename": filename,
+            "filename": safe_name,
             "size_kb": file_size_kb,
-            "message": f"Successfully downloaded mod {filename}{loader_note} ({file_size_kb} KB)! Restart server to load."
+            "message": f"Successfully downloaded mod {safe_name}{loader_note} ({file_size_kb} KB)! Restart server to load."
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Download failed: {str(e)}"}), 500
+
+# ── Modpack Install & Management Systems (Aternos Style) ────────────
+@app.route("/api/modpacks/search")
+@login_required
+def api_modpacks_search():
+    query = request.args.get("q", "").strip()
+    source = request.args.get("source", "modrinth").strip().lower()
+    try:
+        limit = max(1, min(50, int(request.args.get("limit", 15))))
+    except (ValueError, TypeError):
+        limit = 15
+    loader = request.args.get("loader", "").strip().lower()
+
+    try:
+        if source == "curseforge":
+            hits = search_curseforge(query, class_id=4471, loader=loader if loader not in ["all", "any"] else None, limit=limit, source_name="curseforge")
+            return jsonify({"success": True, "hits": hits, "total_hits": len(hits), "source": "curseforge"})
+        else:
+            facets = [["project_type:modpack"]]
+            if loader and loader not in ["all", "any"]:
+                facets.append([f"categories:{loader}"])
+
+            params = {
+                "facets": json.dumps(facets),
+                "limit": limit
+            }
+            if query:
+                params["query"] = query
+
+            url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
+            req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode())
+            hits = []
+            for h in data.get("hits", []):
+                hits.append({
+                    "project_id": h.get("project_id"),
+                    "slug": h.get("slug"),
+                    "title": h.get("title"),
+                    "description": h.get("description", ""),
+                    "author": h.get("author", "Unknown"),
+                    "downloads": h.get("downloads", 0),
+                    "icon_url": h.get("icon_url") or "",
+                    "categories": h.get("categories", []),
+                    "versions": h.get("versions", [])[:6],
+                    "source": "modrinth"
+                })
+            return jsonify({"success": True, "hits": hits, "total_hits": data.get("total_hits", len(hits)), "source": "modrinth"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "hits": []}), 500
+
+@app.route("/api/modpacks/versions")
+@login_required
+def api_modpacks_versions():
+    project_id = request.args.get("project_id", "").strip()
+    if not project_id or not re.match(r'^[a-zA-Z0-9_\-]+$', project_id):
+        return jsonify({"success": False, "message": "Invalid project_id", "versions": []}), 400
+    source = request.args.get("source", "modrinth").strip().lower()
+
+    if source in ["curseforge"]:
+        try:
+            url = f"https://api.curseforge.com/v1/mods/{project_id}/files?pageSize=20"
+            req = urllib.request.Request(url, headers={
+                "User-Agent": get_panel_user_agent(),
+                "x-api-key": CURSEFORGE_API_KEY,
+                "Accept": "application/json"
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw_data = json.loads(resp.read().decode())
+            raw_files = raw_data.get("data", [])
+            versions = []
+            for f in raw_files:
+                dl_url = get_cf_download_url(f)
+                versions.append({
+                    "id": str(f.get("id")),
+                    "name": f.get("displayName") or f.get("fileName"),
+                    "version_number": f.get("fileName"),
+                    "game_versions": f.get("gameVersions", []),
+                    "loaders": [l for l in f.get("gameVersions", []) if l.lower() in ["fabric", "forge", "neoforge", "quilt"]],
+                    "date_published": (f.get("fileDate") or "")[:10],
+                    "files": [{
+                        "url": dl_url,
+                        "filename": f.get("fileName"),
+                        "primary": True,
+                        "size_mb": round(f.get("fileLength", 0) / (1024*1024), 2)
+                    }]
+                })
+            return jsonify({"success": True, "versions": versions})
+        except Exception as e:
+            return jsonify({"success": False, "message": str(e), "versions": []}), 500
+
+    url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+    req = urllib.request.Request(url, headers={"User-Agent": get_panel_user_agent()})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw_v = json.loads(resp.read().decode())
+        versions = []
+        for v in raw_v:
+            files = []
+            for f in v.get("files", []):
+                files.append({
+                    "url": f.get("url"),
+                    "filename": f.get("filename"),
+                    "primary": f.get("primary", False),
+                    "size_mb": round(f.get("size", 0) / (1024*1024), 2)
+                })
+            versions.append({
+                "id": v.get("id"),
+                "name": v.get("name"),
+                "version_number": v.get("version_number"),
+                "game_versions": v.get("game_versions", []),
+                "loaders": v.get("loaders", []),
+                "date_published": v.get("date_published", "")[:10],
+                "files": files
+            })
+        return jsonify({"success": True, "versions": versions})
+    except urllib.error.HTTPError as e:
+        status_code = 404 if e.code == 404 else 502
+        return jsonify({"success": False, "error": f"Modpack not found: {e.code}", "versions": []}), status_code
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "versions": []}), 500
+
+@app.route("/api/modpacks/install", methods=["POST"])
+@login_required
+def api_modpacks_install():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "software" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Software or File manager permission required."}), 403
+
+    file_obj = request.files.get("file")
+    data = (request.form.to_dict() if request.form else None) or request.get_json(silent=True) or {}
+
+    project_id = data.get("project_id", "").strip()
+    version_id = data.get("version_id", "").strip()
+    download_url = data.get("download_url", "").strip()
+    filename = data.get("filename", "").strip()
+    create_backup = str(data.get("create_backup", "true")).lower() in ("true", "1")
+
+    # Stop server if running
+    was_running = server_runner.is_running()
+    if was_running:
+        send_mc_command("save-all")
+        send_mc_command("say [Server] Installing modpack, stopping server...")
+        time.sleep(1)
+        server_runner.stop()
+        time.sleep(1)
+
+    # Optional backup
+    if create_backup:
+        try:
+            b_dir = get_backup_dir()
+            b_name = f"pre_modpack_backup_{int(time.time())}.tar.gz"
+            b_path = os.path.join(b_dir, b_name)
+            with tarfile.open(b_path, "w:gz") as tar:
+                for item in os.listdir(SERVER_DIR):
+                    if item.endswith((".tar.gz", ".zip")) or item == "backups":
+                        continue
+                    full_p = os.path.join(SERVER_DIR, item)
+                    tar.add(full_p, arcname=item)
+        except Exception:
+            pass
+
+    temp_mrpack = os.path.join(SERVER_DIR, f"modpack_{int(time.time())}.mrpack")
+    try:
+        if file_obj and file_obj.filename:
+            file_obj.save(temp_mrpack)
+        elif download_url:
+            req = urllib.request.Request(download_url, headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(req, timeout=60) as resp, open(temp_mrpack, "wb") as f_out:
+                shutil.copyfileobj(resp, f_out)
+        elif project_id:
+            v_url = f"https://api.modrinth.com/v2/project/{project_id}/version"
+            req = urllib.request.Request(v_url, headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                v_list = json.loads(resp.read().decode())
+            if not v_list:
+                return jsonify({"success": False, "message": "No versions found for modpack."}), 404
+            target_v = v_list[0]
+            if version_id:
+                for v in v_list:
+                    if v.get("id") == version_id:
+                        target_v = v
+                        break
+            files = target_v.get("files", [])
+            mrpack_f = next((f for f in files if f.get("filename", "").endswith(".mrpack")), files[0] if files else None)
+            if not mrpack_f or not mrpack_f.get("url"):
+                return jsonify({"success": False, "message": "No .mrpack download file found."}), 404
+
+            dl_req = urllib.request.Request(mrpack_f["url"], headers={"User-Agent": get_panel_user_agent()})
+            with urllib.request.urlopen(dl_req, timeout=60) as resp, open(temp_mrpack, "wb") as f_out:
+                shutil.copyfileobj(resp, f_out)
+        else:
+            return jsonify({"success": False, "message": "No modpack or file specified."}), 400
+
+        installed_mods = 0
+        extracted_configs = 0
+        manifest = {}
+
+        with zipfile.ZipFile(temp_mrpack, "r") as zf:
+            if "modrinth.index.json" in zf.namelist():
+                manifest = json.loads(zf.read("modrinth.index.json").decode("utf-8"))
+
+            for member in zf.namelist():
+                if member.startswith("overrides/") and not member.endswith("/"):
+                    rel_dest = member[len("overrides/"):]
+                    abs_dest = os.path.join(SERVER_DIR, rel_dest)
+                    if safe_fiesta_path(rel_dest):
+                        os.makedirs(os.path.dirname(abs_dest), exist_ok=True)
+                        with zf.open(member) as src, open(abs_dest, "wb") as dst:
+                            shutil.copyfileobj(src, dst)
+                        extracted_configs += 1
+
+        files = manifest.get("files", [])
+        mods_dir = os.path.join(SERVER_DIR, "mods")
+        os.makedirs(mods_dir, exist_ok=True)
+
+        for item in files:
+            p = item.get("path", "")
+            dls = item.get("downloads", [])
+            if p and dls and p.startswith("mods/"):
+                mod_filename = os.path.basename(p)
+                mod_dest = os.path.join(mods_dir, mod_filename)
+                mod_url = dls[0]
+                try:
+                    m_req = urllib.request.Request(mod_url, headers={"User-Agent": get_panel_user_agent()})
+                    with urllib.request.urlopen(m_req, timeout=20) as resp, open(mod_dest, "wb") as mf:
+                        shutil.copyfileobj(resp, mf)
+                    installed_mods += 1
+                except Exception:
+                    pass
+
+        meta_info = {
+            "name": manifest.get("name", filename or "Custom Modpack"),
+            "versionId": manifest.get("versionId", version_id),
+            "summary": manifest.get("summary", ""),
+            "dependencies": manifest.get("dependencies", {}),
+            "installed_mods": installed_mods,
+            "installed_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        with open(os.path.join(SERVER_DIR, "installed_modpack.json"), "w", encoding="utf-8") as f:
+            json.dump(meta_info, f, indent=2)
+
+        if os.path.exists(temp_mrpack):
+            try: os.remove(temp_mrpack)
+            except Exception: pass
+
+        if str(data.get("autostart", was_running)).lower() in ("true", "1", "yes", True):
+            server_runner.start()
+
+        return jsonify({
+            "success": True,
+            "message": f"Modpack '{meta_info['name']}' installed successfully! Installed {installed_mods} mods and {extracted_configs} configuration files.",
+            "meta": meta_info
+        })
+    except Exception as e:
+        if os.path.exists(temp_mrpack):
+            try: os.remove(temp_mrpack)
+            except Exception: pass
+
+        if str(data.get("autostart", was_running)).lower() in ("true", "1", "yes", True):
+            server_runner.start()
+        return jsonify({"success": False, "message": f"Modpack installation failed: {str(e)}"}), 500
 
 # ── Web Panel Addons & Extensions System ─────────────────────────────
 @app.route("/api/panel-addons", methods=["GET"])
@@ -4714,7 +5651,7 @@ def api_admin_addons_discord_link():
     data = request.get_json(silent=True) or {}
     discord_url = str(data.get("discord_url") or data.get("url") or "").strip()
     if not discord_url or not (discord_url.startswith("http://") or discord_url.startswith("https://")):
-        return jsonify({"success": False, "error": "Please enter a valid Discord invite URL (e.g. https://discord.gg/fiestasmp)."}), 400
+        return jsonify({"success": False, "error": "Please enter a valid Discord invite URL (e.g. https://discord.gg/yourserver)."}), 400
 
     repo = addon_manager.load_repository()
     repo["community_discord"] = discord_url
@@ -5054,7 +5991,7 @@ def api_get_backups():
 @login_required
 def api_create_backup():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     def backup_task():
@@ -5066,8 +6003,16 @@ def api_create_backup():
         send_mc_command("save-all")
         time.sleep(2)
         try:
+            def exclude_backups(tarinfo):
+                if tarinfo.name.endswith((".tar.gz", ".tar.zst", ".zip", ".tar.bz2", ".tar.xz")):
+                    return None
+                parts = tarinfo.name.split("/")
+                if "backups" in parts or ".fiesta_server.pid" in parts:
+                    return None
+                return tarinfo
+
             with tarfile.open(target_tar, "w:gz") as tar:
-                tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR))
+                tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR), filter=exclude_backups)
             # Trigger cloud sync if enabled
             c_cfg = cloud_backup_mgr.load_config()
             if c_cfg.get("enabled") and c_cfg.get("auto_sync", True):
@@ -5094,7 +6039,7 @@ def api_download_backup():
 @login_required
 def api_delete_backup():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     data = request.get_json() or {}
@@ -5127,7 +6072,7 @@ def api_backup_cloud_config():
         return jsonify({"success": True, "config": cfg})
 
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     data = request.get_json() or {}
@@ -5140,7 +6085,7 @@ def api_backup_cloud_config():
 @login_required
 def api_backup_cloud_test():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     data = request.get_json()
@@ -5165,7 +6110,7 @@ def api_backup_cloud_list():
 @login_required
 def api_backup_cloud_upload():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     data = request.get_json() or {}
@@ -5191,7 +6136,7 @@ def api_backup_cloud_upload():
 @login_required
 def api_backup_cloud_download():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     data = request.get_json() or {}
@@ -5210,7 +6155,7 @@ def api_backup_cloud_download():
 @login_required
 def api_backup_cloud_delete():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Backups permission required."}), 403
 
     data = request.get_json() or {}
@@ -5246,7 +6191,7 @@ def format_file_size(size_bytes):
 @login_required
 def api_files_list():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
 
     rel_path = request.args.get("path", "").strip().lstrip("/")
@@ -5341,7 +6286,7 @@ def api_files_read():
 @login_required
 def api_files_save():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
 
     data = request.get_json() or {}
@@ -5367,7 +6312,7 @@ def api_files_save():
 @login_required
 def api_files_delete():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
 
     data = request.get_json() or {}
@@ -5391,7 +6336,7 @@ def api_files_delete():
 @login_required
 def api_files_upload():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
 
     if "file" not in request.files:
@@ -5417,7 +6362,7 @@ def api_files_upload():
 @login_required
 def api_files_mkdir():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
 
     data = request.get_json() or {}
@@ -5441,7 +6386,7 @@ def api_files_mkdir():
 @login_required
 def api_files_new_file():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
 
     data = request.get_json() or {}
@@ -5474,6 +6419,233 @@ def api_files_download():
         return jsonify({"success": False, "message": "File not found"}), 404
 
     return send_file(abs_path, as_attachment=True, download_name=os.path.basename(abs_path))
+
+@app.route("/api/files/rename", methods=["POST"])
+@login_required
+def api_files_rename():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
+    data = request.get_json() or {}
+    old_rel = data.get("old_path", "").strip()
+    new_name = data.get("new_name", "").strip()
+
+    if not old_rel or not new_name:
+        return jsonify({"success": False, "message": "Original path and new name are required."}), 400
+    if "/" in new_name or "\\" in new_name or new_name in (".", ".."):
+        return jsonify({"success": False, "message": "Invalid new filename."}), 400
+
+    abs_old = safe_fiesta_path(old_rel)
+    base_dir = os.path.realpath(SERVER_DIR)
+    if not abs_old or abs_old == base_dir:
+        return jsonify({"success": False, "message": "Cannot rename server root."}), 403
+
+    parent_dir = os.path.dirname(abs_old)
+    abs_new = os.path.join(parent_dir, new_name)
+    if os.path.exists(abs_new):
+        return jsonify({"success": False, "message": f"An item named '{new_name}' already exists."}), 400
+
+    try:
+        shutil.move(abs_old, abs_new)
+        return jsonify({"success": True, "message": f"Renamed to '{new_name}' successfully."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/files/archive", methods=["POST"])
+@login_required
+def api_files_archive():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
+    data = request.get_json() or {}
+    paths = data.get("paths", [])
+    archive_name = (data.get("name") or data.get("archive_name") or "").strip()
+    dest_dir_rel = (data.get("dest_dir") or data.get("destination_dir") or "").strip()
+
+    if not paths:
+        return jsonify({"success": False, "message": "No files selected to archive."}), 400
+    if not archive_name:
+        archive_name = f"archive_{int(time.time())}.zip"
+    if not archive_name.lower().endswith(".zip"):
+        archive_name += ".zip"
+    if "/" in archive_name or "\\" in archive_name:
+        return jsonify({"success": False, "message": "Invalid archive filename."}), 400
+
+    abs_dest_dir = safe_fiesta_path(dest_dir_rel)
+    if not abs_dest_dir or not os.path.isdir(abs_dest_dir):
+        abs_dest_dir = os.path.realpath(SERVER_DIR)
+
+    target_zip = os.path.join(abs_dest_dir, archive_name)
+    try:
+        with zipfile.ZipFile(target_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+            for p in paths:
+                abs_p = safe_fiesta_path(p)
+                if not abs_p or not os.path.exists(abs_p):
+                    continue
+                if os.path.isdir(abs_p):
+                    for root, dirs, files in os.walk(abs_p):
+                        for f in files:
+                            full_f = os.path.join(root, f)
+                            rel_f = os.path.relpath(full_f, SERVER_DIR)
+                            zf.write(full_f, rel_f)
+                else:
+                    rel_p = os.path.relpath(abs_p, SERVER_DIR)
+                    zf.write(abs_p, rel_p)
+        return jsonify({"success": True, "message": f"Created archive '{archive_name}' with {len(paths)} item(s)."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/files/extract", methods=["POST"])
+@login_required
+def api_files_extract():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
+    data = request.get_json() or {}
+    archive_rel = (data.get("path") or data.get("archive_path") or "").strip()
+    dest_dir_rel = (data.get("dest_dir") or data.get("destination_dir") or "").strip()
+
+    abs_archive = safe_fiesta_path(archive_rel)
+    if not abs_archive or not os.path.isfile(abs_archive):
+        return jsonify({"success": False, "message": "Archive file not found."}), 404
+
+    target_dest = safe_fiesta_path(dest_dir_rel)
+    if target_dest and not os.path.exists(target_dest):
+        os.makedirs(target_dest, exist_ok=True)
+    if not target_dest or not os.path.isdir(target_dest):
+        target_dest = os.path.dirname(abs_archive)
+
+    try:
+        lower_name = abs_archive.lower()
+        if lower_name.endswith((".zip", ".mrpack")):
+            with zipfile.ZipFile(abs_archive, "r") as zf:
+                for member in zf.namelist():
+                    abs_target = os.path.realpath(os.path.join(target_dest, member))
+                    if not abs_target.startswith(target_dest + os.sep) and abs_target != target_dest:
+                        raise ValueError(f"Unsafe path in archive: {member}")
+                zf.extractall(target_dest)
+        elif lower_name.endswith((".tar.gz", ".tgz", ".tar.bz2", ".tar.xz", ".tar")):
+            with tarfile.open(abs_archive, "r:*") as tf:
+                for member in tf.getmembers():
+                    abs_target = os.path.realpath(os.path.join(target_dest, member.name))
+                    if not abs_target.startswith(target_dest + os.sep) and abs_target != target_dest:
+                        raise ValueError(f"Unsafe path in archive: {member.name}")
+                tf.extractall(target_dest)
+        else:
+            return jsonify({"success": False, "message": "Unsupported archive format (supports .zip, .mrpack, .tar.gz)."}), 400
+
+        return jsonify({"success": True, "message": f"Successfully extracted '{os.path.basename(abs_archive)}'!"})
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Extraction error: {str(e)}"}), 500
+
+@app.route("/api/files/download_dir")
+@login_required
+def api_files_download_dir():
+    rel_path = request.args.get("path", "").strip()
+    abs_path = safe_fiesta_path(rel_path)
+    if not abs_path or not os.path.isdir(abs_path):
+        return jsonify({"success": False, "message": "Directory not found."}), 404
+
+    base_dir = os.path.realpath(SERVER_DIR)
+    folder_name = os.path.basename(abs_path) if abs_path != base_dir else "server_root"
+
+    backup_dir = get_backup_dir()
+    os.makedirs(backup_dir, exist_ok=True)
+    tmp_zip = os.path.join(backup_dir, f"{folder_name}_{int(time.time())}.zip")
+
+    try:
+        with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(abs_path):
+                for f in files:
+                    full_p = os.path.join(root, f)
+                    rel_f = os.path.relpath(full_p, abs_path)
+                    try:
+                        zf.write(full_p, os.path.join(folder_name, rel_f))
+                    except Exception:
+                        pass
+        return send_file(tmp_zip, as_attachment=True, download_name=f"{folder_name}.zip")
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/files/copy", methods=["POST"])
+@login_required
+def api_files_copy():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
+    data = request.get_json() or {}
+    src_rel = (data.get("path") or data.get("source_path") or "").strip()
+    dest_dir_rel = (data.get("dest_dir") or data.get("destination_dir") or "").strip()
+    new_name = (data.get("new_name") or data.get("target_name") or "").strip()
+
+    abs_src = safe_fiesta_path(src_rel)
+    if not abs_src or not os.path.exists(abs_src):
+        return jsonify({"success": False, "message": "Source item not found."}), 404
+
+    abs_dest_dir = safe_fiesta_path(dest_dir_rel)
+    if not abs_dest_dir or not os.path.isdir(abs_dest_dir):
+        abs_dest_dir = os.path.dirname(abs_src)
+
+    if not new_name:
+        src_base = os.path.basename(abs_src)
+        if "." in src_base and not os.path.isdir(abs_src):
+            parts = src_base.rsplit(".", 1)
+            new_name = f"{parts[0]}_copy.{parts[1]}"
+        else:
+            new_name = f"{src_base}_copy"
+
+    abs_dest = os.path.join(abs_dest_dir, new_name)
+    if os.path.exists(abs_dest):
+        return jsonify({"success": False, "message": f"Target '{new_name}' already exists."}), 400
+
+    try:
+        if os.path.isdir(abs_src):
+            shutil.copytree(abs_src, abs_dest)
+        else:
+            shutil.copy2(abs_src, abs_dest)
+        return jsonify({"success": True, "message": f"Copied successfully to '{new_name}'."})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/files/batch-delete", methods=["POST"])
+@login_required
+def api_files_batch_delete():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
+    data = request.get_json() or {}
+    paths = data.get("paths", [])
+    if not paths:
+        return jsonify({"success": False, "message": "No files selected."}), 400
+
+    base_dir = os.path.realpath(SERVER_DIR)
+    deleted = 0
+    errors = []
+
+    for p in paths:
+        abs_p = safe_fiesta_path(p)
+        if not abs_p or abs_p == base_dir:
+            continue
+        try:
+            if os.path.isdir(abs_p):
+                shutil.rmtree(abs_p)
+                deleted += 1
+            elif os.path.isfile(abs_p):
+                os.remove(abs_p)
+                deleted += 1
+        except Exception as e:
+            errors.append(f"{os.path.basename(abs_p)}: {str(e)}")
+
+    return jsonify({
+        "success": True,
+        "message": f"Deleted {deleted} item(s)." + (f" ({len(errors)} error(s))" if errors else ""),
+        "deleted_count": deleted
+    })
 
 # ── Configs ──────────────────────────────────────────────────────────────────
 @app.route("/api/configs")
@@ -5525,7 +6697,7 @@ def api_read_config():
 @login_required
 def api_save_config():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied: Parameter editor permission required."}), 403
 
     data = request.get_json() or {}
@@ -5592,7 +6764,7 @@ def api_banned_ips_route():
         return jsonify({"success": True, "ip_bans": ip_bans, "total": len(ip_bans)})
 
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "security" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "players" not in curr_perms and "security" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied"}), 403
 
     if request.method == "POST":
@@ -5634,7 +6806,7 @@ def api_game_options():
             return jsonify({"success": False, "message": str(e)}), 500
 
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied"}), 403
 
     updates = request.get_json() or {}
@@ -5728,6 +6900,7 @@ def api_worlds_list():
             worlds.append({
                 "name": item,
                 "type": dim_type,
+                "is_active": (item == level_name),
                 "size_bytes": total_size,
                 "size_formatted": format_file_size(total_size),
                 "region_files": region_count,
@@ -5736,11 +6909,15 @@ def api_worlds_list():
                 "level_type": level_type,
                 "last_modified": datetime.datetime.fromtimestamp(last_mtime).strftime("%Y-%m-%d %H:%M") if last_mtime else "N/A"
             })
-    return jsonify({"success": True, "worlds": worlds})
+    return jsonify({"success": True, "worlds": worlds, "active_world": level_name})
 
 @app.route("/api/worlds/download")
 @login_required
 def api_worlds_download():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Backups or Parameter permission required."}), 403
+
     world_name = request.args.get("world", "").strip()
     if not world_name:
         return jsonify({"success": False, "message": "World name required"}), 400
@@ -5771,8 +6948,11 @@ def api_worlds_download():
 @login_required
 def api_worlds_upload():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and session.get("role") != "owner":
-        return jsonify({"success": False, "message": "Owner permission required for world upload"}), 403
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Owner or Administrator permission required for world upload"}), 403
+
+    if server_runner.is_running():
+        return jsonify({"success": False, "message": "Minecraft server must be stopped before uploading or replacing world files."}), 400
 
     if "file" not in request.files:
         return jsonify({"success": False, "message": "No file uploaded"}), 400
@@ -5845,8 +7025,11 @@ def api_worlds_upload():
 @login_required
 def api_worlds_reset_dimension():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and session.get("role") != "owner":
-        return jsonify({"success": False, "message": "Owner permission required for dimension reset"}), 403
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Owner or Administrator permission required for dimension reset"}), 403
+
+    if server_runner.is_running():
+        return jsonify({"success": False, "message": "Minecraft server must be stopped before resetting dimensions to prevent world corruption."}), 400
 
     data = request.get_json() or {}
     dim = data.get("dimension", "").lower().strip()
@@ -5904,11 +7087,21 @@ def api_worlds_reset_dimension():
 @login_required
 def api_worlds_generate():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and session.get("role") != "owner":
-        return jsonify({"success": False, "message": "Owner permission required for world generation"}), 403
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Owner or Administrator permission required for world generation"}), 403
+
+    if server_runner.is_running():
+        return jsonify({"success": False, "message": "Minecraft server must be stopped before generating a new world."}), 400
 
     data = request.get_json() or {}
     world_name = data.get("name", get_main_level_name()).strip()
+    safe_name = os.path.basename(world_name)
+    if not safe_name or safe_name in (".", "..") or "/" in world_name or "\\" in world_name:
+        return jsonify({"success": False, "message": "Invalid world directory name."}), 400
+    abs_world = safe_fiesta_path(safe_name)
+    if not abs_world:
+        return jsonify({"success": False, "message": "World target path must remain inside server directory."}), 400
+
     seed = data.get("seed", "").strip()
     level_type = data.get("type", "minecraft:normal").strip()
     structures = str(data.get("structures", True)).lower()
@@ -5946,11 +7139,10 @@ def api_worlds_generate():
         except Exception:
             pass
 
-    abs_world = os.path.join(SERVER_DIR, world_name)
     if os.path.isdir(abs_world):
         backup_dir = get_backup_dir()
         os.makedirs(backup_dir, exist_ok=True)
-        snap_path = os.path.join(backup_dir, f"pre_gen_{world_name}_{int(time.time())}.zip")
+        snap_path = os.path.join(backup_dir, f"pre_gen_{safe_name}_{int(time.time())}.zip")
         try:
             with zipfile.ZipFile(snap_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 for root, dirs, files in os.walk(abs_world):
@@ -5964,18 +7156,91 @@ def api_worlds_generate():
 
     return jsonify({"success": True, "message": f"New world configuration generated with seed '{seed or 'random'}'! Start or reboot the server to create terrain."})
 
+@app.route("/api/worlds/set-active", methods=["POST"])
+@login_required
+def api_worlds_set_active():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Parameter permission required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    world_name = data.get("world", "").strip()
+    safe_name = os.path.basename(world_name)
+    if not safe_name or safe_name in (".", "..") or "/" in world_name or "\\" in world_name:
+        return jsonify({"success": False, "message": "Invalid world name."}), 400
+
+    abs_world = safe_fiesta_path(safe_name)
+    if not abs_world or not os.path.isdir(abs_world):
+        return jsonify({"success": False, "message": f"World directory '{safe_name}' does not exist."}), 404
+
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    lines = []
+    found = False
+    if os.path.exists(props_path):
+        with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                if line.strip().startswith("level-name="):
+                    lines.append(f"level-name={safe_name}\n")
+                    found = True
+                else:
+                    lines.append(line)
+    if not found:
+        lines.append(f"level-name={safe_name}\n")
+
+    with open(props_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+
+    return jsonify({"success": True, "message": f"Active world changed to '{safe_name}'. Restart the server to load this world."})
+
 @app.route("/api/worlds/optimize", methods=["POST"])
 @login_required
 def api_worlds_optimize():
-    send_mc_command("minecraft:save-all flush")
-    return jsonify({"success": True, "message": "World flushed and saved to disk. To run full force-upgrade, reboot server with '--forceUpgrade --eraseCache'."})
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Parameter permission required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    world_name = os.path.basename(data.get("world") or get_main_level_name())
+    mode = data.get("mode", "clean_cache")
+
+    abs_world = safe_fiesta_path(world_name)
+    cleaned_count = 0
+    if abs_world and os.path.isdir(abs_world):
+        if not server_runner.is_running():
+            for root, dirs, files in os.walk(abs_world):
+                for f in files:
+                    if f in ("session.lock", "uid.dat.tmp") or f.endswith(".tmp") or f.endswith(".lock"):
+                        try:
+                            os.remove(os.path.join(root, f))
+                            cleaned_count += 1
+                        except Exception:
+                            pass
+
+    flag_msg = ""
+    if mode in ("force_upgrade", "both"):
+        rt = server_runner.load_runtime_config()
+        jvm_flags = rt.get("jvm_flags", [])
+        if "--forceUpgrade" not in jvm_flags:
+            jvm_flags.append("--forceUpgrade")
+        if "--eraseCache" not in jvm_flags:
+            jvm_flags.append("--eraseCache")
+        rt["jvm_flags"] = jvm_flags
+        server_runner.save_runtime_config(rt)
+        flag_msg = " Configured server to run full force-upgrade on next reboot."
+
+    if server_runner.is_running():
+        send_mc_command("minecraft:save-all flush")
+        return jsonify({"success": True, "message": f"World '{world_name}' flushed to disk.{flag_msg} (Cleaned {cleaned_count} lock files)"})
+    else:
+        return jsonify({"success": True, "message": f"World '{world_name}' optimized! Removed {cleaned_count} temporary/lock files.{flag_msg}"})
 
 @app.route("/api/worlds/datapacks", methods=["GET", "POST"])
 @login_required
 def api_worlds_datapacks():
-    level_name = get_main_level_name()
-    dp_dir = os.path.join(SERVER_DIR, level_name, "datapacks")
-    if not os.path.exists(dp_dir) and os.path.exists(os.path.join(SERVER_DIR, "world", "datapacks")):
+    target_world = request.args.get("world") or (request.form.get("world") if request.form else None) or ((request.get_json(silent=True) or {}).get("world")) or get_main_level_name()
+    target_world = os.path.basename(str(target_world).strip())
+    dp_dir = os.path.join(SERVER_DIR, target_world, "datapacks")
+    if not os.path.exists(dp_dir) and os.path.exists(os.path.join(SERVER_DIR, "world", "datapacks")) and target_world == get_main_level_name():
         dp_dir = os.path.join(SERVER_DIR, "world", "datapacks")
     os.makedirs(dp_dir, exist_ok=True)
 
@@ -6023,7 +7288,7 @@ def api_worlds_datapacks():
                 "size_formatted": format_file_size(size),
                 "is_dir": os.path.isdir(item_path)
             })
-        return jsonify({"success": True, "datapacks": packs})
+        return jsonify({"success": True, "datapacks": packs, "world": target_world})
 
     action = request.form.get("action") or (request.get_json(silent=True) or {}).get("action")
     if action == "upload":
@@ -6034,7 +7299,7 @@ def api_worlds_datapacks():
         dest = os.path.join(dp_dir, safe_name)
         file.save(dest)
         send_mc_command("datapack list")
-        return jsonify({"success": True, "message": f"Datapack '{safe_name}' uploaded successfully!"})
+        return jsonify({"success": True, "message": f"Datapack '{safe_name}' uploaded successfully to world '{target_world}'!"})
 
     if action == "delete":
         name = request.form.get("name") or (request.get_json(silent=True) or {}).get("name")
@@ -6045,7 +7310,7 @@ def api_worlds_datapacks():
                 shutil.rmtree(target)
             else:
                 os.remove(target)
-            return jsonify({"success": True, "message": f"Datapack '{safe_name}' removed."})
+            return jsonify({"success": True, "message": f"Datapack '{safe_name}' removed from world '{target_world}'."})
         return jsonify({"success": False, "message": "Datapack not found"}), 404
 
     if action == "toggle":
@@ -6057,6 +7322,128 @@ def api_worlds_datapacks():
         return jsonify({"success": success, "message": f"Dispatched: {cmd}"})
 
     return jsonify({"success": False, "message": "Unknown action"}), 400
+
+# ── Minecraft MOTD Visual Editor System ───────────────────────────────────────
+def format_motd_preview(raw_motd):
+    colors = {
+        '0': '#000000', '1': '#0000AA', '2': '#00AA00', '3': '#00AAAA',
+        '4': '#AA0000', '5': '#AA00AA', '6': '#FFAA00', '7': '#AAAAAA',
+        '8': '#555555', '9': '#5555FF', 'a': '#55FF55', 'b': '#55FFFF',
+        'c': '#FF5555', 'd': '#FF55FF', 'e': '#FFFF55', 'f': '#FFFFFF'
+    }
+    text = (raw_motd or "").replace('\\n', '\n').replace('&', '§')
+    lines = text.split('\n')
+    formatted_lines = []
+    for line in lines[:2]:
+        out = ''
+        i = 0
+        curr_color = '#AAAAAA'
+        bold = italic = under = strike = obf = False
+        while i < len(line):
+            if line[i] == '§' and i + 1 < len(line):
+                code = line[i+1].lower()
+                if code in colors:
+                    curr_color = colors[code]
+                    bold = italic = under = strike = obf = False
+                elif code == 'l': bold = True
+                elif code == 'o': italic = True
+                elif code == 'n': under = True
+                elif code == 'm': strike = True
+                elif code == 'k': obf = True
+                elif code == 'r':
+                    curr_color = '#AAAAAA'
+                    bold = italic = under = strike = obf = False
+                i += 2
+                continue
+            styles = [f'color:{curr_color}']
+            if bold: styles.append('font-weight:bold')
+            if italic: styles.append('font-style:italic')
+            if under: styles.append('text-decoration:underline')
+            if strike: styles.append('text-decoration:line-through')
+            char = line[i].replace('<', '&lt;').replace('>', '&gt;').replace(' ', '&nbsp;')
+            cls = 'class="mc-obf"' if obf else ''
+            style_str = ";".join(styles)
+            out += f'<span {cls} style="{style_str}">{char}</span>'
+            i += 1
+        formatted_lines.append(out or '<span style="color:#555555;">&nbsp;</span>')
+    return formatted_lines
+
+@app.route("/api/motd", methods=["GET", "POST"])
+@login_required
+def api_motd():
+    props_path = os.path.join(SERVER_DIR, "server.properties")
+    curr_perms = session.get("permissions", [])
+    if request.method == "POST":
+        if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+            return jsonify({"success": False, "message": "Permission denied: Parameter permission required."}), 403
+
+        data = request.get_json(silent=True) or {}
+        line1 = data.get("line1", "").strip()
+        line2 = data.get("line2", "").strip()
+        raw_motd = data.get("motd")
+
+        if raw_motd is None:
+            raw_motd = f"{line1}\\n{line2}" if line2 else line1
+
+        safe_motd = raw_motd.replace("\r", "")
+        stored_motd = safe_motd.replace('&', '§')
+        lines = []
+        found = False
+        if os.path.exists(props_path):
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if line.strip().startswith("motd="):
+                        lines.append(f"motd={stored_motd}\n")
+                        found = True
+                    else:
+                        lines.append(line)
+        if not found:
+            lines.append(f"motd={stored_motd}\n")
+
+        with open(props_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+
+        norm_ret = safe_motd.replace('\\n', '\n')
+        parts_ret = norm_ret.split('\n')
+        l1_ret = parts_ret[0] if len(parts_ret) > 0 else ""
+        l2_ret = parts_ret[1] if len(parts_ret) > 1 else ""
+        preview_html = format_motd_preview(safe_motd)
+        l1_html = preview_html[0] if len(preview_html) > 0 else ""
+        l2_html = preview_html[1] if len(preview_html) > 1 else ""
+        return jsonify({
+            "success": True,
+            "message": "MOTD updated successfully in server.properties!",
+            "motd": safe_motd,
+            "line1": l1_ret,
+            "line2": l2_ret,
+            "line1_html": l1_html,
+            "line2_html": l2_html,
+            "preview_html": preview_html
+        })
+
+    raw_motd = "A Minecraft Server Powered by FiestaPanel"
+    if os.path.exists(props_path):
+        try:
+            with open(props_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if line.strip().startswith("motd="):
+                        raw_motd = line.split("=", 1)[1].strip()
+                        break
+        except Exception:
+            pass
+
+    norm = raw_motd.replace('\\n', '\n')
+    parts = norm.split('\n')
+    line1 = parts[0].replace('§', '&') if len(parts) > 0 else ""
+    line2 = parts[1].replace('§', '&') if len(parts) > 1 else ""
+
+    return jsonify({
+        "success": True,
+        "motd": raw_motd,
+        "line1": line1,
+        "line2": line2,
+        "preview_html": format_motd_preview(raw_motd)
+    })
 
 # ── Log Intelligence & One-Click mclo.gs ───────────────────────────────────────
 @app.route("/api/logs/share-mclogs", methods=["POST"])
@@ -6111,7 +7498,7 @@ def api_logs_analyze():
                     "solution": "Increase memory (-Xmx) or remove heavy entity/chunk loaders."
                 })
             if "FAILED TO BIND TO PORT" in text or "Address already in use" in text:
-                configured_port = int(get_server_properties_dict().get("server-port", 25565))
+                configured_port = get_server_port()
                 findings.append({
                     "severity": "critical",
                     "title": "Port Binding Conflict",
@@ -6150,7 +7537,7 @@ def api_logs_analyze():
 @login_required
 def api_resourcepack_upload():
     curr_perms = session.get("permissions", [])
-    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") != "owner":
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied"}), 403
 
     if "file" not in request.files:
@@ -6171,8 +7558,9 @@ def api_resourcepack_upload():
     pack_hash = sha1.hexdigest()
     pack_size = os.path.getsize(target_path)
 
+    scheme = request.headers.get("X-Forwarded-Proto") or request.scheme or "http"
     host = request.host
-    dl_url = f"http://{host}/static/resourcepack.zip"
+    dl_url = f"{scheme}://{host}/static/resourcepack.zip"
 
     props_path = os.path.join(SERVER_DIR, "server.properties")
     if os.path.exists(props_path):
@@ -6278,8 +7666,16 @@ def _automated_tasks_worker():
                     send_mc_command("save-all")
                     time.sleep(2)
                     try:
+                        def exclude_backups(tarinfo):
+                            if tarinfo.name.endswith((".tar.gz", ".tar.zst", ".zip", ".tar.bz2", ".tar.xz")):
+                                return None
+                            parts = tarinfo.name.split("/")
+                            if "backups" in parts or ".fiesta_server.pid" in parts:
+                                return None
+                            return tarinfo
+
                         with tarfile.open(target_tar, "w:gz") as tar:
-                            tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR))
+                            tar.add(SERVER_DIR, arcname=os.path.basename(SERVER_DIR), filter=exclude_backups)
                         # Auto-sync to cloud if configured
                         c_cfg = cloud_backup_mgr.load_config()
                         if c_cfg.get("enabled") and c_cfg.get("auto_sync", True):
@@ -6360,11 +7756,17 @@ def api_tasks_route():
 @app.route("/api/action", methods=["POST"])
 @login_required
 def api_action():
+    curr_perms = session.get("permissions", [])
+    role = session.get("role", "")
+    is_admin = (role in ("owner", "administrator") or "all" in curr_perms)
+
     data = request.get_json() or {}
     action = data.get("action")
     param = data.get("param", "")
 
     if action == "restart":
+        if not is_admin and "power" not in curr_perms:
+            return jsonify({"success": False, "message": "Permission denied: Power permission required."}), 403
         if not server_runner.is_running():
             return jsonify({"success": False, "message": "Server is already stopped. Cannot restart server."}), 400
         def restart_worker():
@@ -6374,22 +7776,27 @@ def api_action():
         return jsonify({"success": True, "message": "Server reboot sequence initiated!"})
 
     elif action == "save":
+        if not is_admin and "parameters" not in curr_perms and "console" not in curr_perms and "backups" not in curr_perms:
+            return jsonify({"success": False, "message": "Permission denied: Insufficient privileges."}), 403
         send_mc_command("save-all")
         return jsonify({"success": True, "message": "World data flushed and saved to disk (/save-all)!"})
 
-    elif action == "time":
-        send_mc_command(f"minecraft:time set {param or 'day'}")
-        return jsonify({"success": True, "message": f"Time of day changed to {param}!"})
-
-    elif action == "weather":
-        send_mc_command(f"minecraft:weather {param or 'clear'}")
-        return jsonify({"success": True, "message": f"Weather state set to {param}!"})
-
-    elif action == "difficulty":
-        send_mc_command(f"minecraft:difficulty {param or 'normal'}")
-        return jsonify({"success": True, "message": f"Game difficulty set to {param}!"})
+    elif action in ("time", "weather", "difficulty"):
+        if not is_admin and "parameters" not in curr_perms and "console" not in curr_perms:
+            return jsonify({"success": False, "message": "Permission denied: Parameter permission required."}), 403
+        if action == "time":
+            send_mc_command(f"minecraft:time set {param or 'day'}")
+            return jsonify({"success": True, "message": f"Time of day changed to {param}!"})
+        elif action == "weather":
+            send_mc_command(f"minecraft:weather {param or 'clear'}")
+            return jsonify({"success": True, "message": f"Weather state set to {param}!"})
+        elif action == "difficulty":
+            send_mc_command(f"minecraft:difficulty {param or 'normal'}")
+            return jsonify({"success": True, "message": f"Game difficulty set to {param}!"})
 
     elif action == "reload_plugin":
+        if not is_admin and "parameters" not in curr_perms and "console" not in curr_perms:
+            return jsonify({"success": False, "message": "Permission denied: Parameter or Console permission required."}), 403
         if param == "essentials":
             send_mc_command("ess reload")
         elif param == "tab":

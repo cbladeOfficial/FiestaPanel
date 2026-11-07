@@ -85,7 +85,7 @@ Control the in-game environment on the fly:
 
 ---
 
-## ⚙ 6. Parameter & Configuration Editor
+## 6. Parameter & Configuration Editor
 
 Edit `server.properties` through both a graphical GUI and raw text mode:
 - **Dual Mode**:
@@ -168,7 +168,7 @@ Complete world lifecycle management:
 A responsive switchboard for all Minecraft server gameplay flags:
 - **Online Mode Toggle**: Switch between official Mojang account authentication and offline/cracked mode supported via AuthMe.
 - **Player vs Player (PvP)**: Enable or disable combat between players.
-- **White List**: Enforce whitelist access with 1 click.
+- **White List**: Enforce whitelist access with One-Click.
 - **Flight & Command Blocks**: Allow creative flight without kick warnings, and toggle command block automation.
 - **Mob Spawning Controls**: Individual toggle switches for hostile monsters, passive animals, and villagers/NPCs.
 - **Nether Dimension**: Enable or disable Nether portals.

@@ -103,7 +103,9 @@ echo "Target Platform: $(uname -s) ($(uname -m))"
 echo ""
 
 # 2. Configure Minecraft Server Path
-if [ -d "/home/ubuntu/fiesta" ]; then
+if [ -d "$HOME/fiesta" ]; then
+    DEFAULT_MC="$HOME/fiesta"
+elif [ -d "/home/ubuntu/fiesta" ]; then
     DEFAULT_MC="/home/ubuntu/fiesta"
 fi
 
@@ -211,7 +213,7 @@ if [ ! -f "$TARGET_INSTALL_DIR/config.json" ]; then
       "$TARGET_INSTALL_DIR/venv/bin/python3" - "$TARGET_INSTALL_DIR/config.json" <<'PYCONFIG'
 import json, os, sys
 config = {'admin_user': 'admin', 'server_dir': os.environ['FIESTA_SETUP_MC_DIR'],
-          'service_name': 'fiestapanel', 'screen_session': 'fiesta',
+          'service_name': 'minecraft', 'screen_session': 'fiesta',
           'host': '0.0.0.0', 'port': int(os.environ['FIESTA_SETUP_PORT']),
           'autostart': os.environ.get('FIESTA_SETUP_AUTOSTART', 'true').lower() == 'true'}
 with open(sys.argv[1], 'x', encoding='utf-8') as f:
@@ -278,10 +280,10 @@ EOF
         systemctl disable fiestapanel.service >/dev/null 2>&1 || true
     fi
 
-    if [ "$TARGET_INSTALL_DIR" != "/home/ubuntu/fiesta-portal" ]; then
-        systemctl restart fiestapanel.service || true
-    else
+    if systemctl is-active --quiet fiesta-portal.service 2>/dev/null; then
         systemctl restart fiesta-portal.service || true
+    else
+        systemctl restart fiestapanel.service || true
     fi
 elif [ "$IS_DARWIN" = true ]; then
     echo -e "${COLOR_CYAN}[6/6] Configuring macOS launchd auto-start (LaunchAgent)...${COLOR_RESET}"

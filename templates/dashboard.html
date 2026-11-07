@@ -3535,7 +3535,6 @@
           <!-- Notification Bell & Badge Counter -->
           <div style="position: relative; display: inline-block;">
             <button id="btn-notifications-toggle" class="btn-theme-quick" onclick="toggleNotificationsPanel(event)" title="Notifications & Reminders" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; cursor: pointer;">
-              <i class="fa-solid fa-bell" style="font-size: 11px;"></i>
               <span>Alerts</span>
               <span id="notif-badge-count" style="display: none; background: #ef4444; color: #ffffff; font-size: 9px; padding: 0 5px; height: 14px; line-height: 14px; border-radius: 7px; font-weight: bold; margin-left: 2px;">0</span>
             </button>
@@ -3600,6 +3599,7 @@
         <div class="nav-group">
           <div class="nav-parent" onclick="toggleNavGroup('network', this)">Network</div>
           <div class="nav-sub-list" id="sub-network">
+            <div class="nav-sub-item" onclick="selectNavView('network-motd', this)">- Server MOTD Editor</div>
             <div class="nav-sub-item" onclick="selectNavView('network-props', this)">- Server Properties</div>
             <div class="nav-sub-item" onclick="selectNavView('network-geyser', this)">- Geyser / Bedrock</div>
             <div class="nav-sub-item" onclick="selectNavView('network-resourcepack', this)">- Resource Pack Host</div>
@@ -4284,7 +4284,7 @@
           </div>
 
           <!-- Datapacks Management Section -->
-          <div class="section-sub-header" style="margin-top: 18px;">World Datapacks Management (/world/datapacks/)</div>
+          <div class="section-sub-header" id="world-datapacks-box" style="margin-top: 18px;">World Datapacks Management <span id="datapacks-world-label" style="color:var(--sec-bar-bg); font-weight:bold;">(/world/datapacks/)</span></div>
           <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; gap: 8px; align-items: center;">
               <span>Upload Datapack (.zip):</span>
@@ -4369,11 +4369,11 @@
               <td class="val-col">
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                   <span>X:</span>
-                  <input type="number" id="spawn-input-x" class="tp-input-text" style="width: 85px;" value="-58423">
+                  <input type="number" id="spawn-input-x" class="tp-input-text" style="width: 85px;" value="0">
                   <span>Y:</span>
-                  <input type="number" id="spawn-input-y" class="tp-input-text" style="width: 65px;" value="69">
+                  <input type="number" id="spawn-input-y" class="tp-input-text" style="width: 65px;" value="64">
                   <span>Z:</span>
-                  <input type="number" id="spawn-input-z" class="tp-input-text" style="width: 85px;" value="-9669">
+                  <input type="number" id="spawn-input-z" class="tp-input-text" style="width: 85px;" value="0">
                   <span class="inline-hint">(X, Y, Z block coordinates)</span>
                 </div>
               </td>
@@ -4508,6 +4508,110 @@
           </table>
         </section>
 
+        <!-- ════ VIEW: SERVER MOTD EDITOR (ATERNOS STYLE) ════ -->
+        <section id="view-network-motd" class="view-panel" style="display:none;">
+          <div class="section-title-bar">
+            <span>Network - Minecraft Message of the Day (MOTD) Visual Editor</span>
+            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadMotdEditor()">[ Reload ]</button>
+          </div>
+
+          <p class="help-text" style="margin-bottom: 12px;">
+            Customize the message displayed on the Minecraft multiplayer server browser. Use color buttons, styling codes, or hex colors to create a professional server banner.
+          </p>
+
+          <!-- Live Minecraft Multiplayer Server List Preview Box -->
+          <div style="background: #121212; border: 2px solid #2e2e2e; border-radius: 4px; padding: 12px; margin-bottom: 16px; max-width: 650px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+            <div style="color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Minecraft Server List Preview</div>
+            <div style="display: flex; gap: 12px; align-items: center; background: #080808; border: 1px solid #222; padding: 10px; border-radius: 4px;">
+              <div id="motd-preview-icon" style="width: 64px; height: 64px; background: #1a1a1a; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #555;">
+                <i class="fa-solid fa-cube" style="color: #2563eb;"></i>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                  <span id="motd-preview-server-name" style="font-family: monospace, sans-serif; font-size: 14px; font-weight: bold; color: #fff;">Minecraft Server</span>
+                  <div style="display: flex; align-items: center; gap: 8px; font-family: monospace; font-size: 11px;">
+                    <span style="color: #aaa;">0/20</span>
+                    <span title="5 ms" style="color: #55ff55; letter-spacing: -2px;">▂▄▆█</span>
+                  </div>
+                </div>
+                <div id="motd-preview-line1" style="font-family: monospace, sans-serif; font-size: 12px; min-height: 18px; line-height: 18px; white-space: pre; overflow: hidden; text-overflow: ellipsis; color: #aaa;">
+                  A Minecraft Server Powered by FiestaPanel
+                </div>
+                <div id="motd-preview-line2" style="font-family: monospace, sans-serif; font-size: 12px; min-height: 18px; line-height: 18px; white-space: pre; overflow: hidden; text-overflow: ellipsis; color: #aaa;">
+                  &nbsp;
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MOTD Controls -->
+          <div style="background: var(--panel-bg); border: 1px solid var(--border-color); padding: 14px; max-width: 650px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+              <span style="font-weight: bold; font-size: 12px; color: var(--sec-bar-bg);">Formatting Tools</span>
+              <div style="display: flex; gap: 4px;">
+                <select id="motd-preset-select" onchange="applyMotdPreset(this.value)" style="height: 22px; font-size: 11px;">
+                  <option value="">-- Choose a Preset --</option>
+                  <option value="welcome">Welcome to our Server</option>
+                  <option value="survival">Survival SMP - 24/7 Online</option>
+                  <option value="hardcore">Hardcore Survival Experience</option>
+                  <option value="minigames">Minigames &amp; Custom Events</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Color Palette Buttons -->
+            <div style="margin-bottom: 8px;">
+              <div style="font-size: 10px; color: #777; margin-bottom: 4px;">Color Palette (&amp;0 - &amp;f):</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                <button type="button" class="btn-classic" style="background:#000000; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&0')">&amp;0</button>
+                <button type="button" class="btn-classic" style="background:#0000AA; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&1')">&amp;1</button>
+                <button type="button" class="btn-classic" style="background:#00AA00; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&2')">&amp;2</button>
+                <button type="button" class="btn-classic" style="background:#00AAAA; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&3')">&amp;3</button>
+                <button type="button" class="btn-classic" style="background:#AA0000; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&4')">&amp;4</button>
+                <button type="button" class="btn-classic" style="background:#AA00AA; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&5')">&amp;5</button>
+                <button type="button" class="btn-classic" style="background:#FFAA00; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&6')">&amp;6</button>
+                <button type="button" class="btn-classic" style="background:#AAAAAA; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&7')">&amp;7</button>
+                <button type="button" class="btn-classic" style="background:#555555; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&8')">&amp;8</button>
+                <button type="button" class="btn-classic" style="background:#5555FF; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&9')">&amp;9</button>
+                <button type="button" class="btn-classic" style="background:#55FF55; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&a')">&amp;a</button>
+                <button type="button" class="btn-classic" style="background:#55FFFF; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&b')">&amp;b</button>
+                <button type="button" class="btn-classic" style="background:#FF5555; color:#fff; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&c')">&amp;c</button>
+                <button type="button" class="btn-classic" style="background:#FF55FF; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&d')">&amp;d</button>
+                <button type="button" class="btn-classic" style="background:#FFFF55; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&e')">&amp;e</button>
+                <button type="button" class="btn-classic" style="background:#FFFFFF; color:#000; width:26px; height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&f')">&amp;f</button>
+              </div>
+            </div>
+
+            <!-- Styles & Format Buttons -->
+            <div style="margin-bottom: 12px;">
+              <div style="font-size: 10px; color: #777; margin-bottom: 4px;">Styles:</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                <button type="button" class="btn-classic" style="height:22px; font-size:10px; font-weight:bold;" onclick="insertMotdCode('&l')">Bold (&amp;l)</button>
+                <button type="button" class="btn-classic" style="height:22px; font-size:10px; font-style:italic;" onclick="insertMotdCode('&o')">Italic (&amp;o)</button>
+                <button type="button" class="btn-classic" style="height:22px; font-size:10px; text-decoration:underline;" onclick="insertMotdCode('&n')">Underline (&amp;n)</button>
+                <button type="button" class="btn-classic" style="height:22px; font-size:10px; text-decoration:line-through;" onclick="insertMotdCode('&m')">Strike (&amp;m)</button>
+                <button type="button" class="btn-classic" style="height:22px; font-size:10px;" onclick="insertMotdCode('&k')">Magic (&amp;k)</button>
+                <button type="button" class="btn-classic" style="height:22px; font-size:10px; color:#c00;" onclick="insertMotdCode('&r')">Reset (&amp;r)</button>
+              </div>
+            </div>
+
+            <!-- Line 1 and Line 2 Input Fields -->
+            <div style="margin-bottom: 10px;">
+              <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 3px;">Line 1:</label>
+              <input type="text" id="motd-line1-input" style="width: 100%; height: 26px; font-family: monospace; font-size: 12px; box-sizing: border-box;" oninput="updateLiveMotdPreview()" placeholder="e.g. &amp;6Welcome to &amp;bFiesta SMP">
+            </div>
+            <div style="margin-bottom: 14px;">
+              <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 3px;">Line 2:</label>
+              <input type="text" id="motd-line2-input" style="width: 100%; height: 26px; font-family: monospace; font-size: 12px; box-sizing: border-box;" oninput="updateLiveMotdPreview()" placeholder="e.g. &amp;aSurvival &amp;7• &amp;eActive Community">
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span id="motd-save-status" style="font-size: 11px; font-weight: bold; color: var(--sec-bar-bg);"></span>
+              <button class="btn-satin-green" style="height: 28px; padding: 0 20px; font-weight: bold;" onclick="saveMotdSettings()">[ Save MOTD to server.properties ]</button>
+            </div>
+          </div>
+        </section>
+
         <!-- ════ VIEW 5: SERVER PROPERTIES ════ -->
         <section id="view-network-props" class="view-panel" style="display:none;">
           <div class="section-title-bar">Network - Server Properties</div>
@@ -4599,7 +4703,7 @@
           <div class="section-sub-header" style="margin-top: 18px;">Bedrock One-Click Join &amp; Mobile QR Code</div>
           <div style="background: var(--input-bg); border: 1px solid var(--input-border); padding: 14px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
             <div id="bedrock-qr-container" style="text-align: center;">
-              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') | urlencode }}%7C{{ (branding.server_domain or 'play.your-server.net') | urlencode }}%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
+              <img id="bedrock-qr-img" src="/api/connect/qr.png?data=minecraft%3A%2F%2F%3FaddExternalServer%3D{{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') | urlencode }}%7C{{ (branding.server_domain or 'localhost') | urlencode }}%3A19132" width="130" height="130" style="border: 2px solid var(--input-border); background: #ffffff; padding: 4px; display: block;" alt="Bedrock QR Code">
               <div class="inline-hint" style="margin-top: 4px; font-size: 10px;">Scan with Camera</div>
             </div>
             <div style="flex: 1; min-width: 240px;">
@@ -4608,7 +4712,7 @@
                 Players on Android, iOS, Windows Bedrock, or Nintendo Switch can join directly with one tap without manually entering hostnames or ports.
               </p>
               <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') }}|{{ (branding.server_domain or 'play.your-server.net') }}:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
+                <a id="bedrock-direct-link" href="minecraft://?addExternalServer={{ (branding.bedrock_server_name or branding.brand_name or 'Minecraft Server') }}|{{ (branding.server_domain or 'localhost') }}:19132" class="btn-satin-green" style="height: 24px; padding: 0 14px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center;">[ One-Click Bedrock Connect ]</a>
                 <button class="btn-classic" onclick="copyBedrockLink()">[ Copy Bedrock Link ]</button>
               </div>
             </div>
@@ -4925,6 +5029,7 @@
             <span style="font-weight: bold; font-size: 11px; color: #333;">Repository Target:</span>
             <button id="btn-search-target-plugins" class="btn-classic active-tab" onclick="switchSearchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Minecraft Plugins ]</button>
             <button id="btn-search-target-mods" class="btn-classic" onclick="switchSearchAddonMode('mods')" style="padding: 2px 10px;">[ Minecraft Mods ]</button>
+            <button id="btn-search-target-modpacks" class="btn-classic" onclick="switchSearchAddonMode('modpacks')" style="padding: 2px 10px;">[ Modpacks (.mrpack) ]</button>
             <span id="addon-search-badge" style="margin-left: auto; font-size: 11px; color: #555;">Targeting: <strong id="search-target-label" style="color: var(--help-sub-text, #006622);">Purpur / Paper / Spigot</strong> (into <code>/plugins/</code>)</span>
           </div>
 
@@ -4941,9 +5046,18 @@
           <div class="section-sub-header" id="repo-header-text">Modrinth Minecraft Plugins Repository</div>
           <p id="repo-desc-text" style="margin-bottom: 10px; color: #555;">Search verified Purpur/Paper/Spigot plugins from the Modrinth directory and install with One-Click directly into <code>/plugins/</code>.</p>
 
-          <form onsubmit="searchCurrentAddons(event)" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
-            <input type="text" id="plugin-search-input" placeholder="Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)..." style="flex: 1; height: 26px; padding: 0 8px; font-size: 12px;">
-            <button type="submit" class="btn-satin-green" id="btn-addon-search-submit" style="height: 26px; font-size: 11px;">[ Search Plugins ]</button>
+          <form onsubmit="searchCurrentAddons(event)" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 4px; background: #eef2f7; padding: 2px 8px; border: 1px solid #c8d4e2; border-radius: 3px;">
+              <label for="addon-repo-source-select" style="font-weight: bold; font-size: 11px; color: #333;">Repository:</label>
+              <select id="addon-repo-source-select" class="tp-input-select" onchange="onRepoSourceChanged()" style="height: 24px; font-size: 11px; font-weight: bold; padding: 1px 6px; border: 1px solid #7f9db9; border-radius: 2px; background: #fff; cursor: pointer;">
+                <option value="modrinth" selected>Modrinth (Default)</option>
+                <option value="curseforge">CurseForge</option>
+                <option value="spigotmc">SpigotMC (Spiget)</option>
+                <option value="bukkitdev">BukkitDev</option>
+              </select>
+            </div>
+            <input type="text" id="plugin-search-input" placeholder="Type package name (e.g. LuckPerms, Chunky, Vault, CoreProtect, JEI)..." style="flex: 1; min-width: 200px; height: 26px; padding: 0 8px; font-size: 12px;">
+            <button type="submit" class="btn-satin-green" id="btn-addon-search-submit" style="height: 26px; font-size: 11px;">[ Search Packages ]</button>
           </form>
 
           <div id="quick-searches-container" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
@@ -5268,7 +5382,7 @@
             Select a software engine below. Your world data, plugins, and player inventories in <code>/world</code> remain completely preserved. Existing <code>server.jar</code> is backed up automatically.
           </div>
 
-          <!-- 6 Software Type Cards -->
+          <!-- Software Type Cards (Aternos Style Full Suite) -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px;">
             <div class="software-card active" data-sw="purpur" onclick="selectSoftwareType('purpur', this)">
               <div style="font-weight: bold; font-size: 13px; color: var(--sec-bar-bg, #74b21d);">Purpur</div>
@@ -5283,9 +5397,17 @@
               <div style="font-weight: bold; font-size: 13px; color: #375a7f;">Fabric</div>
               <div style="font-size: 9px; color: #666; margin-top: 3px;">Modular lightweight modding loader (Lithium, Sodium, FerriteCore).</div>
             </div>
+            <div class="software-card" data-sw="forge" onclick="selectSoftwareType('forge', this)">
+              <div style="font-weight: bold; font-size: 13px; color: #b45309;">Forge</div>
+              <div style="font-size: 9px; color: #666; margin-top: 3px;">The classic comprehensive modded Minecraft server platform.</div>
+            </div>
             <div class="software-card" data-sw="neoforge" onclick="selectSoftwareType('neoforge', this)">
               <div style="font-weight: bold; font-size: 13px; color: #d97706;">NeoForge</div>
               <div style="font-size: 9px; color: #666; margin-top: 3px;">Modern modded Minecraft server platform &amp; Forge successor. Rich mod ecosystem.</div>
+            </div>
+            <div class="software-card" data-sw="quilt" onclick="selectSoftwareType('quilt', this)">
+              <div style="font-weight: bold; font-size: 13px; color: #7c3aed;">Quilt</div>
+              <div style="font-size: 9px; color: #666; margin-top: 3px;">Modern, modular, open-source loader compatible with most Fabric mods.</div>
             </div>
             <div class="software-card" data-sw="vanilla" onclick="selectSoftwareType('vanilla', this)">
               <div style="font-weight: bold; font-size: 13px; color: #885500;">Vanilla</div>
@@ -5294,6 +5416,18 @@
             <div class="software-card" data-sw="spigot" onclick="selectSoftwareType('spigot', this)">
               <div style="font-weight: bold; font-size: 13px; color: #c0392b;">Spigot</div>
               <div style="font-size: 9px; color: #666; margin-top: 3px;">Classic CraftBukkit server software for legacy plugin compatibility.</div>
+            </div>
+            <div class="software-card" data-sw="bedrock" onclick="selectSoftwareType('bedrock', this)">
+              <div style="font-weight: bold; font-size: 13px; color: #0284c7;">Bedrock (BDS)</div>
+              <div style="font-size: 9px; color: #666; margin-top: 3px;">Official Mojang Bedrock Dedicated Server for iOS, Android, Win10, Consoles.</div>
+            </div>
+            <div class="software-card" data-sw="velocity" onclick="selectSoftwareType('velocity', this)">
+              <div style="font-weight: bold; font-size: 13px; color: #059669;">Velocity</div>
+              <div style="font-size: 9px; color: #666; margin-top: 3px;">Next-generation high performance, secure Minecraft proxy platform.</div>
+            </div>
+            <div class="software-card" data-sw="bungeecord" onclick="selectSoftwareType('bungeecord', this)">
+              <div style="font-weight: bold; font-size: 13px; color: #e11d48;">BungeeCord</div>
+              <div style="font-size: 9px; color: #666; margin-top: 3px;">Classic proxy software uniting multiple servers into a unified network.</div>
             </div>
           </div>
 
@@ -5306,10 +5440,13 @@
             <tr>
               <td class="label-col">Target Game Version:</td>
               <td class="val-col">
-                <select id="sw-version-select" style="width: 220px; font-weight: bold;" onchange="onSoftwareVersionChanged()">
-                  <option value="">Loading versions list...</option>
-                </select>
-                <span id="sw-version-hint" class="inline-hint">(Fetching live from official project API)</span>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <select id="sw-version-select" style="width: 220px; font-weight: bold;" onchange="onSoftwareVersionChanged()">
+                    <option value="">Loading versions list...</option>
+                  </select>
+                  <span id="sw-java-advisory" class="badge-status online" style="display:none; font-size:10px; padding:2px 8px;">Java 21+</span>
+                  <span id="sw-version-hint" class="inline-hint">(Fetching live from official project API)</span>
+                </div>
               </td>
             </tr>
             <tr>
@@ -5364,6 +5501,15 @@
                 </label>
               </td>
             </tr>
+            <tr>
+              <td class="label-col">Clean Reinstall:</td>
+              <td class="val-col">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                  <input type="checkbox" id="sw-opt-clean-install">
+                  <span style="color: #b45309; font-weight: bold;">Clean conflicting mods &amp; libraries (creates safety snapshot backup; recommended when switching between Fabric / Forge / Paper)</span>
+                </label>
+              </td>
+            </tr>
           </table>
 
           <div id="sw-install-progress-box" style="display: none; margin: 12px 0; background: var(--banner-success-bg, #eaf3db); border: 1px solid var(--banner-success-border, #74b21d); padding: 10px;">
@@ -5381,21 +5527,36 @@
         <!-- ════ VIEW 15B: SERVER FILE MANAGER ════ -->
         <section id="view-sys-filemanager" class="view-panel" style="display:none;">
           <div class="section-title-bar">
-            <span>System Tools - Server File Manager</span>
-            <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadFileManager()">[ Refresh ]</button>
+            <span>System Tools - Server File Manager (Aternos Style)</span>
+            <div style="display:flex; gap:4px; align-items:center;">
+              <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadFileManager(currentFmPath)">[ Refresh ]</button>
+            </div>
           </div>
 
           <!-- Breadcrumbs and Action Toolbar -->
-          <div class="fm-toolbar">
+          <div class="fm-toolbar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding:6px 8px; background:var(--panel-bg); border:1px solid var(--border-color);">
             <div id="fm-breadcrumbs" style="font-size: 11px; font-family: monospace; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
               <!-- Breadcrumb chips generated dynamically -->
             </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <input type="text" id="fm-filter-input" placeholder="Filter files..." oninput="filterFileManagerTable()" style="width: 130px; height: 22px;">
-              <input type="file" id="fm-file-input" style="display: none;" onchange="handleFileManagerUpload(this)">
-              <button class="btn-satin-green" style="height: 22px; font-size: 10px;" onclick="document.getElementById('fm-file-input').click()">[ Upload File ]</button>
+            <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+              <input type="text" id="fm-filter-input" placeholder="Search in folder..." oninput="filterFileManagerTable()" style="width: 120px; height: 22px; font-size:11px;">
+              <input type="file" id="fm-file-input" style="display: none;" onchange="handleFileManagerUpload(this)" multiple>
+              <button class="btn-satin-green" style="height: 22px; font-size: 10px;" onclick="document.getElementById('fm-file-input').click()">[ Upload ]</button>
               <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="promptNewFolder()">[ New Folder ]</button>
               <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="promptNewFile()">[ New File ]</button>
+              <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="downloadCurrentFolderZip()">[ Zip Dir ]</button>
+              <button class="btn-classic" style="height: 22px; font-size: 10px; color:var(--help-sub-text, #006622); font-weight:bold;" onclick="triggerFmSnapshotBackup()">[ Backup ]</button>
+              <button class="btn-classic" style="height: 22px; font-size: 10px;" onclick="switchView('sys-backups')">[ Restore ]</button>
+            </div>
+          </div>
+
+          <!-- Batch Action Bar (shown when checkboxes are checked) -->
+          <div id="fm-batch-toolbar" style="display:none; justify-content:space-between; align-items:center; background:#fef3c7; border:1px solid #f59e0b; padding:4px 10px; margin-bottom:8px; font-size:11px;">
+            <div><strong id="fm-selected-count">0</strong> item(s) selected</div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-classic" style="height:22px; font-size:10px;" onclick="executeBatchArchive()">[ Zip Selected ]</button>
+              <button class="btn-danger-red" style="height:22px; font-size:10px;" onclick="executeBatchDelete()">[ Delete Selected ]</button>
+              <button class="btn-classic" style="height:22px; font-size:10px;" onclick="clearBatchSelection()">[ Cancel ]</button>
             </div>
           </div>
 
@@ -5405,15 +5566,16 @@
           <table class="data-grid-table" id="fm-table">
             <thead>
               <tr>
-                <th style="width: 32px; text-align: center;">Type</th>
-                <th>File / Directory Name</th>
-                <th style="width: 90px; text-align: right;">Size</th>
-                <th style="width: 130px;">Last Modified</th>
-                <th style="width: 190px; text-align: center;">Operations</th>
+                <th style="width: 26px; text-align: center;"><input type="checkbox" id="fm-select-all-cb" onchange="toggleSelectAllFiles(this)"></th>
+                <th style="width: 30px; text-align: center;">Type</th>
+                <th>Name</th>
+                <th style="width: 80px; text-align: right;">Size</th>
+                <th style="width: 120px;">Modified</th>
+                <th style="width: 250px; text-align: center;">Actions</th>
               </tr>
             </thead>
             <tbody id="fm-table-body">
-              <tr><td colspan="5" style="text-align: center; color: #888; padding: 25px;">Loading directory items...</td></tr>
+              <tr><td colspan="6" style="text-align: center; color: #888; padding: 25px;">Loading directory items...</td></tr>
             </tbody>
           </table>
         </section>
@@ -6343,7 +6505,7 @@
             </div>
           </div>
           <p class="inline-hint" style="margin-bottom: 14px;">
-            One-click install official and verified extensions to customize and automate your FiestaPanel gateway.
+            One-Click install official and verified extensions to customize and automate your FiestaPanel gateway.
           </p>
 
           <!-- Featured Addons Carousel Banner -->
@@ -6495,7 +6657,7 @@ def on_action(ctx, action_name, payload):
             <ol class="help-text" style="margin: 0 0 10px 20px; padding: 0; line-height: 1.55;">
               <li><strong>Package as ZIP</strong>: Compress your addon directory into a <code>.zip</code> file containing <code>addon.json</code>, <code>main.py</code>, <code>tab.html</code>, and <code>README.md</code>.</li>
               <li><strong>Submit for Review</strong>: Submit a Pull Request to our GitHub repository (<a href="https://github.com/open-fiestasmp/FiestaPanel" target="_blank" rel="noopener noreferrer" style="color: #0284c7; font-weight: bold;">open-fiestasmp/FiestaPanel &nearr;</a>) or send your <code>.zip</code> archive directly to the Fiesta team on our Discord server.</li>
-              <li><strong>Approval &amp; Publishing</strong>: The <strong>FiestaSMP core team will review, security-audit, test, and approve the sent .zip file</strong>. Once approved, the team will deploy it directly to the official Plugin Store catalog so users can one-click install it!</li>
+              <li><strong>Approval &amp; Publishing</strong>: The <strong>FiestaSMP core team will review, security-audit, test, and approve the sent .zip file</strong>. Once approved, the team will deploy it directly to the official Plugin Store catalog so users can One-Click install it!</li>
             </ol>
           </div>
 
@@ -6521,7 +6683,7 @@ def on_action(ctx, action_name, payload):
       <!-- ── RIGHT HELP & DOCUMENTATION ───────────────────────── -->
       <aside class="right-help" id="tp-help-panel">
         <div class="help-header">
-          <span style="color: var(--primary-accent, #74b21d);">ℹ</span> <span id="help-title">Status Help</span>
+          <span id="help-title">Status Help</span>
         </div>
         <div id="help-content">
           <div class="help-sub">LAN / Gateway Status</div>
@@ -6564,8 +6726,14 @@ def on_action(ctx, action_name, payload):
       </div>
       <div class="modal-inner-box" style="padding: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px;">
-          <div>Path: <strong id="fm-editor-filepath" style="font-family: monospace; color: var(--sec-bar-bg);">--</strong></div>
-          <div id="fm-editor-stats" style="color: var(--text-sub); font-size: 10px;">0 lines | 0 bytes</div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>Path: <strong id="fm-editor-filepath" style="font-family: monospace; color: var(--sec-bar-bg);">--</strong></span>
+            <span id="fm-editor-syntax" class="badge-status online" style="font-size: 9px; padding: 1px 6px;">PLAIN</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 10px; color: #888;">[ Ctrl+S to save ]</span>
+            <div id="fm-editor-stats" style="color: var(--text-sub); font-size: 10px;">0 lines | 0 bytes</div>
+          </div>
         </div>
         <textarea id="fm-editor-content" style="width: 100%; height: 460px; font-family: 'Courier New', Courier, monospace; font-size: 12px; border: 1px solid var(--input-border); padding: 6px; box-sizing: border-box; background: var(--input-bg); color: var(--input-text); resize: vertical;" spellcheck="false" oninput="updateEditorStats()"></textarea>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
@@ -6575,6 +6743,45 @@ def on_action(ctx, action_name, payload):
             <button class="btn-classic" style="height: 24px; font-weight: bold;" onclick="closeFileManagerEditor()">[ Close ]</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MOD / PLUGIN / MODPACK VERSION EXPLORER MODAL (ATERNOS STYLE) ────────── -->
+  <div id="tp-version-selector-modal" class="inv-modal-overlay" style="display:none;">
+    <div class="inv-modal-box" style="width: 780px; max-width: 95vw;">
+      <div class="section-title-bar" style="margin-bottom: 0;">
+        <span id="version-modal-title">Package Releases &amp; Version History</span>
+        <button class="btn-classic" style="height: 19px; line-height: 15px; font-weight: bold;" onclick="closeProjectVersionsModal()">[ X ]</button>
+      </div>
+      <div class="modal-inner-box" style="padding: 12px; max-height: calc(85vh - 50px); overflow-y: auto;">
+        <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <div id="version-modal-icon" style="width: 44px; height: 44px; background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 4px;"></div>
+          <div style="flex: 1;">
+            <div id="version-modal-pkg-name" style="font-size: 14px; font-weight: bold; color: var(--sec-bar-bg);">--</div>
+            <div id="version-modal-desc" style="font-size: 11px; color: var(--text-sub); line-height: 1.3;">--</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px;">
+          <strong style="color: #333;">Compatible Release Versions:</strong>
+          <span id="version-modal-status" style="color: #666; font-size: 10.5px;">Loading releases...</span>
+        </div>
+
+        <table class="data-grid-table">
+          <thead>
+            <tr>
+              <th style="width: 140px;">Version</th>
+              <th>Supported Minecraft</th>
+              <th>Loaders</th>
+              <th style="width: 90px;">Published</th>
+              <th style="width: 110px; text-align: center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="version-modal-tbody">
+            <tr><td colspan="5" style="text-align: center; color: #888; padding: 20px;">Fetching version list from repository...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -6637,6 +6844,7 @@ def on_action(ctx, action_name, payload):
           <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" class="perm-cb" value="backups"> <span>Backup &amp; Download Snapshots</span></label>
           <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" class="perm-cb" value="software"> <span>Server Software Management</span></label>
           <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" class="perm-cb" value="access"> <span>Manage Sub-Users &amp; Access</span></label>
+          <label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" class="perm-cb" value="events"> <span>Events &amp; Tournaments</span></label>
         </div>
 
         <div class="btn-row" style="margin-top: 10px;">
@@ -6694,7 +6902,7 @@ def on_action(ctx, action_name, payload):
           <div style="display: flex; gap: 6px; align-items: center;">
             <div id="ext-link-modal-url" class="ext-link-box" style="flex: 1;"></div>
             <button type="button" class="btn-classic" style="height: 30px; font-size: 11px; white-space: nowrap;" onclick="copyExtModalUrl()" id="ext-link-copy-btn">
-              <i class="fa-regular fa-copy"></i> Copy
+              [ Copy ]
             </button>
           </div>
         </div>
@@ -6723,12 +6931,12 @@ def on_action(ctx, action_name, payload):
 
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--table-border, #e2e8f0); padding-top: 12px;">
           <button type="button" class="btn-classic" style="font-size: 10.5px; color: var(--text-sub);" onclick="openTrustedDomainsModal()">
-            <i class="fa-solid fa-shield-halved"></i> Manage Trusted Domains (<span id="ext-link-trusted-count">0</span>)
+            [ Manage Trusted Domains (<span id="ext-link-trusted-count">0</span>) ]
           </button>
           <div style="display: flex; gap: 8px;">
             <button type="button" class="btn-classic" style="height: 28px; padding: 0 14px; font-weight: bold;" onclick="closeExternalLinkModal()">[ Cancel ]</button>
-            <button type="button" id="ext-link-proceed-btn" class="btn-satin-green" style="height: 28px; padding: 0 16px; font-weight: bold; display: flex; align-items: center; gap: 6px;" onclick="proceedExternalLink()">
-              <span>[ Proceed to Site ]</span> <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i>
+            <button type="button" id="ext-link-proceed-btn" class="btn-satin-green" style="height: 28px; padding: 0 16px; font-weight: bold;" onclick="proceedExternalLink()">
+              [ Proceed to Site ]
             </button>
           </div>
         </div>
@@ -6840,7 +7048,7 @@ def on_action(ctx, action_name, payload):
         <!-- Action buttons -->
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-classic" style="height: 26px; padding: 0 10px;" onclick="copyModerationDetails()">
-            <i class="fa-regular fa-copy" style="margin-right: 4px;"></i> [ Copy Details ]
+            [ Copy Details ]
           </button>
           <div style="display: flex; gap: 6px;">
             <button type="button" id="mod-dialog-pardon-btn" class="btn-satin-green" style="height: 26px; padding: 0 12px; display: none;" onclick="pardonFromModerationDialog()">
@@ -6893,7 +7101,7 @@ def on_action(ctx, action_name, payload):
           </label>
           <div style="display: flex; gap: 6px;">
             <button type="button" class="btn-classic" style="height: 26px; padding: 0 10px;" onclick="copyErrorTrace()">
-              <i class="fa-regular fa-copy" style="margin-right: 4px;"></i> [ Copy Trace ]
+              [ Copy Trace ]
             </button>
             <button type="button" class="btn-satin-green" style="height: 26px; padding: 0 12px;" onclick="viewErrorInConsole()">
               [ View in Console ]
@@ -7056,7 +7264,7 @@ def on_action(ctx, action_name, payload):
             <div style="font-size: 11px; color: var(--text-sub, #555); margin-top: 2px;">Instantly opens Google Calendar and prompts to subscribe to this server's live schedule.</div>
           </div>
           <button type="button" class="btn-satin-green" style="padding: 5px 12px; font-size: 11px; font-weight: bold; white-space: nowrap;" onclick="subscribeInGoogleCalendar()">
-            <i class="fa-solid fa-arrow-up-right-from-square" style="margin-right: 4px;"></i>Add to Google Calendar
+            [ Add to Google Calendar ]
           </button>
         </div>
 
@@ -7206,16 +7414,16 @@ def on_action(ctx, action_name, payload):
       <!-- Navigation Tabs (With distinct active tab highlighting) -->
       <div class="addon-modal-tab-bar">
         <button class="addon-modal-tab-btn active-tab" data-tab="docs" onclick="switchAddonModalTab('docs', this)">
-          <i class="fa-solid fa-book-open"></i> Documentation &amp; Setup
+          Documentation &amp; Setup
         </button>
         <button class="addon-modal-tab-btn" data-tab="deps" onclick="switchAddonModalTab('deps', this)">
-          <i class="fa-solid fa-puzzle-piece"></i> Dependencies &amp; Compatibility
+          Dependencies &amp; Compatibility
         </button>
         <button class="addon-modal-tab-btn" data-tab="config" onclick="switchAddonModalTab('config', this)">
-          <i class="fa-solid fa-sliders"></i> Settings Schema
+          Settings Schema
         </button>
         <button class="addon-modal-tab-btn" data-tab="reviews" onclick="switchAddonModalTab('reviews', this)">
-          <i class="fa-solid fa-star"></i> Reviews &amp; Ratings
+          Reviews &amp; Ratings
         </button>
       </div>
 
@@ -7288,6 +7496,13 @@ def on_action(ctx, action_name, payload):
         body: `
           <div class="help-sub">IP Address Blacklist</div>
           <p class="help-text">Prevents targeted IP addresses from establishing network connections to the Minecraft port. Dispatches native pardon-ip commands on unban.</p>
+        `
+      },
+      'network-motd': {
+        title: 'Server MOTD Editor Help',
+        body: `
+          <div class="help-sub">Visual MOTD Designer</div>
+          <p class="help-text">Customize the message of the day displayed on the Minecraft multiplayer server browser. Use color code buttons (&amp;0-&amp;f) and style codes (bold, italic, magic, reset) with live simulated multiplayer list preview.</p>
         `
       },
       'network-resourcepack': {
@@ -7623,6 +7838,7 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'plugins-disabled') loadCurrentDisabledAddons();
       if (viewId === 'plugins-upload') updateUploadTargetDisplay();
       if (viewId === 'world-control') loadWorldSpawnCoordinates();
+      if (viewId === 'network-motd') loadMotdEditor();
       if (viewId === 'network-props') loadServerProps();
       if (viewId === 'network-geyser') renderBedrockConnectAndQr();
       if (viewId === 'network-resourcepack') loadResourcePackInfo();
@@ -7638,6 +7854,19 @@ def on_action(ctx, action_name, payload):
       if (viewId === 'diag-ping') runPingTest();
       if (viewId === 'panel-addons-installed') loadPanelAddons();
       if (viewId === 'panel-addons-store') loadPanelAddonStore();
+    }
+
+    function switchView(viewId, el) {
+      selectNavView(viewId, el);
+    }
+
+    function handleExternalLinkClick(event, href) {
+      if (href) {
+        window.open(href, '_blank', 'noopener,noreferrer');
+      }
+      if (event && event.preventDefault) {
+        event.preventDefault();
+      }
     }
 
     // ── Server Domain Admin Editor & Clipboard Helpers ────────────
@@ -7725,7 +7954,8 @@ def on_action(ctx, action_name, payload):
       copyDomainAddress(getServerDomain(), btn);
     }
     function copyServerIpPort(btn) {
-      copyDomainAddress(getServerDomain() + ':25565', btn);
+      const port = document.getElementById('st-mc-port-val')?.textContent?.trim() || '25565';
+      copyDomainAddress(getServerDomain() + ':' + port, btn);
     }
     function copyDomainAddress(text, btn) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -8710,7 +8940,7 @@ def on_action(ctx, action_name, payload):
       if (countEl) countEl.textContent = getTrustedDomains().length;
 
       const copyBtn = document.getElementById('ext-link-copy-btn');
-      if (copyBtn) copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+      if (copyBtn) copyBtn.textContent = '[ Copy ]';
 
       const modal = document.getElementById('tp-external-link-modal');
       if (modal) modal.style.display = 'flex';
@@ -8751,9 +8981,9 @@ def on_action(ctx, action_name, payload):
       const btn = document.getElementById('ext-link-copy-btn');
       const done = () => {
         if (btn) {
-          btn.innerHTML = '<i class="fa-solid fa-check" style="color: var(--banner-success-text, #16a34a);"></i> Copied!';
+          btn.textContent = '[ Copied! ]';
           setTimeout(() => {
-            if (btn) btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+            if (btn) btn.textContent = '[ Copy ]';
           }, 1500);
         }
       };
@@ -9828,7 +10058,7 @@ def on_action(ctx, action_name, payload):
         `).join('');
       }
 
-      const ipTbody = document.getElementById('ip-bans-table-body');
+      const ipTbody = document.getElementById('ip-bans-table-body') || document.getElementById('dedicated-ip-table-body');
       if (ipTbody) {
         if (!ipBans || !ipBans.length) {
           const searchBox = document.getElementById('ban-search-box');
@@ -9881,8 +10111,10 @@ def on_action(ctx, action_name, payload):
     }
 
     async function executeIpBanFromPanel() {
-      const target = document.getElementById('ban-ip-target').value.trim();
-      const reason = document.getElementById('ban-ip-reason').value.trim() || 'Banned by administrator';
+      const targetEl = document.getElementById('ban-ip-target') || document.getElementById('dedicated-ban-ip');
+      const reasonEl = document.getElementById('ban-ip-reason') || document.getElementById('dedicated-ban-reason');
+      const target = targetEl ? targetEl.value.trim() : '';
+      const reason = (reasonEl ? reasonEl.value.trim() : '') || 'Banned by administrator';
       if (!target) return showBannerAlert('Enter player username or IP address to ban.', true);
       try {
         const res = await fetch('/api/command', {
@@ -9898,8 +10130,8 @@ def on_action(ctx, action_name, payload):
           reason: reason,
           source: 'Web Portal Admin'
         });
-        document.getElementById('ban-ip-target').value = '';
-        document.getElementById('ban-ip-reason').value = '';
+        if (targetEl) targetEl.value = '';
+        if (reasonEl) reasonEl.value = '';
         setTimeout(() => {
           loadBans();
           loadPlayers();
@@ -9972,6 +10204,7 @@ def on_action(ctx, action_name, payload):
 
     const pluginQuickSearches = ['LuckPerms', 'Chunky', 'Vault', 'CoreProtect', 'ViaVersion', 'DeluxeMenus', 'TAB', 'SkinsRestorer', 'WorldEdit'];
     const modQuickSearches = ['JEI', 'JourneyMap', 'Curios API', 'Sophisticated Backpacks', 'Waystones', 'FerriteCore', 'ModernFix', 'Simple Voice Chat', 'Cloth Config', 'Chunky', 'Fabric API'];
+    const modpackQuickSearches = ['Fabulously Optimized', 'Cobblemon', 'Simply Optimized', 'Adrenaline', 'Better MC', 'Medieval MC'];
 
     async function fetchAddonContext() {
       try {
@@ -10166,9 +10399,24 @@ def on_action(ctx, action_name, payload):
       }
     }
 
+    let currentRepoSource = 'modrinth';
+
+    function onRepoSourceChanged() {
+      const select = document.getElementById('addon-repo-source-select');
+      if (select) {
+        currentRepoSource = select.value;
+      }
+      renderSearchTargetState();
+      const input = document.getElementById('plugin-search-input');
+      if (input && input.value.trim()) {
+        searchCurrentAddons();
+      }
+    }
+
     function renderSearchTargetState() {
       const pBtn = document.getElementById('btn-search-target-plugins');
       const mBtn = document.getElementById('btn-search-target-mods');
+      const mpBtn = document.getElementById('btn-search-target-modpacks');
       const label = document.getElementById('search-target-label');
       const header = document.getElementById('repo-header-text');
       const desc = document.getElementById('repo-desc-text');
@@ -10176,48 +10424,75 @@ def on_action(ctx, action_name, payload):
       const submitBtn = document.getElementById('btn-addon-search-submit');
       const chipsContainer = document.getElementById('quick-searches-chips');
       const loaderBar = document.getElementById('mod-loader-filter-bar');
+      const sourceSelect = document.getElementById('addon-repo-source-select');
+      if (sourceSelect) currentRepoSource = sourceSelect.value || 'modrinth';
+
+      const sourceTitles = {
+        'modrinth': 'Modrinth',
+        'curseforge': 'CurseForge',
+        'spigotmc': 'SpigotMC (Spiget)',
+        'bukkitdev': 'BukkitDev'
+      };
+      const srcName = sourceTitles[currentRepoSource] || 'Modrinth';
 
       const isMods = currentSearchAddonMode === 'mods';
+      const isModpacks = currentSearchAddonMode === 'modpacks';
+
       if (loaderBar) {
         loaderBar.style.display = isMods ? 'flex' : 'none';
       }
 
-      if (pBtn && mBtn) {
-        if (isMods) {
-          mBtn.classList.add('active-tab');
-          mBtn.style.fontWeight = 'bold';
-          pBtn.classList.remove('active-tab');
-          pBtn.style.fontWeight = 'normal';
-        } else {
-          pBtn.classList.add('active-tab');
-          pBtn.style.fontWeight = 'bold';
-          mBtn.classList.remove('active-tab');
-          mBtn.style.fontWeight = 'normal';
+      [pBtn, mBtn, mpBtn].forEach(b => {
+        if (b) {
+          b.classList.remove('active-tab');
+          b.style.fontWeight = 'normal';
         }
+      });
+      if (isModpacks && mpBtn) {
+        mpBtn.classList.add('active-tab');
+        mpBtn.style.fontWeight = 'bold';
+      } else if (isMods && mBtn) {
+        mBtn.classList.add('active-tab');
+        mBtn.style.fontWeight = 'bold';
+      } else if (pBtn) {
+        pBtn.classList.add('active-tab');
+        pBtn.style.fontWeight = 'bold';
       }
 
       if (label) {
-        label.textContent = isMods ? 'Fabric / Forge / NeoForge (into /mods/)' : 'Purpur / Paper / Spigot (into /plugins/)';
+        if (isModpacks) label.textContent = `${srcName} Modpack Catalog`;
+        else if (isMods) label.textContent = `Fabric / Forge / NeoForge via ${srcName} (into /mods/)`;
+        else label.textContent = `Purpur / Paper / Spigot via ${srcName} (into /plugins/)`;
       }
       if (header) {
-        header.textContent = isMods ? 'Modrinth Minecraft Mods Directory' : 'Modrinth Minecraft Plugins Directory';
+        if (isModpacks) header.textContent = `${srcName} Minecraft Modpacks Repository`;
+        else if (isMods) header.textContent = `${srcName} Minecraft Mods Directory`;
+        else header.textContent = `${srcName} Minecraft Plugins Directory`;
       }
       if (desc) {
-        desc.innerHTML = isMods ?
-          'Search verified <strong>Fabric / Forge / NeoForge mods</strong> from Modrinth and install with One-Click directly into <code>/mods/</code>.' :
-          'Search verified <strong>Purpur / Paper / Spigot plugins</strong> from Modrinth and install with One-Click directly into <code>/plugins/</code>.';
+        if (isModpacks) {
+          desc.innerHTML = `Search curated <strong>${srcName} Modpacks</strong>. Automatically extracts overrides, installs mods into <code>/mods/</code>, and creates an automated backup.`;
+        } else if (isMods) {
+          desc.innerHTML = `Search verified <strong>Fabric / Forge / NeoForge mods</strong> from ${srcName} and install with One-Click directly into <code>/mods/</code>.`;
+        } else {
+          desc.innerHTML = `Search verified <strong>Purpur / Paper / Spigot plugins</strong> from ${srcName} and install with One-Click directly into <code>/plugins/</code>.`;
+        }
       }
       if (input) {
-        input.placeholder = isMods ?
-          'Type mod name (e.g. JEI, JourneyMap, Curios API, FerriteCore, Simple Voice Chat)...' :
-          'Type plugin name (e.g. LuckPerms, Chunky, Vault, CoreProtect, ViaVersion)...';
+        if (isModpacks) input.placeholder = `Type modpack name to search on ${srcName} (e.g. Fabulously Optimized, Cobblemon, Better MC)...`;
+        else if (isMods) input.placeholder = `Type mod name to search on ${srcName} (e.g. JEI, JourneyMap, Curios API, FerriteCore)...`;
+        else input.placeholder = `Type plugin name to search on ${srcName} (e.g. LuckPerms, Chunky, Vault, CoreProtect)...`;
       }
       if (submitBtn) {
-        submitBtn.textContent = isMods ? '[ Search Mods ]' : '[ Search Plugins ]';
+        if (isModpacks) submitBtn.textContent = `[ Search Modpacks (${srcName}) ]`;
+        else if (isMods) submitBtn.textContent = `[ Search Mods (${srcName}) ]`;
+        else submitBtn.textContent = `[ Search Plugins (${srcName}) ]`;
       }
 
       if (chipsContainer) {
-        const list = isMods ? modQuickSearches : pluginQuickSearches;
+        let list = pluginQuickSearches;
+        if (isModpacks) list = modpackQuickSearches;
+        else if (isMods) list = modQuickSearches;
         chipsContainer.innerHTML = list.map(item => `
           <button type="button" class="btn-classic" style="height: 20px; font-size: 10px;" onclick="quickSearchAddon('${escapeHtml(item)}')">${escapeHtml(item)}</button>
         `).join('');
@@ -10252,34 +10527,59 @@ def on_action(ctx, action_name, payload):
       const q = document.getElementById('plugin-search-input').value.trim();
       if (!q) return showBannerAlert('Enter a search keyword first.', true);
 
+      const isModpacks = currentSearchAddonMode === 'modpacks';
       const isMods = currentSearchAddonMode === 'mods';
-      const endpoint = isMods ?
-        `/api/mods/search?q=${encodeURIComponent(q)}&loader=${encodeURIComponent(currentModLoaderFilter)}` :
-        `/api/plugins/search?q=${encodeURIComponent(q)}`;
+      const sourceSelect = document.getElementById('addon-repo-source-select');
+      const currentSource = sourceSelect ? sourceSelect.value : (currentRepoSource || 'modrinth');
+
+      let endpoint = `/api/plugins/search?q=${encodeURIComponent(q)}&source=${encodeURIComponent(currentSource)}`;
+      if (isModpacks) {
+        endpoint = `/api/modpacks/search?q=${encodeURIComponent(q)}&source=${encodeURIComponent(currentSource)}`;
+      } else if (isMods) {
+        endpoint = `/api/mods/search?q=${encodeURIComponent(q)}&loader=${encodeURIComponent(currentModLoaderFilter)}&source=${encodeURIComponent(currentSource)}`;
+      }
 
       const statusEl = document.getElementById('plugin-search-status');
       const tbody = document.getElementById('plugins-search-table-body');
       statusEl.style.display = 'block';
       statusEl.style.color = 'var(--help-sub-text, #006622)';
-      statusEl.textContent = `Searching Modrinth ${isMods ? 'mods' : 'plugins'} for "${q}"...`;
+      const typeLabel = isModpacks ? 'modpacks' : (isMods ? 'mods' : 'plugins');
+      const sourceNames = {
+        'modrinth': 'Modrinth',
+        'curseforge': 'CurseForge',
+        'spigotmc': 'SpigotMC',
+        'bukkitdev': 'BukkitDev'
+      };
+      const srcDisplay = sourceNames[currentSource] || 'Repository';
+      statusEl.textContent = `Searching ${srcDisplay} ${typeLabel} for "${q}"...`;
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Searching remote repository...</td></tr>';
 
       try {
         const res = await fetch(endpoint);
         const d = await res.json();
         if (!d.success || !d.hits || !d.hits.length) {
-          statusEl.textContent = `No ${isMods ? 'mods' : 'plugins'} found matching "${q}".`;
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No compatible ${isMods ? 'mods' : 'plugins'} found. Try another keyword.</td></tr>`;
+          statusEl.textContent = `No ${typeLabel} found matching "${q}" on ${srcDisplay}.`;
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No compatible ${typeLabel} found on ${srcDisplay}. Try another keyword or switch source.</td></tr>`;
           return;
         }
 
-        statusEl.textContent = `Found ${d.total_hits} ${isMods ? 'mod' : 'plugin'} packages (showing top results):`;
+        statusEl.textContent = `Found ${d.total_hits} ${typeLabel} packages on ${srcDisplay} (showing top results):`;
         tbody.innerHTML = d.hits.map(p => {
-          const icon = p.icon_url ? `<img src="${escapeHtml(p.icon_url)}" style="width:32px; height:32px; object-fit:contain; border-radius:3px;">` : `<div style="width:32px; height:32px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#666; font-size:10px;">JAR</div>`;
+          const icon = p.icon_url ? `<img src="${escapeHtml(p.icon_url)}" style="width:32px; height:32px; object-fit:contain; border-radius:3px;">` : `<div style="width:32px; height:32px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#666; font-size:10px;">${isModpacks ? 'PACK' : 'JAR'}</div>`;
           const dlFormatted = Number(p.downloads || 0).toLocaleString();
 
+          const pSource = (p.source || currentSource || 'modrinth').toLowerCase();
+          let sourceBadge = '<span style="background:#00af5c; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-left:4px;">Modrinth</span>';
+          if (pSource === 'curseforge') {
+            sourceBadge = '<span style="background:#f16436; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-left:4px;">CurseForge</span>';
+          } else if (pSource === 'spigotmc') {
+            sourceBadge = '<span style="background:#ed8b00; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-left:4px;">SpigotMC</span>';
+          } else if (pSource === 'bukkitdev') {
+            sourceBadge = '<span style="background:#ea580c; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:bold; margin-left:4px;">BukkitDev</span>';
+          }
+
           let loaderBadges = '';
-          if (isMods) {
+          if (isMods || isModpacks) {
             const badges = [];
             const isNfComp = p.compatible_neoforge || (p.loaders && p.loaders.includes('neoforge'));
             if (isNfComp) {
@@ -10302,22 +10602,39 @@ def on_action(ctx, action_name, payload):
             loaderBadges = `<div style="margin-top:4px; display:flex; align-items:center; flex-wrap:wrap; gap:3px;">${badges.join('')}${highlightBadge}</div>`;
           }
 
-          const dlBtnLabel = (isMods && currentModLoaderFilter === 'neoforge') ? '[ Download NeoForge .jar ]' : '[ Download .jar ]';
+          const dlUrlAttr = p.download_url ? encodeURIComponent(p.download_url) : '';
+          const fnAttr = p.filename ? escapeHtml(p.filename) : '';
+
+          let actionButtons = '';
+          if (isModpacks) {
+            actionButtons = `
+              <div style="display:flex; gap:4px; justify-content:center;">
+                <button class="btn-classic" style="padding: 2px 6px; font-size: 10px; height: 24px;" onclick="openProjectVersionsModal('${p.project_id}', '${escapeHtml(p.title)}', false, true, '${pSource}')">[ Versions ]</button>
+                <button class="btn-satin-green" id="btn-dl-${p.project_id}" style="padding: 2px 8px; font-size: 10px; height: 24px;" onclick="installModpackDirectly('${p.project_id}', '${escapeHtml(p.title)}', '${pSource}')">[ Install Modpack ]</button>
+              </div>
+            `;
+          } else {
+            const dlBtnLabel = (isMods && currentModLoaderFilter === 'neoforge') ? '[ Download NeoForge .jar ]' : '[ Download .jar ]';
+            actionButtons = `
+              <div style="display:flex; gap:4px; justify-content:center;">
+                <button class="btn-classic" style="padding: 2px 6px; font-size: 10px; height: 24px;" onclick="openProjectVersionsModal('${p.project_id}', '${escapeHtml(p.title)}', ${isMods}, false, '${pSource}')">[ Versions ]</button>
+                <button class="btn-satin-green" id="btn-dl-${p.project_id}" style="padding: 2px 8px; font-size: 10px; height: 24px;" onclick="installCurrentOnlineAddon('${p.project_id}', '${escapeHtml(p.title)}', '${pSource}', '${dlUrlAttr}', '${fnAttr}')">${dlBtnLabel}</button>
+              </div>
+            `;
+          }
 
           return `
             <tr>
               <td style="text-align: center; vertical-align: middle;">${icon}</td>
               <td>
-                <strong style="font-size: 12px; color: var(--help-sub-text, #006622);">${escapeHtml(p.title)}</strong><br>
+                <strong style="font-size: 12px; color: var(--help-sub-text, #006622);">${escapeHtml(p.title)}</strong> ${sourceBadge}<br>
                 <span style="color: #666; font-size: 10px;">by ${escapeHtml(p.author)}</span>
                 ${loaderBadges}
               </td>
               <td style="font-size: 10px; color: #444; line-height: 1.3;">${escapeHtml(p.description)}</td>
               <td style="text-align: right; font-family: monospace; font-size: 11px; font-weight: bold; color: #333;">${dlFormatted}</td>
               <td style="text-align: center;">
-                <button class="btn-satin-green" id="btn-dl-${p.project_id}" style="padding: 2px 8px; font-size: 10px; height: 24px;" onclick="installCurrentOnlineAddon('${p.project_id}', '${escapeHtml(p.title)}')">
-                  ${dlBtnLabel}
-                </button>
+                ${actionButtons}
               </td>
             </tr>
           `;
@@ -10329,7 +10646,7 @@ def on_action(ctx, action_name, payload):
       }
     }
 
-    async function installCurrentOnlineAddon(projectId, title) {
+    async function installCurrentOnlineAddon(projectId, title, source, encUrl, filename) {
       const isMods = currentSearchAddonMode === 'mods';
       const endpoint = isMods ? '/api/mod/install_online' : '/api/plugin/install_online';
       const btn = document.getElementById(`btn-dl-${projectId}`);
@@ -10340,6 +10657,7 @@ def on_action(ctx, action_name, payload):
       }
       showBannerAlert(`Downloading release for "${title}" into /${isMods ? 'mods' : 'plugins'}/...`);
 
+      const dlUrl = encUrl ? decodeURIComponent(encUrl) : '';
       try {
         const res = await fetch(endpoint, {
           method: 'POST',
@@ -10347,7 +10665,10 @@ def on_action(ctx, action_name, payload):
           body: JSON.stringify({
             project_id: projectId,
             name: title,
-            loader: isMods ? currentModLoaderFilter : undefined
+            loader: isMods ? currentModLoaderFilter : undefined,
+            source: source || currentRepoSource || 'modrinth',
+            download_url: dlUrl || undefined,
+            filename: filename || undefined
           })
         });
         const d = await res.json();
@@ -10376,8 +10697,144 @@ def on_action(ctx, action_name, payload):
       }
     }
 
-    async function installOnlinePlugin(projectId, title) {
-      return installCurrentOnlineAddon(projectId, title);
+    async function installOnlinePlugin(projectId, title, source, encUrl, filename) {
+      return installCurrentOnlineAddon(projectId, title, source, encUrl, filename);
+    }
+
+    async function openProjectVersionsModal(projectId, title, isMods, isModpack, source) {
+      const modal = document.getElementById('tp-version-selector-modal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      const typeLabel = isModpack ? 'Modpack' : (isMods ? 'Mod' : 'Plugin');
+      const titleEl = document.getElementById('version-modal-title');
+      const pkgNameEl = document.getElementById('version-modal-pkg-name');
+      const descEl = document.getElementById('version-modal-desc');
+      const statusEl = document.getElementById('version-modal-status');
+      const tbody = document.getElementById('version-modal-tbody');
+
+      source = source || (document.getElementById('addon-repo-source-select') ? document.getElementById('addon-repo-source-select').value : 'modrinth');
+      const sourceNames = { 'modrinth': 'Modrinth', 'curseforge': 'CurseForge', 'spigotmc': 'SpigotMC', 'bukkitdev': 'BukkitDev' };
+      const srcDisplay = sourceNames[source] || 'Repository';
+
+      if (titleEl) titleEl.textContent = `${typeLabel} Releases & Version History: ${title} (${srcDisplay})`;
+      if (pkgNameEl) pkgNameEl.textContent = title;
+      if (descEl) descEl.textContent = `Select and install a specific release version of ${title} compatible with your server software.`;
+      if (statusEl) statusEl.textContent = `Fetching release versions from ${srcDisplay} API...`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888; padding:20px;">Fetching release versions from ${srcDisplay}...</td></tr>`;
+
+      try {
+        const res = await fetch(`/api/modrinth/versions?project_id=${encodeURIComponent(projectId)}&source=${encodeURIComponent(source)}`);
+        const d = await res.json();
+        if (!d.success || !d.versions || !d.versions.length) {
+          if (statusEl) statusEl.textContent = 'No published releases found.';
+          if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:20px;">No public release versions available for this package.</td></tr>';
+          return;
+        }
+
+        if (statusEl) statusEl.textContent = `Found ${d.versions.length} release versions from ${srcDisplay}:`;
+        if (tbody) {
+          tbody.innerHTML = d.versions.map(v => {
+            const primaryFile = (v.files && v.files.find(f => f.primary)) || (v.files && v.files[0]) || {};
+            const dlUrl = primaryFile.url || '';
+            const filename = primaryFile.filename || `${title}-${v.version_number}.jar`;
+            const mcVers = (v.game_versions || []).slice(0, 5).join(', ') + ((v.game_versions && v.game_versions.length > 5) ? ' ...' : '');
+            const loaders = (v.loaders || []).map(l => `<span style="background:#e2e8f0; color:#334155; padding:1px 4px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:3px;">${escapeHtml(l)}</span>`).join('');
+            const dateStr = v.date_published ? v.date_published.slice(0, 10) : 'N/A';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(v.name || v.version_number)}</strong><br>
+                  <span style="font-size:10px; color:#666;">${escapeHtml(v.version_type || 'release')} • ${escapeHtml(v.version_number)}</span>
+                </td>
+                <td style="font-size:11px;">${escapeHtml(mcVers || 'All')}</td>
+                <td>${loaders || '<span style="color:#888; font-size:10px;">Universal</span>'}</td>
+                <td style="font-size:10px; color:#555;">${escapeHtml(dateStr)}</td>
+                <td style="text-align:center;">
+                  <button class="btn-satin-green" style="padding: 2px 8px; font-size: 10px; height: 22px;" onclick="installSpecificProjectVersion('${projectId}', '${v.id}', '${encodeURIComponent(dlUrl)}', '${escapeHtml(filename)}', ${isMods}, ${isModpack}, '${source}')">
+                    [ Install ]
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = `Failed to fetch release versions from ${srcDisplay}.`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#c00; padding:20px;">Error communicating with ${srcDisplay} API.</td></tr>`;
+      }
+    }
+
+    function closeProjectVersionsModal() {
+      const modal = document.getElementById('tp-version-selector-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function installSpecificProjectVersion(projectId, versionId, encUrl, filename, isMods, isModpack, source) {
+      const downloadUrl = decodeURIComponent(encUrl);
+      source = source || currentRepoSource || 'modrinth';
+      if (isModpack) {
+        if (!confirm(`Install modpack version '${filename}'?\n\n• Overrides will be extracted.\n• Included mods will be placed in /mods/.\n• A snapshot backup will be created automatically.\n\nProceed?`)) return;
+        showBannerAlert(`Downloading and installing modpack ${filename}...`);
+        closeProjectVersionsModal();
+        try {
+          const res = await fetch('/api/modpacks/install', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, source: source, backup: true })
+          });
+          const d = await res.json();
+          showBannerAlert(d.message, !d.success);
+        } catch (e) {
+          showBannerAlert('Network error during modpack installation.', true);
+        }
+      } else if (isMods) {
+        showBannerAlert(`Downloading mod "${filename}" into /mods/...`);
+        closeProjectVersionsModal();
+        try {
+          const res = await fetch('/api/mod/install_online', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, filename: filename, source: source })
+          });
+          const d = await res.json();
+          showBannerAlert(d.message, !d.success);
+        } catch (e) {
+          showBannerAlert('Network error downloading mod version.', true);
+        }
+      } else {
+        showBannerAlert(`Downloading plugin "${filename}" into /plugins/...`);
+        closeProjectVersionsModal();
+        try {
+          const res = await fetch('/api/plugin/install_online', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ project_id: projectId, version_id: versionId, download_url: downloadUrl, filename: filename, source: source })
+          });
+          const d = await res.json();
+          showBannerAlert(d.message, !d.success);
+        } catch (e) {
+          showBannerAlert('Network error downloading plugin version.', true);
+        }
+      }
+    }
+
+    async function installModpackDirectly(projectId, title, source) {
+      source = source || currentRepoSource || 'modrinth';
+      if (!confirm(`Install modpack '${title}'?\n\n• The latest verified release will be downloaded.\n• Mods and config overrides will be installed.\n• A pre-install snapshot backup will be created.\n\nProceed with installation?`)) return;
+      showBannerAlert(`Initiating modpack installation for "${title}"...`);
+      try {
+        const res = await fetch('/api/modpacks/install', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ project_id: projectId, source: source, backup: true })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+      } catch (e) {
+        showBannerAlert('Modpack installation error.', true);
+      }
     }
 
     // ── Server Power Controls ───────────────────────────────────
@@ -10631,6 +11088,212 @@ def on_action(ctx, action_name, payload):
         if (d.success) loadDisabledMods();
       } catch (e) {
         showBannerAlert('Permanent delete error.', true);
+      }
+    }
+
+    // ── Minecraft MOTD Visual Editor (Aternos Style) ──────────────
+    let lastFocusedMotdInput = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const l1 = document.getElementById('motd-line1-input');
+      const l2 = document.getElementById('motd-line2-input');
+      if (l1) l1.addEventListener('focus', () => { lastFocusedMotdInput = l1; });
+      if (l2) l2.addEventListener('focus', () => { lastFocusedMotdInput = l2; });
+    });
+
+    async function loadMotdEditor() {
+      const statusEl = document.getElementById('motd-save-status');
+      if (statusEl) statusEl.textContent = 'Loading server MOTD...';
+      try {
+        const iconBox = document.getElementById('motd-preview-icon');
+        if (iconBox) {
+          iconBox.innerHTML = `<img src="/api/server/icon?t=${Date.now()}" width="64" height="64" style="object-fit:cover; display:block;" onerror="this.parentElement.innerHTML='<i class=\\'fa-solid fa-cube\\' style=\\'color: #2563eb;\\'></i>'">`;
+        }
+        const sNameEl = document.getElementById('motd-preview-server-name');
+        if (sNameEl) {
+          sNameEl.textContent = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'Minecraft Server';
+        }
+        const res = await fetch('/api/motd');
+        const d = await res.json();
+        if (d.success) {
+          const l1 = document.getElementById('motd-line1-input');
+          const l2 = document.getElementById('motd-line2-input');
+          if (l1) l1.value = d.line1 || '';
+          if (l2) l2.value = d.line2 || '';
+          updateLiveMotdPreview();
+          if (statusEl) statusEl.textContent = '';
+        } else {
+          if (statusEl) statusEl.textContent = d.message || 'Failed to load MOTD.';
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = 'Network error loading MOTD.';
+      }
+    }
+
+    function formatMcColorCodesToHtml(text) {
+      if (!text) return '';
+      const colorMap = {
+        '0': '#000000', '1': '#0000aa', '2': '#00aa00', '3': '#00aaaa',
+        '4': '#aa0000', '5': '#aa00aa', '6': '#ffaa00', '7': '#aaaaaa',
+        '8': '#555555', '9': '#5555ff', 'a': '#55ff55', 'b': '#55ffff',
+        'c': '#ff5555', 'd': '#ff55ff', 'e': '#ffff55', 'f': '#ffffff'
+      };
+      let raw = text.replace(/§/g, '&');
+      let out = '';
+      let currentColor = null;
+      let isBold = false;
+      let isItalic = false;
+      let isUnderline = false;
+      let isStrikethrough = false;
+
+      let i = 0;
+      while (i < raw.length) {
+        if (raw[i] === '&' && i + 1 < raw.length) {
+          const code = raw[i + 1].toLowerCase();
+          if (code === '#' && i + 7 < raw.length && /^[0-9a-fA-F]{6}$/.test(raw.substring(i + 2, i + 8))) {
+            currentColor = '#' + raw.substring(i + 2, i + 8);
+            i += 8;
+            continue;
+          }
+          if (colorMap[code]) {
+            currentColor = colorMap[code];
+            isBold = false;
+            isItalic = false;
+            isUnderline = false;
+            isStrikethrough = false;
+            i += 2;
+            continue;
+          } else if (code === 'l') {
+            isBold = true; i += 2; continue;
+          } else if (code === 'o') {
+            isItalic = true; i += 2; continue;
+          } else if (code === 'n') {
+            isUnderline = true; i += 2; continue;
+          } else if (code === 'm') {
+            isStrikethrough = true; i += 2; continue;
+          } else if (code === 'r') {
+            currentColor = null;
+            isBold = false;
+            isItalic = false;
+            isUnderline = false;
+            isStrikethrough = false;
+            i += 2;
+            continue;
+          } else if (code === 'k') {
+            i += 2; continue;
+          }
+        }
+
+        const ch = raw[i];
+        let escaped = escapeHtml(ch);
+        let styles = [];
+        if (currentColor) styles.push(`color:${currentColor}`);
+        if (isBold) styles.push('font-weight:bold');
+        if (isItalic) styles.push('font-style:italic');
+        if (isUnderline && isStrikethrough) styles.push('text-decoration:underline line-through');
+        else if (isUnderline) styles.push('text-decoration:underline');
+        else if (isStrikethrough) styles.push('text-decoration:line-through');
+
+        if (styles.length) {
+          out += `<span style="${styles.join(';')}">${escaped}</span>`;
+        } else {
+          out += escaped;
+        }
+        i++;
+      }
+      return out;
+    }
+
+    function updateLiveMotdPreview() {
+      const l1 = document.getElementById('motd-line1-input');
+      const l2 = document.getElementById('motd-line2-input');
+      const p1 = document.getElementById('motd-preview-line1');
+      const p2 = document.getElementById('motd-preview-line2');
+      if (p1 && l1) p1.innerHTML = formatMcColorCodesToHtml(l1.value) || '&nbsp;';
+      if (p2 && l2) p2.innerHTML = formatMcColorCodesToHtml(l2.value) || '&nbsp;';
+    }
+
+    function insertMotdCode(code) {
+      let target = lastFocusedMotdInput || document.getElementById('motd-line1-input');
+      if (!target) return;
+      const start = target.selectionStart || target.value.length;
+      const end = target.selectionEnd || target.value.length;
+      const val = target.value;
+      target.value = val.substring(0, start) + code + val.substring(end);
+      target.selectionStart = target.selectionEnd = start + code.length;
+      target.focus();
+      updateLiveMotdPreview();
+    }
+
+    function applyMotdPreset(presetKey) {
+      const presets = {
+        'welcome': {
+          line1: '&6&lFiesta SMP &7| &a1.21.4',
+          line2: '&eWelcome to our multiplayer world! &aHave fun!'
+        },
+        'survival': {
+          line1: '&a&lSurvival SMP &8» &b24/7 Online',
+          line2: '&7Economy &8• &7Land Claims &8• &eActive Community'
+        },
+        'hardcore': {
+          line1: '&4&lHARDCORE SURVIVAL &8[ &c1 Life &8]',
+          line2: '&7Can you survive the ultimate challenge? &cDeath is final!'
+        },
+        'minigames': {
+          line1: '&b&lFiesta Arcade &8» &eMinigames &amp; Events',
+          line2: '&aBedwars &8• &dSkyblock &8• &6Custom Maps'
+        }
+      };
+      if (!presets[presetKey]) return;
+      const p = presets[presetKey];
+      const l1 = document.getElementById('motd-line1-input');
+      const l2 = document.getElementById('motd-line2-input');
+      if (l1) l1.value = p.line1;
+      if (l2) l2.value = p.line2;
+      updateLiveMotdPreview();
+      const sel = document.getElementById('motd-preset-select');
+      if (sel) sel.value = '';
+    }
+
+    async function saveMotdSettings() {
+      const l1 = (document.getElementById('motd-line1-input') || {}).value || '';
+      const l2 = (document.getElementById('motd-line2-input') || {}).value || '';
+      const statusEl = document.getElementById('motd-save-status');
+      if (statusEl) {
+        statusEl.style.color = 'var(--sec-bar-bg)';
+        statusEl.textContent = 'Saving MOTD to server.properties...';
+      }
+
+      try {
+        const res = await fetch('/api/motd', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ line1: l1, line2: l2 })
+        });
+        const d = await res.json();
+        if (d.success) {
+          if (statusEl) {
+            statusEl.style.color = '#15803d';
+            statusEl.textContent = '✓ MOTD saved successfully!';
+          }
+          showBannerAlert('MOTD successfully updated in server.properties!');
+          const propMotd = document.getElementById('prop-motd');
+          if (propMotd) propMotd.value = d.motd || (l1 + '\\n' + l2);
+          const guiMotd = document.getElementById('gui-prop-motd');
+          if (guiMotd) guiMotd.value = d.motd || (l1 + '\\n' + l2);
+        } else {
+          if (statusEl) {
+            statusEl.style.color = '#b91c1c';
+            statusEl.textContent = d.message || 'Error saving MOTD.';
+          }
+          showBannerAlert(d.message || 'Error saving MOTD.', true);
+        }
+      } catch (e) {
+        if (statusEl) {
+          statusEl.style.color = '#b91c1c';
+          statusEl.textContent = 'Network error saving MOTD.';
+        }
+        showBannerAlert('Network error saving MOTD.', true);
       }
     }
 
@@ -10926,6 +11589,8 @@ def on_action(ctx, action_name, payload):
 
     // ── Dedicated Worlds Hub ─────────────────────────────────────
     let loadedWorldsList = [];
+    let currentActiveWorld = 'world';
+    let currentDatapackWorld = 'world';
 
     async function loadWorldsHub() {
       const tbody = document.getElementById('worlds-table-body');
@@ -10938,8 +11603,20 @@ def on_action(ctx, action_name, payload):
           return;
         }
         loadedWorldsList = d.worlds || [];
+        currentActiveWorld = d.active_world || (loadedWorldsList.find(w => w.is_active)?.name) || 'world';
         renderWorldsTable(loadedWorldsList);
-        loadDatapacks();
+        loadDatapacks(currentDatapackWorld || currentActiveWorld);
+
+        const targetSelect = document.getElementById('world-upload-target');
+        if (targetSelect && loadedWorldsList && loadedWorldsList.length) {
+          const currentVal = targetSelect.value;
+          targetSelect.innerHTML = loadedWorldsList.map(w => 
+            `<option value="${escapeHtml(w.name)}">${escapeHtml(w.name)} (${escapeHtml(w.type)})</option>`
+          ).join('') + '<option value="_custom_">+ Custom New World Name...</option>';
+          if (loadedWorldsList.some(w => w.name === currentVal)) {
+            targetSelect.value = currentVal;
+          }
+        }
       } catch (e) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #c00; padding: 14px;">Failed to load worlds.</td></tr>';
       }
@@ -10957,16 +11634,23 @@ def on_action(ctx, action_name, payload):
         if (w.type === 'Nether') typeBadge = '<span class="badge-status" style="background: #b91c1c; color: #fff; font-size: 9px; padding: 1px 5px;">Nether</span>';
         if (w.type === 'The End') typeBadge = '<span class="badge-status" style="background: #7c2d12; color: #fff; font-size: 9px; padding: 1px 5px;">The End</span>';
 
+        const isActive = w.is_active || (w.name === currentActiveWorld);
+        const activeBadge = isActive ?
+          '<span class="badge-status online" style="font-size: 9px; padding: 1px 6px; font-weight: bold; margin-left: 6px;">★ Active</span>' : '';
+
         return `
           <tr>
-            <td style="font-weight: bold; font-family: monospace;">${escapeHtml(w.name)}</td>
+            <td style="font-weight: bold; font-family: monospace;">${escapeHtml(w.name)} ${activeBadge}</td>
             <td>${typeBadge}</td>
             <td><strong>${escapeHtml(w.size_formatted)}</strong></td>
             <td>${w.region_files} region files</td>
             <td>${w.datapack_count} active</td>
             <td>${escapeHtml(w.last_modified)}</td>
             <td>
-              <div style="display: flex; gap: 4px;">
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                ${!isActive ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #166534; font-weight: bold;" onclick="setActiveWorld('${escapeHtml(w.name)}')">[ Set Active ]</button>` : ''}
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #2563eb;" onclick="switchWorldDatapacks('${escapeHtml(w.name)}')">[ Datapacks ]</button>
+                <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #7c2d12;" onclick="optimizeSingleWorld('${escapeHtml(w.name)}')">[ Optimize ]</button>
                 <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px;" onclick="downloadWorldZip('${escapeHtml(w.name)}')">[ Download ZIP ]</button>
                 ${w.type === 'Nether' ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #b91c1c;" onclick="confirmResetDimension('nether')">[ Reset ]</button>` : ''}
                 ${w.type === 'The End' ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 21px; color: #7c2d12;" onclick="confirmResetDimension('the_end')">[ Reset ]</button>` : ''}
@@ -10977,6 +11661,47 @@ def on_action(ctx, action_name, payload):
       }).join('');
     }
 
+    async function setActiveWorld(worldName) {
+      if (!confirm(`Switch active server world to '${worldName}'? This updates 'level-name' in server.properties. A server restart will be required to load the new world.`)) return;
+      try {
+        const res = await fetch('/api/worlds/set-active', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ world: worldName })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadWorldsHub();
+      } catch (e) {
+        showBannerAlert('Network error switching active world.', true);
+      }
+    }
+
+    async function optimizeSingleWorld(worldName) {
+      if (!confirm(`Optimize world '${worldName}'?\n\n• Cleans temporary chunk locks and cache files.\n• Configures '--forceUpgrade --eraseCache' flag to re-index all chunks smoothly on next reboot.\n\nProceed?`)) return;
+      try {
+        const res = await fetch('/api/worlds/optimize', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ world: worldName, mode: 'both' })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadWorldsHub();
+      } catch (e) {
+        showBannerAlert('Network error during world optimization.', true);
+      }
+    }
+
+    function switchWorldDatapacks(worldName) {
+      currentDatapackWorld = worldName;
+      const lbl = document.getElementById('datapacks-world-label');
+      if (lbl) lbl.textContent = `(${worldName}/datapacks/)`;
+      loadDatapacks(worldName);
+      const dpSection = document.getElementById('world-datapacks-box');
+      if (dpSection) dpSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
     function downloadWorldZip(worldName) {
       showBannerAlert(`Preparing ${worldName}.zip download... Snapshot creation in progress.`);
       window.location.href = `/api/worlds/download?world=${encodeURIComponent(worldName)}`;
@@ -10984,7 +11709,7 @@ def on_action(ctx, action_name, payload):
 
     async function handleWorldUpload() {
       const fileInput = document.getElementById('world-upload-input');
-      const targetWorld = document.getElementById('world-upload-target').value;
+      let targetWorld = document.getElementById('world-upload-target').value;
       const statusEl = document.getElementById('world-upload-status');
 
       if (!fileInput.files.length) {
@@ -10992,8 +11717,14 @@ def on_action(ctx, action_name, payload):
         return;
       }
 
+      if (targetWorld === '_custom_') {
+        const customName = prompt('Enter a name for the new world directory (e.g. survival_world):');
+        if (!customName || !customName.trim()) return;
+        targetWorld = customName.trim();
+      }
+
       const file = fileInput.files[0];
-      if (!confirm(`Warning: Uploading this world will replace the current '${targetWorld}' directory. An automated pre-upload snapshot backup will be created in the backups directory. Continue?`)) {
+      if (!confirm(`Warning: Uploading this world will place files in '${targetWorld}'. An automated pre-upload snapshot backup will be created in the backups directory. Continue?`)) {
         return;
       }
 
@@ -11075,14 +11806,18 @@ def on_action(ctx, action_name, payload):
       }
     }
 
-    async function loadDatapacks() {
+    async function loadDatapacks(worldName) {
+      const targetWorld = worldName || currentDatapackWorld || currentActiveWorld || 'world';
+      currentDatapackWorld = targetWorld;
+      const lbl = document.getElementById('datapacks-world-label');
+      if (lbl) lbl.textContent = `(/${targetWorld}/datapacks/)`;
       const tbody = document.getElementById('datapacks-table-body');
       if (!tbody) return;
       try {
-        const res = await fetch('/api/worlds/datapacks');
+        const res = await fetch(`/api/worlds/datapacks?world=${encodeURIComponent(targetWorld)}`);
         const d = await res.json();
         if (!d.success || !d.datapacks || !d.datapacks.length) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888; padding: 12px;">No custom datapacks installed in /world/datapacks/.</td></tr>';
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #888; padding: 12px;">No custom datapacks installed in /${escapeHtml(targetWorld)}/datapacks/.</td></tr>`;
           return;
         }
 
@@ -11114,6 +11849,7 @@ def on_action(ctx, action_name, payload):
       }
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
+      formData.append('world', currentDatapackWorld || 'world');
       formData.append('action', 'upload');
 
       try {
@@ -11128,12 +11864,12 @@ def on_action(ctx, action_name, payload):
     }
 
     async function deleteDatapack(name) {
-      if (!confirm(`Delete datapack '${name}' from server?`)) return;
+      if (!confirm(`Delete datapack '${name}' from ${currentDatapackWorld}?`)) return;
       try {
         const res = await fetch('/api/worlds/datapacks', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ action: 'delete', name })
+          body: JSON.stringify({ action: 'delete', name, world: currentDatapackWorld || 'world' })
         });
         const d = await res.json();
         showBannerAlert(d.message, !d.success);
@@ -11148,7 +11884,7 @@ def on_action(ctx, action_name, payload):
         const res = await fetch('/api/worlds/datapacks', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ action: 'toggle', name, mode })
+          body: JSON.stringify({ action: 'toggle', name, mode, world: currentDatapackWorld || 'world' })
         });
         const d = await res.json();
         showBannerAlert(d.message, !d.success);
@@ -11306,8 +12042,8 @@ def on_action(ctx, action_name, payload):
 
     // ── Bedrock Connect & Mobile QR ──────────────────────────────
     function renderBedrockConnectAndQr() {
-      const host = window.location.hostname || '127.0.0.1';
-      const port = '19132';
+      const host = getServerDomain();
+      const port = document.getElementById('dynip-bedrock-port')?.value || '19132';
       const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'Minecraft Server';
       const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:${port}`;
 
@@ -11321,9 +12057,10 @@ def on_action(ctx, action_name, payload):
     }
 
     function copyBedrockLink() {
-      const host = window.location.hostname || '127.0.0.1';
+      const host = getServerDomain();
+      const port = document.getElementById('dynip-bedrock-port')?.value || '19132';
       const bName = (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.bedrock_server_name) || (typeof currentBranding !== 'undefined' && currentBranding && currentBranding.brand_name) || 'Minecraft Server';
-      const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:19132`;
+      const connectUrl = `minecraft://?addExternalServer=${encodeURIComponent(bName)}|${host}:${port}`;
       navigator.clipboard.writeText(connectUrl);
       showBannerAlert('Bedrock One-Click Connect URL copied to clipboard!');
     }
@@ -11573,8 +12310,12 @@ def on_action(ctx, action_name, payload):
 
     function renderFileManagerTable(items) {
       const tbody = document.getElementById('fm-table-body');
+      clearBatchSelection();
+      const selectAll = document.getElementById('fm-select-all-cb');
+      if (selectAll) selectAll.checked = false;
+
       if (!items.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888; padding:20px;">Directory is empty.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888; padding:20px;">Directory is empty.</td></tr>';
         return;
       }
 
@@ -11584,9 +12325,11 @@ def on_action(ctx, action_name, payload):
           ? `onclick="loadFileManager('${escapeHtml(item.path)}')"` 
           : (item.is_editable ? `onclick="openFileManagerEditor('${escapeHtml(item.path)}')"` : '');
         const nameStyle = (item.is_dir || item.is_editable) ? 'cursor: pointer; color: var(--help-sub-text, #006622); font-weight: bold; text-decoration: underline;' : 'color: var(--text-main, #222);';
+        const isArchive = ['zip', 'mrpack', 'tar.gz', 'tgz', 'tar.bz2', 'tar.xz', 'tar'].includes(item.extension) || item.name.toLowerCase().endsWith('.tar.gz');
 
         return `
           <tr>
+            <td style="text-align: center;"><input type="checkbox" class="fm-item-cb" value="${escapeHtml(item.path)}" onchange="updateFmBatchSelection()"></td>
             <td style="text-align: center; font-size: 14px;">${icon}</td>
             <td>
               <span style="${nameStyle}" ${nameClick}>${escapeHtml(item.name)}</span>
@@ -11594,13 +12337,18 @@ def on_action(ctx, action_name, payload):
             <td style="text-align: right; font-family: monospace; font-size: 10px;">${item.size_formatted}</td>
             <td style="font-size: 10px; color: #555;">${item.mtime}</td>
             <td style="text-align: center;">
-              <div style="display: flex; gap: 4px; justify-content: center;">
+              <div style="display: flex; gap: 3px; justify-content: center; flex-wrap: wrap;">
                 ${item.is_dir ? `
                   <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="loadFileManager('${escapeHtml(item.path)}')">Open</button>
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="downloadDirectoryZip('${escapeHtml(item.path)}')">Zip</button>
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="renameFileItem('${escapeHtml(item.path)}')">Rename</button>
                   <button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="deleteFileItem('${escapeHtml(item.path)}', true)">Delete</button>
                 ` : `
                   ${item.is_editable ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px; font-weight: bold;" onclick="openFileManagerEditor('${escapeHtml(item.path)}')">Edit</button>` : ''}
+                  ${isArchive ? `<button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px; color: #0284c7; font-weight: bold;" onclick="extractFileArchive('${escapeHtml(item.path)}')">Extract</button>` : ''}
                   <a href="/api/files/download?path=${encodeURIComponent(item.path)}" class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px; text-decoration: none;">Download</a>
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="copyFileItem('${escapeHtml(item.path)}')">Copy</button>
+                  <button class="btn-classic" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="renameFileItem('${escapeHtml(item.path)}')">Rename</button>
                   <button class="btn-danger-red" style="padding: 1px 6px; font-size: 10px; height: 20px;" onclick="deleteFileItem('${escapeHtml(item.path)}', false)">Delete</button>
                 `}
               </div>
@@ -11608,6 +12356,146 @@ def on_action(ctx, action_name, payload):
           </tr>
         `;
       }).join('');
+    }
+
+    function toggleSelectAllFiles(masterCb) {
+      document.querySelectorAll('.fm-item-cb').forEach(cb => cb.checked = masterCb.checked);
+      updateFmBatchSelection();
+    }
+
+    function updateFmBatchSelection() {
+      const selected = Array.from(document.querySelectorAll('.fm-item-cb:checked')).map(cb => cb.value);
+      const toolbar = document.getElementById('fm-batch-toolbar');
+      const countEl = document.getElementById('fm-selected-count');
+      if (selected.length > 0) {
+        toolbar.style.display = 'flex';
+        countEl.textContent = selected.length;
+      } else {
+        toolbar.style.display = 'none';
+      }
+    }
+
+    function clearBatchSelection() {
+      document.querySelectorAll('.fm-item-cb').forEach(cb => cb.checked = false);
+      const toolbar = document.getElementById('fm-batch-toolbar');
+      if (toolbar) toolbar.style.display = 'none';
+      const selectAll = document.getElementById('fm-select-all-cb');
+      if (selectAll) selectAll.checked = false;
+    }
+
+    async function executeBatchDelete() {
+      const selected = Array.from(document.querySelectorAll('.fm-item-cb:checked')).map(cb => cb.value);
+      if (!selected.length) return;
+      if (!confirm(`Are you SURE you want to delete these ${selected.length} item(s)?\nThis cannot be undone.`)) return;
+
+      try {
+        const res = await fetch('/api/files/batch-delete', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ paths: selected })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadFileManager(currentFmPath);
+      } catch (e) {
+        showBannerAlert('Batch delete failed.', true);
+      }
+    }
+
+    async function executeBatchArchive() {
+      const selected = Array.from(document.querySelectorAll('.fm-item-cb:checked')).map(cb => cb.value);
+      if (!selected.length) return;
+      const zipName = prompt(`Archive ${selected.length} item(s) as ZIP:\nEnter archive filename:`, `archive_${Date.now()}.zip`);
+      if (!zipName || !zipName.trim()) return;
+
+      try {
+        const res = await fetch('/api/files/archive', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ paths: selected, name: zipName.trim(), dest_dir: currentFmPath })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadFileManager(currentFmPath);
+      } catch (e) {
+        showBannerAlert('Failed to create archive.', true);
+      }
+    }
+
+    async function extractFileArchive(path) {
+      if (!confirm(`Extract archive contents into /${currentFmPath || 'server'}?\n\nFile: ${path}`)) return;
+      showBannerAlert(`Extracting ${path}...`);
+      try {
+        const res = await fetch('/api/files/extract', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ path, dest_dir: currentFmPath })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadFileManager(currentFmPath);
+      } catch (e) {
+        showBannerAlert('Extraction failed.', true);
+      }
+    }
+
+    async function renameFileItem(path) {
+      const oldName = path.split('/').pop();
+      const newName = prompt(`Rename '${oldName}' to:`, oldName);
+      if (!newName || !newName.trim() || newName.trim() === oldName) return;
+
+      try {
+        const res = await fetch('/api/files/rename', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ old_path: path, new_name: newName.trim() })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadFileManager(currentFmPath);
+      } catch (e) {
+        showBannerAlert('Rename failed.', true);
+      }
+    }
+
+    async function copyFileItem(path) {
+      const oldName = path.split('/').pop();
+      const newName = prompt(`Duplicate / Copy '${oldName}':\nNew Name:`, `copy_${oldName}`);
+      if (!newName || !newName.trim()) return;
+
+      try {
+        const res = await fetch('/api/files/copy', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ path, dest_dir: currentFmPath, new_name: newName.trim() })
+        });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadFileManager(currentFmPath);
+      } catch (e) {
+        showBannerAlert('Copy failed.', true);
+      }
+    }
+
+    function downloadDirectoryZip(dirPath) {
+      showBannerAlert(`Preparing ${dirPath.split('/').pop() || 'folder'}.zip download...`);
+      window.location.href = `/api/files/download_dir?path=${encodeURIComponent(dirPath)}`;
+    }
+
+    function downloadCurrentFolderZip() {
+      downloadDirectoryZip(currentFmPath);
+    }
+
+    async function triggerFmSnapshotBackup() {
+      showBannerAlert('Triggering on-demand snapshot backup to backup system...');
+      try {
+        const res = await fetch('/api/backup', { method: 'POST' });
+        const d = await res.json();
+        showBannerAlert(d.message, !d.success);
+        loadFileManager(currentFmPath);
+      } catch (e) {
+        showBannerAlert('Failed to trigger backup.', true);
+      }
     }
 
     function getFileIcon(ext) {
@@ -11683,6 +12571,11 @@ def on_action(ctx, action_name, payload):
 
     async function handleFileManagerUpload(inputEl) {
       if (!inputEl.files.length) return;
+      if (inputEl.files.length > 1) {
+        uploadDroppedFiles(inputEl.files);
+        inputEl.value = '';
+        return;
+      }
       const file = inputEl.files[0];
       const statusEl = document.getElementById('fm-upload-status');
       statusEl.style.display = 'block';
@@ -11709,26 +12602,103 @@ def on_action(ctx, action_name, payload):
       inputEl.value = '';
     }
 
+    async function uploadDroppedFiles(files) {
+      if (!files || !files.length) return;
+      const statusEl = document.getElementById('fm-upload-status');
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.textContent = `Uploading ${files.length} file(s) to /${currentFmPath}...`;
+      }
+
+      let uploaded = 0;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('path', currentFmPath);
+        try {
+          const res = await fetch('/api/files/upload', { method: 'POST', body: formData });
+          const d = await res.json();
+          if (d.success) uploaded++;
+        } catch (e) {}
+      }
+      if (statusEl) statusEl.textContent = `Uploaded ${uploaded}/${files.length} item(s) successfully!`;
+      showBannerAlert(`Uploaded ${uploaded} file(s) into /${currentFmPath}`);
+      loadFileManager(currentFmPath);
+      setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 3500);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const dropZone = document.getElementById('view-sys-filemanager');
+      if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.style.outline = '2px dashed var(--sec-bar-bg, #74b21d)';
+          dropZone.style.outlineOffset = '-4px';
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+          e.preventDefault();
+          dropZone.style.outline = '';
+        });
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.style.outline = '';
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+            uploadDroppedFiles(e.dataTransfer.files);
+          }
+        });
+      }
+    });
+
     async function openFileManagerEditor(filePath) {
       currentEditingFilePath = filePath;
       const modal = document.getElementById('fm-editor-modal');
-      document.getElementById('fm-editor-title').textContent = `Edit Server File — ${filePath.split('/').pop()}`;
+      const filename = filePath.split('/').pop();
+      document.getElementById('fm-editor-title').textContent = `Edit Server File — ${filename}`;
       document.getElementById('fm-editor-filepath').textContent = filePath;
       document.getElementById('fm-editor-status').textContent = '';
-      document.getElementById('fm-editor-content').value = 'Loading file contents...';
+      
+      const ext = filename.split('.').pop().toLowerCase();
+      const syntaxMap = {
+        'yml': 'YAML', 'yaml': 'YAML', 'json': 'JSON', 'properties': 'PROPERTIES',
+        'toml': 'TOML', 'sh': 'SHELL', 'txt': 'TEXT', 'log': 'LOG', 'md': 'MARKDOWN', 'cfg': 'CONFIG'
+      };
+      const syntaxBadge = document.getElementById('fm-editor-syntax');
+      if (syntaxBadge) syntaxBadge.textContent = syntaxMap[ext] || ext.toUpperCase() || 'PLAIN';
+
+      const ta = document.getElementById('fm-editor-content');
+      ta.value = 'Loading file contents...';
       modal.style.display = 'flex';
+
+      // Bind Ctrl+S shortcut and tab key handling once
+      if (!ta._hasEditorListeners) {
+        ta._hasEditorListeners = true;
+        ta.addEventListener('keydown', function(e) {
+          if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            saveFileManagerEditorFile();
+          } else if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 2;
+            updateEditorStats();
+          }
+        });
+      }
 
       try {
         const res = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`);
         const d = await res.json();
         if (d.success) {
-          document.getElementById('fm-editor-content').value = d.content;
+          ta.value = d.content;
           updateEditorStats();
         } else {
-          document.getElementById('fm-editor-content').value = `Error: ${d.message}`;
+          ta.value = `Error: ${d.message}`;
         }
       } catch (e) {
-        document.getElementById('fm-editor-content').value = 'Error reading file from server.';
+        ta.value = 'Error reading file from server.';
       }
     }
 
@@ -12415,7 +13385,7 @@ def on_action(ctx, action_name, payload):
         cbs.forEach(cb => cb.checked = true);
       } else if (role === 'operator') {
         cbs.forEach(cb => {
-          cb.checked = ['console', 'power', 'players', 'parameters'].includes(cb.value);
+          cb.checked = ['console', 'power', 'players', 'parameters', 'events'].includes(cb.value);
         });
       } else if (role === 'moderator') {
         cbs.forEach(cb => {
@@ -12579,6 +13549,8 @@ def on_action(ctx, action_name, payload):
       }
     }
 
+    let currentJavaAdvisories = {};
+
     function selectSoftwareType(swName, cardEl) {
       selectedSoftware = swName;
       document.querySelectorAll('.software-card').forEach(c => {
@@ -12593,9 +13565,14 @@ def on_action(ctx, action_name, payload):
         'purpur': 'Purpur (High Performance Fork)',
         'paper': 'Paper (Standard Performance)',
         'fabric': 'Fabric (Lightweight Modding)',
+        'forge': 'Forge (Classic Modded Minecraft)',
         'neoforge': 'NeoForge (Modern Modded Minecraft)',
+        'quilt': 'Quilt (Modern Modular Modding)',
         'vanilla': 'Vanilla (Official Mojang)',
-        'spigot': 'Spigot (CraftBukkit Core)'
+        'spigot': 'Spigot (CraftBukkit Core)',
+        'bedrock': 'Bedrock Dedicated Server (BDS)',
+        'velocity': 'Velocity (Modern High-Perf Proxy)',
+        'bungeecord': 'BungeeCord (Multi-Server Proxy)'
       };
       document.getElementById('sw-chosen-name').textContent = displayNames[swName] || swName.toUpperCase();
       loadSoftwareVersions(swName);
@@ -12610,6 +13587,7 @@ def on_action(ctx, action_name, payload):
       try {
         const res = await fetch(`/api/software/versions?software=${encodeURIComponent(swName)}`);
         const d = await res.json();
+        currentJavaAdvisories = d.java_advisories || {};
         if (d.success && d.versions && d.versions.length > 0) {
           select.innerHTML = '';
           d.versions.forEach(v => {
@@ -12624,17 +13602,40 @@ def on_action(ctx, action_name, payload):
           });
           hint.textContent = `(${d.versions.length} versions available online)`;
         } else {
-          select.innerHTML = '<option value="26.3">Minecraft 26.3 (Latest)</option><option value="26.2">Minecraft 26.2</option><option value="1.21.11">Minecraft 1.21.11</option><option value="1.21.4">Minecraft 1.21.4</option><option value="1.20.4">Minecraft 1.20.4</option>';
+          select.innerHTML = '<option value="1.21.4">Minecraft 1.21.4 (Latest)</option><option value="1.21.3">Minecraft 1.21.3</option><option value="1.21.1">Minecraft 1.21.1</option><option value="1.20.4">Minecraft 1.20.4</option><option value="1.19.4">Minecraft 1.19.4</option><option value="1.16.5">Minecraft 1.16.5</option>';
           hint.textContent = '(Default releases available)';
         }
       } catch (e) {
-        select.innerHTML = '<option value="26.3">Minecraft 26.3</option><option value="26.2">Minecraft 26.2</option><option value="1.21.11">Minecraft 1.21.11</option>';
+        select.innerHTML = '<option value="1.21.4">Minecraft 1.21.4 (Latest)</option><option value="1.21.1">Minecraft 1.21.1</option><option value="1.20.4">Minecraft 1.20.4</option><option value="1.19.4">Minecraft 1.19.4</option><option value="1.16.5">Minecraft 1.16.5</option>';
         hint.textContent = '(Offline fallback versions)';
       }
+      onSoftwareVersionChanged();
     }
 
     function onSoftwareVersionChanged() {
-      // Version change handler
+      const verSelect = document.getElementById('sw-version-select');
+      const advBadge = document.getElementById('sw-java-advisory');
+      if (!verSelect || !advBadge) return;
+      const v = verSelect.value || '';
+      if (selectedSoftware === 'bedrock') {
+        advBadge.textContent = 'Native C++ (No Java needed)';
+        advBadge.style.display = 'inline-block';
+        return;
+      }
+      let advisory = (currentJavaAdvisories && currentJavaAdvisories[v]);
+      if (!advisory) {
+        if (v.startsWith('26.') || v.startsWith('1.21') || v.startsWith('1.20.5') || v.startsWith('1.20.6')) {
+          advisory = 'Java 21+';
+        } else if (v.startsWith('1.18') || v.startsWith('1.19') || v.startsWith('1.20')) {
+          advisory = 'Java 17+';
+        } else if (v.startsWith('1.17')) {
+          advisory = 'Java 16';
+        } else {
+          advisory = 'Java 8/11';
+        }
+      }
+      advBadge.textContent = advisory;
+      advBadge.style.display = 'inline-block';
     }
 
     async function checkSoftwareUpdate() {
@@ -12727,7 +13728,8 @@ def on_action(ctx, action_name, payload):
             build,
             ram_gb: parseInt(document.getElementById('sw-ram-select') ? document.getElementById('sw-ram-select').value : 4),
             auto_eula: document.getElementById('sw-opt-eula') ? document.getElementById('sw-opt-eula').checked : true,
-            autostart: document.getElementById('sw-opt-autostart') ? document.getElementById('sw-opt-autostart').checked : true
+            autostart: document.getElementById('sw-opt-autostart') ? document.getElementById('sw-opt-autostart').checked : true,
+            clean_install: document.getElementById('sw-opt-clean-install') ? document.getElementById('sw-opt-clean-install').checked : false
           })
         });
         clearInterval(animTimer);
@@ -13724,7 +14726,7 @@ def on_action(ctx, action_name, payload):
     });
 
     // ── Quick Install & Dynamic Version Resolution ──────────────
-    let latestDetectedPaperVersion = '26.3';
+    let latestDetectedPaperVersion = '1.21.4';
 
     function updateUninstalledBannerVersion(version) {
       if (!version) return;
@@ -13751,7 +14753,7 @@ def on_action(ctx, action_name, payload):
     }
 
     async function quickInstallLatestPaper() {
-      const version = latestDetectedPaperVersion || '26.3';
+      const version = latestDetectedPaperVersion || '1.21.4';
       const conf = confirm(
         `Install & Launch Minecraft Server?\n\n` +
         `• Target Engine: Paper ${version} (Latest Stable Release)\n` +
@@ -16460,9 +17462,9 @@ def on_action(ctx, action_name, payload):
           const zEl = document.getElementById('spawn-input-z');
           const dimEl = document.getElementById('spawn-input-dim');
           const radEl = document.getElementById('spawn-input-radius');
-          if (xEl) xEl.value = s.x !== undefined ? s.x : -58423;
-          if (yEl) yEl.value = s.y !== undefined ? s.y : 69;
-          if (zEl) zEl.value = s.z !== undefined ? s.z : -9669;
+          if (xEl) xEl.value = s.x !== undefined ? s.x : 0;
+          if (yEl) yEl.value = s.y !== undefined ? s.y : 64;
+          if (zEl) zEl.value = s.z !== undefined ? s.z : 0;
           if (dimEl) dimEl.value = s.dimension || 'minecraft:overworld';
           if (radEl) radEl.value = s.radius !== undefined ? s.radius : 0;
         }

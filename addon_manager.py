@@ -64,7 +64,7 @@ STORE_CATALOG = [
         "settings_schema": [
             {"key": "webhook_url", "label": "Discord Webhook URL", "type": "text", "default": "", "placeholder": "https://discord.com/api/webhooks/..."},
             {"key": "bot_name", "label": "Bot Username", "type": "text", "default": "FiestaPanel Gateway"},
-            {"key": "avatar_url", "label": "Bot Avatar URL", "type": "text", "default": "https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/assets/banner.png"},
+            {"key": "avatar_url", "label": "Bot Avatar URL", "type": "text", "default": ""},
             {"key": "notify_start", "label": "Notify on Server Start", "type": "checkbox", "default": True},
             {"key": "notify_stop", "label": "Notify on Server Stop", "type": "checkbox", "default": True},
             {"key": "notify_join", "label": "Notify on Player Joins", "type": "checkbox", "default": True},
@@ -73,7 +73,7 @@ STORE_CATALOG = [
         "default_settings": {
             "webhook_url": "",
             "bot_name": "FiestaPanel Gateway",
-            "avatar_url": "https://raw.githubusercontent.com/open-fiestasmp/FiestaPanel/main/assets/banner.png",
+            "avatar_url": "",
             "notify_start": True,
             "notify_stop": True,
             "notify_join": True,
@@ -151,7 +151,7 @@ STORE_CATALOG = [
       </div>
     </div>
     <div style="font-weight:bold;color:#f2f3f5;font-size:14px;margin-bottom:4px;"><i class="fa-solid fa-bolt" style="color:#eab308;margin-right:4px;"></i> Server Online Notification</div>
-    <div style="color:#dbdee1;margin-bottom:8px;">Paper 26.3 is now running on port 25565. TPS is optimal at 20.0.</div>
+    <div style="color:#dbdee1;margin-bottom:8px;">Paper 1.21.4 is now running on port 25565. TPS is optimal at 20.0.</div>
     <div style="font-size:11px;color:#949ba4;border-top:1px solid rgba(255,255,255,0.08);padding-top:6px;margin-top:8px;">
       FiestaPanel Addon System • 0 / 20 Players Online
     </div>
@@ -799,7 +799,14 @@ class AddonManager:
         self.app = app
         self.send_mc_command = send_mc_command
         self.ping_mc = ping_mc
-        def_sdir = "/home/ubuntu/fiesta" if os.path.isdir("/home/ubuntu/fiesta") else os.path.join(os.path.expanduser("~"), "minecraft")
+        user_home = os.path.expanduser("~")
+        local_sdir = os.path.join(user_home, "fiesta")
+        if os.path.isdir(local_sdir):
+            def_sdir = local_sdir
+        elif os.path.isdir("/home/ubuntu/fiesta"):
+            def_sdir = "/home/ubuntu/fiesta"
+        else:
+            def_sdir = os.path.join(user_home, "minecraft")
         self.server_dir = server_dir or os.environ.get("MC_PATH") or os.environ.get("SERVER_DIR") or def_sdir
         
         # Primary addons directory
@@ -990,7 +997,7 @@ class AddonManager:
                 pass
                 
         # Detect server engine / version
-        server_engine = "Paper 26.3 (Paperclip)"
+        server_engine = "Paper 1.21.4 (Paperclip)"
         version_history = os.path.join(self.server_dir, "version_history.json") if self.server_dir else None
         if version_history and os.path.isfile(version_history):
             try:
@@ -1299,7 +1306,13 @@ class AddonManager:
 
     def install_from_url(self, url: str) -> Dict[str, Any]:
         """Downloads and installs an addon ZIP from an HTTP(S) URL."""
-        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel-Addons/1.0"})
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Only HTTP and HTTPS URLs are supported.")
+        host = (parsed.hostname or "").lower()
+        if host in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "169.254.169.254"):
+            raise ValueError("Target host is not permitted.")
+        req = urllib.request.Request(url, headers={"User-Agent": "FiestaPanel-Addons/2.5"})
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = resp.read()
         return self.install_from_zip(data)

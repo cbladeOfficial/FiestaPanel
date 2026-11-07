@@ -39,7 +39,7 @@ def load_config():
     is_docker = os.environ.get("DOCKER") == "1" or os.path.exists("/.dockerenv")
     cfg = {
         "admin_user": "admin",
-        "admin_pass": "admin",
+        "admin_pass": None,
         "server_dir": "/server" if is_docker else os.path.join(SCRIPT_DIR, "minecraft_server"),
         "service_name": "fiesta-portal",
         "host": "0.0.0.0",
@@ -235,7 +235,7 @@ def cmd_reset_admin():
     import secrets
     import string
     alphabet = string.ascii_letters + string.digits
-    new_pass = "Fiesta@" + ''.join(secrets.choice(alphabet) for _ in range(8))
+    new_pass = secrets.token_urlsafe(16)
     
     users = {}
     if os.path.exists(USERS_FILE):
@@ -245,10 +245,17 @@ def cmd_reset_admin():
         except Exception:
             pass
 
+    target_user = "admin"
+    if isinstance(users, dict):
+        for u, d in users.items():
+            if isinstance(d, dict) and d.get("role") == "owner":
+                target_user = u
+                break
+
     from werkzeug.security import generate_password_hash
     p_hash = generate_password_hash(new_pass, method="scrypt")
-    users["admin"] = {
-        "username": "admin",
+    users[target_user] = {
+        "username": target_user,
         "password_hash": p_hash,
         "role": "owner",
         "permissions": ["all"],
@@ -261,7 +268,7 @@ def cmd_reset_admin():
     print("==================================================")
     print("  Administrator Password Reset Successfully!      ")
     print("==================================================")
-    print(f"Username: admin")
+    print(f"Username: {target_user}")
     print(f"Password: {new_pass}")
     print("==================================================")
 

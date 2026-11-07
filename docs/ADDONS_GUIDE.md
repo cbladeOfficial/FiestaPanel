@@ -277,7 +277,7 @@ cd addons/quick_heal
   "name": "Quick Heal & Feed Utility",
   "version": "1.0.0",
   "author": "YourName",
-  "description": "One-click button to heal and replenish hunger for all online players.",
+  "description": "One-Click button to heal and replenish hunger for all online players.",
   "icon": "fas fa-heart",
   "category": "Tools",
   "enabled": true,
@@ -312,7 +312,7 @@ def on_action(ctx, action_name, payload):
   <div class="section-title-bar"><span>Quick Heal &amp; Feed</span></div>
   <p class="inline-hint">Instantly restores health and hunger bars for all currently connected members.</p>
   <button class="btn-classic" style="padding:6px 20px;font-weight:bold;color:#008800;" onclick="triggerQuickHeal()">
-    [ ❤ Heal &amp; Feed All Players ]
+    [ Heal &amp; Feed All Players ]
   </button>
   <div id="heal-result" style="margin-top:10px;font-weight:bold;"></div>
 </div>

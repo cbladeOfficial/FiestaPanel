@@ -293,7 +293,7 @@ def fetch_single(item_name, versions=None):
 
     for url in candidates:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) FiestaPanel/2.5"})
+            req = urllib.request.Request(url, headers={"User-Agent": f"FiestaPanel/2.5 ({get_contact_email()})"})
             with urllib.request.urlopen(req, timeout=3) as resp:
                 if resp.status == 200:
                     data = resp.read()

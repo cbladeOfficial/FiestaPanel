@@ -277,7 +277,7 @@
       </div>
       <div style="display: flex; gap: 8px; align-items: center;">
         <span id="dev-status-badge" class="inline-badge" style="background: {% if is_unlocked %}#16a34a{% else %}#dc2626{% endif %}; color: #fff;">
-          {% if is_unlocked %}● Publisher Unlocked{% else %}🔒 Locked{% endif %}
+          {% if is_unlocked %}● Publisher Unlocked{% else %}● Locked{% endif %}
         </span>
         <button type="button" id="btn-toggle-lock" class="btn-classic" style="background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: #fff; font-weight: bold;" onclick="toggleLockState()">
           {% if is_unlocked %}[ Lock Session ]{% else %}[ Unlock ]{% endif %}
@@ -293,7 +293,7 @@
     <div id="locked-gate-panel" style="display: {% if is_unlocked %}none{% else %}block{% endif %}; padding: 24px 16px;">
       <div class="panel-box" style="max-width: 680px; margin: 0 auto; border: 2px solid #0284c7;">
         <div class="section-title-bar" style="background: #0284c7; color: #fff; font-size: 12.5px;">
-          <span>[ 🔒 Fiesta Team Developer Gateway Locked ]</span>
+          <span>[ Fiesta Team Developer Gateway Locked ]</span>
         </div>
         <div class="panel-body">
           <div style="font-size: 12px; line-height: 1.5; margin-bottom: 14px; color: var(--text-main);">
@@ -668,7 +668,7 @@
         document.getElementById('locked-gate-panel').style.display = 'block';
         const badge = document.getElementById('dev-status-badge');
         if (badge) {
-          badge.textContent = '🔒 Locked';
+          badge.textContent = '● Locked';
           badge.style.background = '#dc2626';
         }
         const toggleBtn = document.getElementById('btn-toggle-lock');

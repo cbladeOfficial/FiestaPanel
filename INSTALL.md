@@ -209,7 +209,7 @@ unset FIESTA_ADMIN_PASS
 | `/server` | `./minecraft_server` | Complete Minecraft server directory (`server.jar`, worlds, `plugins/`, `mods/`, logs) |
 | `/app/data` | `./data` | Panel persistence (`users.json`, `branding.json`, `config.json`, uploads) |
 
-### ⚙ Container Environment Variables
+### Container Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
@@ -240,7 +240,7 @@ Once logged into FiestaPanel:
 
 1. If no Minecraft server is installed yet, you will see a prominent banner:
    **"Welcome to FiestaPanel — Minecraft Server Software Not Installed Yet"**
-2. Click **[  Install Paper 26.3 ]** or navigate to **System Tools -> Software**.
+2. Click **[  Install Paper 1.21.4 ]** or navigate to **System Tools -> Software**.
 3. Select your engine:
    - **Purpur** (High-performance Paper fork with extensive customization)
    - **Paper** (Industry standard high-performance engine)
@@ -328,7 +328,7 @@ sudo certbot --nginx -d panel.yourdomain.com
 
 ---
 
-## ⚙ Cross-Platform Auto-Start on Boot / Reboot
+## Cross-Platform Auto-Start on Boot / Reboot
 
 FiestaPanel supports automatic startup on system boot or user logon across all supported platforms.
 
