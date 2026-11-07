@@ -161,6 +161,7 @@ class AternosFeaturesTests(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.headers.get("Content-Type"), "application/zip")
         self.assertIn("stream_dir.zip", res.headers.get("Content-Disposition", ""))
+        res.close()
 
     # ── MOTD Editor: GET, POST, & Formatting ──
 
@@ -348,6 +349,14 @@ class AternosFeaturesTests(unittest.TestCase):
         name3 = portal_app.resolve_clean_jar_name("HyperEdit (Bukkit) #1", "https://example.com/download")
         self.assertEqual(name3, "HyperEdit (Bukkit) _1.jar")
 
+        # Fallback download.jar does not become download.jar.jar
+        name4 = portal_app.resolve_clean_jar_name("download.jar", "https://example.com/download")
+        self.assertEqual(name4, "addon.jar")
+
+        # Double .jar extension is normalized
+        name5 = portal_app.resolve_clean_jar_name("plugin.jar.jar", "https://example.com/download")
+        self.assertEqual(name5, "plugin.jar")
+
     def test_get_cf_download_url(self):
         # File with direct downloadUrl
         f1 = {"id": 123456, "fileName": "test.jar", "downloadUrl": "https://edge.forgecdn.net/files/123/456/test.jar"}
@@ -422,6 +431,103 @@ class AternosFeaturesTests(unittest.TestCase):
             self.assertTrue(d["success"])
             self.assertEqual(len(d["versions"]), 1)
             self.assertEqual(d["versions"][0]["files"][0]["url"], "https://example.com/cf.jar")
+
+    def test_datapacks_safety_and_deletion(self):
+        dp_dir = os.path.join(self.sandbox_server, "world", "datapacks")
+        os.makedirs(dp_dir, exist_ok=True)
+        with open(os.path.join(dp_dir, "sample.zip"), "w") as f:
+            f.write("datapack_data")
+
+        # Empty name should fail with 400 and NOT wipe dp_dir
+        res_empty = self._post("/api/worlds/datapacks", {"action": "delete", "name": ""})
+        self.assertEqual(res_empty.status_code, 400)
+        self.assertTrue(os.path.exists(dp_dir))
+        self.assertTrue(os.path.exists(os.path.join(dp_dir, "sample.zip")))
+
+        # Path traversal should also fail
+        res_trav = self._post("/api/worlds/datapacks", {"action": "delete", "name": "../../world"})
+        self.assertEqual(res_trav.status_code, 404)
+        self.assertTrue(os.path.exists(dp_dir))
+
+        # Valid deletion
+        res_del = self._post("/api/worlds/datapacks", {"action": "delete", "name": "sample.zip"})
+        self.assertEqual(res_del.status_code, 200)
+        self.assertFalse(os.path.exists(os.path.join(dp_dir, "sample.zip")))
+
+    def test_files_copy_traversal_prevention(self):
+        test_file = os.path.join(self.sandbox_server, "copy_src.txt")
+        with open(test_file, "w") as f:
+            f.write("content to copy")
+
+        res_bad = self._post("/api/files/copy", {
+            "path": "copy_src.txt",
+            "new_name": "../../escaped.txt"
+        })
+        self.assertEqual(res_bad.status_code, 400)
+
+        res_good = self._post("/api/files/copy", {
+            "path": "copy_src.txt",
+            "new_name": "copy_dest.txt"
+        })
+        self.assertEqual(res_good.status_code, 200)
+        self.assertTrue(os.path.exists(os.path.join(self.sandbox_server, "copy_dest.txt")))
+
+    def test_worlds_generate_configures_level_name(self):
+        props_path = os.path.join(self.sandbox_server, "server.properties")
+        with open(props_path, "w") as f:
+            f.write("level-name=world\nlevel-seed=123\n")
+
+        res = self._post("/api/worlds/generate", {
+            "name": "custom_survival",
+            "seed": "456789",
+            "type": "minecraft:normal"
+        })
+        self.assertEqual(res.status_code, 200)
+
+        with open(props_path, "r") as f:
+            content = f.read()
+        self.assertIn("level-name=custom_survival", content)
+        self.assertIn("level-seed=456789", content)
+
+    def test_motd_newline_escaping(self):
+        props_path = os.path.join(self.sandbox_server, "server.properties")
+        res = self._post("/api/motd", {
+            "line1": "First Line",
+            "line2": "Second Line"
+        })
+        self.assertEqual(res.status_code, 200)
+        with open(props_path, "r") as f:
+            content = f.read()
+        self.assertIn("motd=First Line\\nSecond Line", content)
+
+    def test_backup_list_omits_temp_files(self):
+        bdir = portal_app.get_backup_dir()
+        os.makedirs(bdir, exist_ok=True)
+        temp_zip = os.path.join(bdir, "stream_dir_test_temp.zip")
+        real_backup = os.path.join(bdir, "fiesta_backup_test.tar.gz")
+        with open(temp_zip, "w") as f:
+            f.write("temp")
+        with open(real_backup, "w") as f:
+            f.write("real")
+
+        try:
+            res = self.client.get("/api/backups")
+            self.assertEqual(res.status_code, 200)
+            data = res.get_json()
+            filenames = [b["filename"] for b in data.get("backups", [])]
+            self.assertNotIn("stream_dir_test_temp.zip", filenames)
+            self.assertIn("fiesta_backup_test.tar.gz", filenames)
+        finally:
+            if os.path.exists(temp_zip):
+                os.remove(temp_zip)
+            if os.path.exists(real_backup):
+                os.remove(real_backup)
+
+    def test_ping_mc_closed_port_no_leak(self):
+        # ping_mc with an offline port should return offline dict safely
+        info = portal_app.ping_mc()
+        self.assertIsInstance(info, dict)
+        self.assertIn("online", info)
 
 if __name__ == "__main__":
     unittest.main()

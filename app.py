@@ -1,6 +1,7 @@
 import os
 import platform
 import tarfile
+import tempfile
 import subprocess
 import time
 import json
@@ -640,7 +641,9 @@ class ServerRunner:
         return self.start()
 
     def send_command(self, cmd):
-        clean_cmd = cmd.strip()
+        clean_cmd = re.sub(r'[\r\n]+', ' ', cmd or "").strip()
+        if not clean_cmd:
+            return False, "Command cannot be empty."
         if self.proc and self.proc.stdin and self.proc.poll() is None:
             try:
                 self.proc.stdin.write(f"{clean_cmd}\n".encode("utf-8"))
@@ -826,10 +829,13 @@ def login_required(f):
     return decorated_function
 
 def send_mc_command(cmd):
+    clean_cmd = re.sub(r'[\r\n]+', ' ', cmd or "").strip()
+    if not clean_cmd:
+        return False, "Command cannot be empty."
     # 1. First attempt via direct process stdin if running as background process
     try:
         if "server_runner" in globals() and server_runner and server_runner.proc and server_runner.proc.stdin and server_runner.proc.poll() is None:
-            executed, msg = server_runner.send_command(cmd)
+            executed, msg = server_runner.send_command(clean_cmd)
             if executed:
                 return True, msg
     except Exception:
@@ -838,13 +844,13 @@ def send_mc_command(cmd):
     # 2. Linux screen dispatch
     if IS_LINUX and shutil.which("screen"):
         try:
-            clean_cmd = cmd.replace('"', '\\"').replace("'", "\\'").strip()
+            screen_cmd = clean_cmd.replace('"', '\\"').replace("'", "\\'").strip()
             screen_name = (SERVER_CONFIG.get("screen_session") if isinstance(SERVER_CONFIG, dict) else None) or SCREEN_SESSION or SERVER_CONFIG.get("service_name") or "minecraft"
             subprocess.run(
-                ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{clean_cmd}\\015"'],
+                ["screen", "-p", "0", "-S", screen_name, "-X", "eval", f'stuff "{screen_cmd}\\015"'],
                 check=True
             )
-            return True, f"Executed: {cmd}"
+            return True, f"Executed: {clean_cmd}"
         except Exception as e:
             return False, str(e)
     return False, "Could not dispatch command: server process is not running or console is inaccessible."
@@ -1232,6 +1238,7 @@ def ping_mc():
     except (ValueError, TypeError):
         pass
 
+    s = None
     try:
         t0 = time.time()
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1265,7 +1272,6 @@ def ping_mc():
             if not chunk:
                 break
             received += chunk
-        s.close()
         ms = round((time.time() - t0) * 1000, 1)
 
         info = json.loads(received.decode('utf-8', errors='ignore'))
@@ -1297,6 +1303,12 @@ def ping_mc():
             'player_sample': [],
             'motd': props.get('motd', '')
         }
+    finally:
+        if s is not None:
+            try:
+                s.close()
+            except Exception:
+                pass
 
 # Initialize FiestaPanel Addons & Extension Engine
 # All browser mutations require a per-session CSRF token. Permissions are
@@ -2072,6 +2084,9 @@ def api_player_inventory():
 
     if not uuid:
         return jsonify({"success": False, "message": "Player UUID not found"}), 404
+
+    if not re.match(r'^[a-fA-F0-9\-]{32,36}$', uuid):
+        return jsonify({"success": False, "message": "Invalid player UUID format"}), 400
 
     # If player name not resolved yet, lookup from UUID
     if not player_name and os.path.exists(usercache_file):
@@ -3699,9 +3714,22 @@ def api_server_properties():
             return jsonify({"success": False, "message": str(e)}), 500
 
     elif request.method == "POST":
-        updates = request.get_json() or {}
-        if not updates:
+        curr_perms = session.get("permissions", [])
+        if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+            return jsonify({"success": False, "message": "Permission denied: Parameter permission required."}), 403
+
+        raw_updates = request.get_json() or {}
+        if not raw_updates:
             return jsonify({"success": False, "message": "No updates provided"}), 400
+
+        updates = {}
+        for k, v in raw_updates.items():
+            clean_k = re.sub(r'[^a-zA-Z0-9_\.\-]', '', str(k)).strip()
+            if clean_k:
+                updates[clean_k] = str(v).replace("\r", "").replace("\n", "\\n")
+
+        if not updates:
+            return jsonify({"success": False, "message": "No valid property updates provided"}), 400
 
         try:
             # Backup
@@ -3743,6 +3771,10 @@ def api_server_icon():
 @app.route("/api/server/icon/upload", methods=["POST"])
 @login_required
 def api_server_icon_upload():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Parameter permission required."}), 403
+
     if "icon" not in request.files:
         return jsonify({"success": False, "message": "No image file provided"}), 400
     file = request.files["icon"]
@@ -3762,6 +3794,10 @@ def api_server_icon_upload():
 @app.route("/api/broadcast", methods=["POST"])
 @login_required
 def api_broadcast():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "console" not in curr_perms and "players" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Console or Player management required."}), 403
+
     data = request.get_json() or {}
     msg = data.get("message", "").strip()
     msg_type = data.get("type", "chat")
@@ -3769,12 +3805,14 @@ def api_broadcast():
     if not msg:
         return jsonify({"success": False, "message": "Message cannot be empty"}), 400
 
+    json_text = json.dumps(msg)
     if msg_type == "title":
-        send_mc_command(f'title @a title {{"text":"{msg}","color":"gold","bold":true}}')
+        send_mc_command(f'title @a title {{"text":{json_text},"color":"gold","bold":true}}')
     elif msg_type == "actionbar":
-        send_mc_command(f'title @a actionbar {{"text":"{msg}","color":"yellow"}}')
+        send_mc_command(f'title @a actionbar {{"text":{json_text},"color":"yellow"}}')
     else:
-        send_mc_command(f'say {msg}')
+        clean_msg = re.sub(r'[\r\n]+', ' ', msg).strip()
+        send_mc_command(f'say {clean_msg}')
 
     return jsonify({"success": True, "message": "Broadcast sent!"})
 
@@ -4231,9 +4269,16 @@ def api_plugins_disabled():
 @app.route("/api/plugin/delete", methods=["POST"])
 @login_required
 def api_plugin_delete():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "plugins" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Plugin management required."}), 403
+
     data = request.get_json() or {}
-    name = data.get("name", "").strip()
-    if not name:
+    raw_name = (data.get("name") or "").strip()
+    name = os.path.basename(raw_name)
+    if name.lower().endswith(".jar"):
+        name = name[:-4]
+    if not name or name in (".", "..") or "/" in raw_name or "\\" in raw_name:
         return jsonify({"success": False, "message": "Plugin name required"}), 400
 
     plugins_dir = os.path.join(SERVER_DIR, "plugins")
@@ -4254,9 +4299,14 @@ def api_plugin_delete():
 @app.route("/api/plugin/enable", methods=["POST"])
 @login_required
 def api_plugin_enable():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "plugins" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Plugin management required."}), 403
+
     data = request.get_json() or {}
-    filename = data.get("filename", "").strip()
-    if not filename:
+    raw_filename = (data.get("filename") or "").strip()
+    filename = os.path.basename(raw_filename)
+    if not filename or filename in (".", "..") or "/" in raw_filename or "\\" in raw_filename:
         return jsonify({"success": False, "message": "Filename required"}), 400
 
     plugins_dir = os.path.join(SERVER_DIR, "plugins")
@@ -4281,9 +4331,14 @@ def api_plugin_enable():
 @app.route("/api/plugin/perm_delete", methods=["POST"])
 @login_required
 def api_plugin_perm_delete():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "plugins" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Plugin management required."}), 403
+
     data = request.get_json() or {}
-    filename = data.get("filename", "").strip()
-    if not filename:
+    raw_filename = (data.get("filename") or "").strip()
+    filename = os.path.basename(raw_filename)
+    if not filename or filename in (".", "..") or "/" in raw_filename or "\\" in raw_filename:
         return jsonify({"success": False, "message": "Filename required"}), 400
 
     disabled_dir = os.path.join(SERVER_DIR, "plugins", "disabled")
@@ -4301,17 +4356,24 @@ def api_plugin_perm_delete():
 @app.route("/api/plugin/upload", methods=["POST"])
 @login_required
 def api_plugin_upload():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "plugins" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Plugin management required."}), 403
+
     if "file" not in request.files:
         return jsonify({"success": False, "message": "No file part in request"}), 400
     file = request.files["file"]
-    if file.filename == "":
+    if not file or not file.filename:
         return jsonify({"success": False, "message": "No file selected"}), 400
     if not file.filename.lower().endswith(".jar"):
         return jsonify({"success": False, "message": "Only .jar files are allowed"}), 400
 
+    safe_name = os.path.basename(file.filename)
+    if not safe_name or safe_name in (".", ".."):
+        return jsonify({"success": False, "message": "Invalid filename"}), 400
+
     plugins_dir = os.path.join(SERVER_DIR, "plugins")
     os.makedirs(plugins_dir, exist_ok=True)
-    safe_name = os.path.basename(file.filename)
     dst = os.path.join(plugins_dir, safe_name)
     try:
         file.save(dst)
@@ -4348,8 +4410,14 @@ def resolve_clean_jar_name(initial_name, resp_url, resp_headers=None):
             fn = path_name
     if not fn or not fn.lower().endswith(".jar") or fn.lower() == "download.jar":
         base = re.sub(r'[^a-zA-Z0-9_\-\.\(\)\+ ]', '_', initial_name or "addon").strip()
-        fn = f"{base or 'addon'}.jar"
+        if base.lower().endswith(".jar"):
+            base = base[:-4].strip()
+        if not base or base.lower() == "download":
+            base = "addon"
+        fn = f"{base}.jar"
     fn = re.sub(r'[^a-zA-Z0-9_\-\.\(\)\+ ]', '_', fn)
+    while fn.lower().endswith(".jar.jar"):
+        fn = fn[:-4]
     if not fn.lower().endswith(".jar"):
         fn += ".jar"
     return fn
@@ -4663,6 +4731,10 @@ def api_modrinth_project_versions():
 @app.route("/api/plugin/install_online", methods=["POST"])
 @login_required
 def api_plugin_install_online():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "plugins" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Plugin management required."}), 403
+
     data = request.get_json() or {}
     project_id = str(data.get("project_id", "")).strip()
     direct_url = data.get("download_url", "").strip()
@@ -4887,9 +4959,16 @@ def api_mods_disabled():
 @app.route("/api/mod/delete", methods=["POST"])
 @login_required
 def api_mod_delete():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "mods" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Mod management required."}), 403
+
     data = request.get_json() or {}
-    name = data.get("name", "").strip()
-    if not name:
+    raw_name = (data.get("name") or "").strip()
+    name = os.path.basename(raw_name)
+    if name.lower().endswith(".jar"):
+        name = name[:-4]
+    if not name or name in (".", "..") or "/" in raw_name or "\\" in raw_name:
         return jsonify({"success": False, "message": "Mod name required"}), 400
 
     mods_dir = os.path.join(SERVER_DIR, "mods")
@@ -4910,9 +4989,14 @@ def api_mod_delete():
 @app.route("/api/mod/enable", methods=["POST"])
 @login_required
 def api_mod_enable():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "mods" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Mod management required."}), 403
+
     data = request.get_json() or {}
-    filename = data.get("filename", "").strip()
-    if not filename:
+    raw_filename = (data.get("filename") or "").strip()
+    filename = os.path.basename(raw_filename)
+    if not filename or filename in (".", "..") or "/" in raw_filename or "\\" in raw_filename:
         return jsonify({"success": False, "message": "Filename required"}), 400
 
     mods_dir = os.path.join(SERVER_DIR, "mods")
@@ -4936,9 +5020,14 @@ def api_mod_enable():
 @app.route("/api/mod/perm_delete", methods=["POST"])
 @login_required
 def api_mod_perm_delete():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "mods" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Mod management required."}), 403
+
     data = request.get_json() or {}
-    filename = data.get("filename", "").strip()
-    if not filename:
+    raw_filename = (data.get("filename") or "").strip()
+    filename = os.path.basename(raw_filename)
+    if not filename or filename in (".", "..") or "/" in raw_filename or "\\" in raw_filename:
         return jsonify({"success": False, "message": "Filename required"}), 400
 
     disabled_dir = os.path.join(SERVER_DIR, "mods", "disabled")
@@ -4956,17 +5045,24 @@ def api_mod_perm_delete():
 @app.route("/api/mod/upload", methods=["POST"])
 @login_required
 def api_mod_upload():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "mods" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Mod management required."}), 403
+
     if "file" not in request.files:
         return jsonify({"success": False, "message": "No file part in request"}), 400
     file = request.files["file"]
-    if file.filename == "":
+    if not file or not file.filename:
         return jsonify({"success": False, "message": "No file selected"}), 400
     if not file.filename.lower().endswith(".jar"):
         return jsonify({"success": False, "message": "Only .jar files are allowed"}), 400
 
+    safe_name = os.path.basename(file.filename)
+    if not safe_name or safe_name in (".", ".."):
+        return jsonify({"success": False, "message": "Invalid filename"}), 400
+
     mods_dir = os.path.join(SERVER_DIR, "mods")
     os.makedirs(mods_dir, exist_ok=True)
-    safe_name = os.path.basename(file.filename)
     dst = os.path.join(mods_dir, safe_name)
     try:
         file.save(dst)
@@ -5041,6 +5137,10 @@ def api_mods_search():
 @app.route("/api/mod/install_online", methods=["POST"])
 @login_required
 def api_mod_install_online():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "mods" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Mod management required."}), 403
+
     data = request.get_json() or {}
     project_id = str(data.get("project_id", "")).strip()
     direct_url = data.get("download_url", "").strip()
@@ -6112,6 +6212,9 @@ def api_get_backups():
         for pat in patterns:
             for f in glob.glob(os.path.join(d, pat)):
                 if os.path.isfile(f) and f not in seen_paths:
+                    bname = os.path.basename(f)
+                    if bname.startswith(("stream_dir_", "temp_", "fiesta_dl_", "tmp_")):
+                        continue
                     seen_paths.add(f)
                     try:
                         stat = os.stat(f)
@@ -6166,8 +6269,15 @@ def api_create_backup():
 @app.route("/api/backup/download")
 @login_required
 def api_download_backup():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "backups" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"error": "Permission denied: Backups permission required."}), 403
+
     filename = request.args.get("filename", "").strip()
     safe_name = os.path.basename(filename)
+    if not safe_name or safe_name in (".", ".."):
+        return jsonify({"error": "Invalid backup filename."}), 400
+
     search_dirs = get_backup_search_dirs()
     for folder in search_dirs:
         p = os.path.join(folder, safe_name)
@@ -6399,6 +6509,10 @@ def api_files_list():
 @app.route("/api/files/read")
 @login_required
 def api_files_read():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
     rel_path = request.args.get("path", "").strip()
     abs_path = safe_fiesta_path(rel_path)
     if not abs_path or not os.path.isfile(abs_path):
@@ -6436,6 +6550,9 @@ def api_files_save():
     abs_path = safe_fiesta_path(rel_path)
     if not abs_path:
         return jsonify({"success": False, "message": "Access denied"}), 403
+
+    if os.path.isdir(abs_path):
+        return jsonify({"success": False, "message": "Cannot save content to a directory."}), 400
 
     try:
         if os.path.exists(abs_path):
@@ -6491,6 +6608,8 @@ def api_files_upload():
         return jsonify({"success": False, "message": "Invalid target directory"}), 400
 
     safe_name = os.path.basename(file.filename)
+    if not safe_name or safe_name in (".", ".."):
+        return jsonify({"success": False, "message": "Invalid filename"}), 400
     dst = os.path.join(abs_dir, safe_name)
     try:
         file.save(dst)
@@ -6509,7 +6628,7 @@ def api_files_mkdir():
     parent_rel = data.get("path", "").strip()
     folder_name = data.get("name", "").strip()
 
-    if not folder_name or "/" in folder_name or "\\" in folder_name:
+    if not folder_name or "/" in folder_name or "\\" in folder_name or folder_name in (".", ".."):
         return jsonify({"success": False, "message": "Invalid folder name"}), 400
 
     abs_dir = safe_fiesta_path(os.path.join(parent_rel, folder_name))
@@ -6533,7 +6652,7 @@ def api_files_new_file():
     parent_rel = data.get("path", "").strip()
     filename = data.get("name", "").strip()
 
-    if not filename or "/" in filename or "\\" in filename:
+    if not filename or "/" in filename or "\\" in filename or filename in (".", ".."):
         return jsonify({"success": False, "message": "Invalid file name"}), 400
 
     abs_file = safe_fiesta_path(os.path.join(parent_rel, filename))
@@ -6553,6 +6672,10 @@ def api_files_new_file():
 @app.route("/api/files/download")
 @login_required
 def api_files_download():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
     rel_path = request.args.get("path", "").strip()
     abs_path = safe_fiesta_path(rel_path)
     if not abs_path or not os.path.isfile(abs_path):
@@ -6684,6 +6807,10 @@ def api_files_extract():
 @app.route("/api/files/download_dir")
 @login_required
 def api_files_download_dir():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: File manager permission required."}), 403
+
     rel_path = request.args.get("path", "").strip()
     abs_path = safe_fiesta_path(rel_path)
     if not abs_path or not os.path.isdir(abs_path):
@@ -6692,9 +6819,9 @@ def api_files_download_dir():
     base_dir = os.path.realpath(SERVER_DIR)
     folder_name = os.path.basename(abs_path) if abs_path != base_dir else "server_root"
 
-    backup_dir = get_backup_dir()
-    os.makedirs(backup_dir, exist_ok=True)
-    tmp_zip = os.path.join(backup_dir, f"{folder_name}_{int(time.time())}.zip")
+    tmp_dir = tempfile.gettempdir()
+    tmp_fd, tmp_zip = tempfile.mkstemp(prefix=f"fiesta_dl_{folder_name}_", suffix=".zip", dir=tmp_dir)
+    os.close(tmp_fd)
 
     try:
         with zipfile.ZipFile(tmp_zip, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -6706,8 +6833,22 @@ def api_files_download_dir():
                         zf.write(full_p, os.path.join(folder_name, rel_f))
                     except Exception:
                         pass
-        return send_file(tmp_zip, as_attachment=True, download_name=f"{folder_name}.zip")
+
+        resp = send_file(tmp_zip, as_attachment=True, download_name=f"{folder_name}.zip")
+        @resp.call_on_close
+        def _cleanup():
+            try:
+                if os.path.exists(tmp_zip):
+                    os.remove(tmp_zip)
+            except Exception:
+                pass
+        return resp
     except Exception as e:
+        try:
+            if os.path.exists(tmp_zip):
+                os.remove(tmp_zip)
+        except Exception:
+            pass
         return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route("/api/files/copy", methods=["POST"])
@@ -6738,7 +6879,14 @@ def api_files_copy():
         else:
             new_name = f"{src_base}_copy"
 
+    if "/" in new_name or "\\" in new_name or new_name in (".", ".."):
+        return jsonify({"success": False, "message": "Invalid target filename."}), 400
+
     abs_dest = os.path.join(abs_dest_dir, new_name)
+    base_dir = os.path.realpath(SERVER_DIR)
+    if not os.path.realpath(abs_dest).startswith(base_dir + os.sep) and os.path.realpath(abs_dest) != base_dir:
+        return jsonify({"success": False, "message": "Destination out of server bounds."}), 400
+
     if os.path.exists(abs_dest):
         return jsonify({"success": False, "message": f"Target '{new_name}' already exists."}), 400
 
@@ -6815,6 +6963,10 @@ def api_list_configs():
 @app.route("/api/config/read")
 @login_required
 def api_read_config():
+    curr_perms = session.get("permissions", [])
+    if "all" not in curr_perms and "parameters" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+        return jsonify({"success": False, "message": "Permission denied: Parameter or File Manager permission required."}), 403
+
     name = request.args.get("name", "").strip()
     target_path = None
     if name in ALLOWED_CONFIGS and os.path.exists(ALLOWED_CONFIGS[name]):
@@ -6949,9 +7101,18 @@ def api_game_options():
     if "all" not in curr_perms and "parameters" not in curr_perms and session.get("role") not in ("owner", "administrator"):
         return jsonify({"success": False, "message": "Permission denied"}), 403
 
-    updates = request.get_json() or {}
-    if not updates:
+    raw_updates = request.get_json() or {}
+    if not raw_updates:
         return jsonify({"success": False, "message": "No settings to update"}), 400
+
+    updates = {}
+    for k, v in raw_updates.items():
+        clean_k = re.sub(r'[^a-zA-Z0-9_\.\-]', '', str(k)).strip()
+        if clean_k:
+            updates[clean_k] = str(v).replace("\r", "").replace("\n", "\\n")
+
+    if not updates:
+        return jsonify({"success": False, "message": "No valid settings to update"}), 400
 
     try:
         shutil.copy2(props_path, props_path + ".bak")
@@ -7059,30 +7220,46 @@ def api_worlds_download():
         return jsonify({"success": False, "message": "Permission denied: Backups or Parameter permission required."}), 403
 
     world_name = request.args.get("world", "").strip()
-    if not world_name:
-        return jsonify({"success": False, "message": "World name required"}), 400
-    abs_path = safe_fiesta_path(world_name)
+    safe_name = os.path.basename(world_name)
+    if not safe_name or safe_name in (".", "..") or "/" in world_name or "\\" in world_name:
+        return jsonify({"success": False, "message": "Invalid world name"}), 400
+    abs_path = safe_fiesta_path(safe_name)
     if not abs_path or not os.path.isdir(abs_path):
         return jsonify({"success": False, "message": "World directory not found"}), 404
 
-    backup_dir = get_backup_dir()
-    os.makedirs(backup_dir, exist_ok=True)
-    zip_filename = f"{world_name}_{int(time.time())}.zip"
-    zip_path = os.path.join(backup_dir, zip_filename)
+    tmp_dir = tempfile.gettempdir()
+    tmp_fd, zip_path = tempfile.mkstemp(prefix=f"fiesta_world_{safe_name}_", suffix=".zip", dir=tmp_dir)
+    os.close(tmp_fd)
 
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(abs_path):
-            for file in files:
-                if file.endswith(".lock") or file == "session.lock":
-                    continue
-                full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, abs_path)
-                try:
-                    zf.write(full_path, os.path.join(world_name, rel_path))
-                except Exception:
-                    pass
+    try:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(abs_path):
+                for file in files:
+                    if file.endswith(".lock") or file == "session.lock":
+                        continue
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, abs_path)
+                    try:
+                        zf.write(full_path, os.path.join(safe_name, rel_path))
+                    except Exception:
+                        pass
 
-    return send_file(zip_path, as_attachment=True, download_name=f"{world_name}.zip")
+        resp = send_file(zip_path, as_attachment=True, download_name=f"{safe_name}.zip")
+        @resp.call_on_close
+        def _cleanup():
+            try:
+                if os.path.exists(zip_path):
+                    os.remove(zip_path)
+            except Exception:
+                pass
+        return resp
+    except Exception as e:
+        try:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+        except Exception:
+            pass
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route("/api/worlds/upload", methods=["POST"])
 @login_required
@@ -7097,10 +7274,14 @@ def api_worlds_upload():
     if "file" not in request.files:
         return jsonify({"success": False, "message": "No file uploaded"}), 400
     file = request.files["file"]
-    if not file.filename.endswith(".zip"):
+    if not file or not file.filename:
+        return jsonify({"success": False, "message": "No file selected"}), 400
+    if not file.filename.lower().endswith(".zip"):
         return jsonify({"success": False, "message": "Only .zip world archives are supported"}), 400
 
-    target_world = request.form.get("world", get_main_level_name()).strip()
+    target_world = os.path.basename(request.form.get("world", get_main_level_name()).strip())
+    if not target_world or target_world in (".", ".."):
+        return jsonify({"success": False, "message": "Invalid world target"}), 400
     abs_world = safe_fiesta_path(target_world)
     if not abs_world:
         return jsonify({"success": False, "message": "Invalid world target"}), 400
@@ -7121,12 +7302,13 @@ def api_worlds_upload():
             pass
 
     # Extract safely
-    temp_zip = os.path.join(backup_dir, f"temp_{int(time.time())}.zip")
+    tmp_fd, temp_zip = tempfile.mkstemp(prefix=f"fiesta_upload_{target_world}_", suffix=".zip")
+    os.close(tmp_fd)
     file.save(temp_zip)
     try:
         with zipfile.ZipFile(temp_zip, "r") as zf:
             for member in zf.namelist():
-                if ".." in member or member.startswith("/"):
+                if ".." in member or member.startswith("/") or member.startswith("\\"):
                     return jsonify({"success": False, "message": "Malicious zip archive detected"}), 400
 
             namelist = zf.namelist()
@@ -7159,7 +7341,10 @@ def api_worlds_upload():
         return jsonify({"success": False, "message": str(e)}), 500
     finally:
         if os.path.exists(temp_zip):
-            os.remove(temp_zip)
+            try:
+                os.remove(temp_zip)
+            except Exception:
+                pass
 
 @app.route("/api/worlds/reset-dimension", methods=["POST"])
 @login_required
@@ -7250,6 +7435,7 @@ def api_worlds_generate():
     props_path = os.path.join(SERVER_DIR, "server.properties")
     if os.path.exists(props_path):
         updates = {
+            "level-name": safe_name,
             "level-seed": seed,
             "level-type": level_type,
             "generate-structures": structures,
@@ -7430,12 +7616,21 @@ def api_worlds_datapacks():
             })
         return jsonify({"success": True, "datapacks": packs, "world": target_world})
 
+    if request.method == "POST":
+        curr_perms = session.get("permissions", [])
+        if "all" not in curr_perms and "parameters" not in curr_perms and "filemanager" not in curr_perms and session.get("role") not in ("owner", "administrator"):
+            return jsonify({"success": False, "message": "Permission denied: Parameter or File Manager permission required."}), 403
+
     action = request.form.get("action") or (request.get_json(silent=True) or {}).get("action")
     if action == "upload":
         if "file" not in request.files:
             return jsonify({"success": False, "message": "No file uploaded"}), 400
         file = request.files["file"]
+        if not file or not file.filename:
+            return jsonify({"success": False, "message": "No file selected"}), 400
         safe_name = os.path.basename(file.filename)
+        if not safe_name or safe_name in (".", ".."):
+            return jsonify({"success": False, "message": "Invalid filename"}), 400
         dest = os.path.join(dp_dir, safe_name)
         file.save(dest)
         send_mc_command("datapack list")
@@ -7443,7 +7638,9 @@ def api_worlds_datapacks():
 
     if action == "delete":
         name = request.form.get("name") or (request.get_json(silent=True) or {}).get("name")
-        safe_name = os.path.basename(name or "")
+        safe_name = os.path.basename(str(name or "").strip())
+        if not safe_name or safe_name in (".", ".."):
+            return jsonify({"success": False, "message": "Valid datapack name required"}), 400
         target = os.path.join(dp_dir, safe_name)
         if os.path.exists(target):
             if os.path.isdir(target):
@@ -7455,8 +7652,12 @@ def api_worlds_datapacks():
 
     if action == "toggle":
         name = request.form.get("name") or (request.get_json(silent=True) or {}).get("name")
-        mode = request.form.get("mode") or (request.get_json(silent=True) or {}).get("mode")
-        safe_name = os.path.basename(name or "")
+        mode = str(request.form.get("mode") or (request.get_json(silent=True) or {}).get("mode") or "").strip().lower()
+        if mode not in ("enable", "disable"):
+            return jsonify({"success": False, "message": "Mode must be 'enable' or 'disable'"}), 400
+        safe_name = os.path.basename(str(name or "").strip())
+        if not safe_name or safe_name in (".", ".."):
+            return jsonify({"success": False, "message": "Valid datapack name required"}), 400
         cmd = f"datapack {mode} \"file/{safe_name}\""
         success, msg = send_mc_command(cmd)
         return jsonify({"success": success, "message": f"Dispatched: {cmd}"})
@@ -7526,7 +7727,7 @@ def api_motd():
             raw_motd = f"{line1}\\n{line2}" if line2 else line1
 
         safe_motd = raw_motd.replace("\r", "")
-        stored_motd = safe_motd.replace('&', '§')
+        stored_motd = safe_motd.replace("\n", "\\n").replace('&', '§')
         lines = []
         found = False
         if os.path.exists(props_path):
@@ -7937,23 +8138,28 @@ def api_action():
     elif action == "reload_plugin":
         if not is_admin and "parameters" not in curr_perms and "console" not in curr_perms:
             return jsonify({"success": False, "message": "Permission denied: Parameter or Console permission required."}), 403
-        if param == "essentials":
+        safe_param = re.sub(r'[^a-zA-Z0-9_\-]', '', param or "").strip()
+        if not safe_param:
+            return jsonify({"success": False, "message": "Plugin name required."}), 400
+        if safe_param == "essentials":
             send_mc_command("ess reload")
-        elif param == "tab":
+        elif safe_param == "tab":
             send_mc_command("tab reload")
-        elif param == "deluxemenus":
+        elif safe_param == "deluxemenus":
             send_mc_command("dm reload")
-        elif param == "skinsrestorer":
+        elif safe_param == "skinsrestorer":
             send_mc_command("sr reload")
-        elif param == "luckperms":
+        elif safe_param == "luckperms":
             send_mc_command("lp reload")
-        elif param == "geyser":
+        elif safe_param == "geyser":
             send_mc_command("geyser reload")
         else:
-            send_mc_command(f"{param} reload")
-        return jsonify({"success": True, "message": f"Reload command dispatched for {param}!"})
+            send_mc_command(f"{safe_param} reload")
+        return jsonify({"success": True, "message": f"Reload command dispatched for {safe_param}!"})
 
     elif action == "gc":
+        if not is_admin and "parameters" not in curr_perms and "console" not in curr_perms:
+            return jsonify({"success": False, "message": "Permission denied: Parameter or Console permission required."}), 403
         send_mc_command("gc")
         return jsonify({"success": True, "message": "Garbage collector (/gc) triggered in Minecraft engine!"})
 
