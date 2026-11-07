@@ -2509,6 +2509,14 @@
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
     }
 
+    .btn-classic.active-tab {
+      background: var(--sec-bar-bg) !important;
+      color: var(--sec-bar-text) !important;
+      border-color: var(--sec-bar-border) !important;
+      font-weight: bold !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
     /* Primary Satin Button */
     .btn-satin-green {
       background: linear-gradient(to bottom, var(--btn-satin-grad-1) 0%, var(--btn-satin-grad-2) 100%);
@@ -5524,7 +5532,7 @@
             <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadCurrentAddons()">[ Refresh ]</button>
           </div>
 
-          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: var(--table-th-bg, #eef2f7); padding: 6px 10px; border: 1px solid var(--table-border, #c8d4e2); border-radius: 2px;">
             <span style="font-weight: bold; font-size: 11px; color: var(--text-bold);">Package Type:</span>
             <button id="btn-tab-addon-plugins" class="btn-classic active-tab" onclick="switchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Plugins (/plugins/) ]</button>
             <button id="btn-tab-addon-mods" class="btn-classic" onclick="switchAddonMode('mods')" style="padding: 2px 10px;">[ Mods (/mods/) ]</button>
@@ -5558,7 +5566,7 @@
             <span>Forwarding / Addons - Online Repository Search &amp; Direct Download</span>
           </div>
 
-          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2; flex-wrap: wrap;">
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: var(--table-th-bg, #eef2f7); padding: 6px 10px; border: 1px solid var(--table-border, #c8d4e2); border-radius: 2px; flex-wrap: wrap;">
             <span style="font-weight: bold; font-size: 11px; color: var(--text-bold);">Repository Target:</span>
             <button id="btn-search-target-plugins" class="btn-classic active-tab" onclick="switchSearchAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Minecraft Plugins ]</button>
             <button id="btn-search-target-mods" class="btn-classic" onclick="switchSearchAddonMode('mods')" style="padding: 2px 10px;">[ Minecraft Mods ]</button>
@@ -5567,12 +5575,12 @@
           </div>
 
           <!-- Mod Loader Filter Bar (Visible in Mods Mode) -->
-          <div id="mod-loader-filter-bar" style="display: none; gap: 6px; margin-bottom: 10px; align-items: center; background: var(--table-alt, #fff8eb); padding: 6px 10px; border: 1px solid var(--table-border, #fed7aa); border-radius: 3px; flex-wrap: wrap;">
+          <div id="mod-loader-filter-bar" style="display: none; gap: 6px; margin-bottom: 10px; align-items: center; background: var(--table-th-bg, #fff8eb); padding: 6px 10px; border: 1px solid var(--table-border, #fed7aa); border-radius: 2px; flex-wrap: wrap;">
             <span style="font-weight: bold; font-size: 11px; color: var(--text-bold, #9a3412);">Mod Loader Filter:</span>
             <button type="button" class="btn-classic active-tab" id="btn-loader-all" onclick="selectModLoaderFilter('all')" style="font-size: 10px; padding: 2px 8px; font-weight: bold;">[ All Loaders ]</button>
-            <button type="button" class="btn-classic" id="btn-loader-neoforge" onclick="selectModLoaderFilter('neoforge')" style="font-size: 10px; padding: 2px 8px; color: #c2410c; font-weight: bold;">[ NeoForge Only ]</button>
-            <button type="button" class="btn-classic" id="btn-loader-fabric" onclick="selectModLoaderFilter('fabric')" style="font-size: 10px; padding: 2px 8px; color: #1d4ed8; font-weight: bold;">[ Fabric ]</button>
-            <button type="button" class="btn-classic" id="btn-loader-forge" onclick="selectModLoaderFilter('forge')" style="font-size: 10px; padding: 2px 8px; color: #b45309; font-weight: bold;">[ Forge ]</button>
+            <button type="button" class="btn-classic" id="btn-loader-neoforge" onclick="selectModLoaderFilter('neoforge')" style="font-size: 10px; padding: 2px 8px; font-weight: bold;">[ NeoForge Only ]</button>
+            <button type="button" class="btn-classic" id="btn-loader-fabric" onclick="selectModLoaderFilter('fabric')" style="font-size: 10px; padding: 2px 8px; font-weight: bold;">[ Fabric ]</button>
+            <button type="button" class="btn-classic" id="btn-loader-forge" onclick="selectModLoaderFilter('forge')" style="font-size: 10px; padding: 2px 8px; font-weight: bold;">[ Forge ]</button>
             <span id="loader-filter-status" style="margin-left: auto; font-size: 10.5px; color: var(--text-sub, #7c2d12); font-style: italic;">Showing all mod packages</span>
           </div>
 
@@ -5580,7 +5588,7 @@
           <p id="repo-desc-text" style="margin-bottom: 10px; color: var(--text-sub);">Search verified Purpur/Paper/Spigot plugins from the Modrinth directory and install with One-Click directly into <code>/plugins/</code>.</p>
 
           <form onsubmit="searchCurrentAddons(event)" style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 4px; background: var(--table-alt, #eef2f7); padding: 2px 8px; border: 1px solid var(--table-border, #c8d4e2); border-radius: 3px;">
+            <div style="display: flex; align-items: center; gap: 4px; background: var(--table-th-bg, #eef2f7); padding: 2px 8px; border: 1px solid var(--table-border, #c8d4e2); border-radius: 2px;">
               <label for="addon-repo-source-select" style="font-weight: bold; font-size: 11px; color: var(--text-main, #333);">Repository:</label>
               <select id="addon-repo-source-select" class="tp-input-select" onchange="onRepoSourceChanged()" style="height: 24px; font-size: 11px; font-weight: bold; padding: 1px 6px; cursor: pointer;">
                 <option value="modrinth" selected>Modrinth (Default)</option>
@@ -5651,7 +5659,7 @@
             <span>Forwarding / Addons - Disabled Packages Archive</span>
             <button class="btn-classic" style="height: 20px; font-size: 10px;" onclick="loadCurrentDisabledAddons()">[ Refresh ]</button>
           </div>
-          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: #eef2f7; padding: 6px 10px; border: 1px solid #c8d4e2;">
+          <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center; background: var(--table-th-bg, #eef2f7); padding: 6px 10px; border: 1px solid var(--table-border, #c8d4e2); border-radius: 2px;">
             <span style="font-weight: bold; font-size: 11px; color: var(--text-bold);">Archive Category:</span>
             <button id="btn-tab-disabled-plugins" class="btn-classic active-tab" onclick="switchDisabledAddonMode('plugins')" style="font-weight: bold; padding: 2px 10px;">[ Disabled Plugins (/plugins/disabled/) ]</button>
             <button id="btn-tab-disabled-mods" class="btn-classic" onclick="switchDisabledAddonMode('mods')" style="padding: 2px 10px;">[ Disabled Mods (/mods/disabled/) ]</button>
@@ -7342,7 +7350,7 @@ def on_action(ctx, action_name, payload):
       </div>
       <div class="modal-inner-box" style="padding: 12px; max-height: calc(85vh - 50px); overflow-y: auto;">
         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-          <div id="version-modal-icon" style="width: 44px; height: 44px; background: #ddd; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 4px;"></div>
+          <div id="version-modal-icon" style="width: 44px; height: 44px; background: var(--table-th-bg); border: 1px solid var(--card-border); color: var(--text-sub); display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 4px;"></div>
           <div style="flex: 1;">
             <div id="version-modal-pkg-name" style="font-size: 14px; font-weight: bold; color: var(--sec-bar-bg);">--</div>
             <div id="version-modal-desc" style="font-size: 11px; color: var(--text-sub); line-height: 1.3;">--</div>
