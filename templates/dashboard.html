@@ -3095,9 +3095,21 @@
       font-weight: bold;
     }
     .perm-badge.all {
-      background: #dff0d8;
-      color: #255625;
-      border-color: #4cae4c;
+      background: var(--banner-success-bg, #dff0d8);
+      color: var(--banner-success-text, #255625);
+      border-color: var(--banner-success-border, #4cae4c);
+    }
+    [data-theme="dark"] .perm-badge.all,
+    [data-theme="archer-dark"] .perm-badge.all,
+    [data-theme="amber-dark"] .perm-badge.all,
+    [data-theme="matrix"] .perm-badge.all,
+    [data-theme="synthwave"] .perm-badge.all,
+    [data-theme="nighthawk"] .perm-badge.all,
+    [data-theme="catppuccin"] .perm-badge.all,
+    [data-theme="custom"] .perm-badge.all {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86efac;
+      border-color: #22c55e;
     }
 
     .btn-row {
@@ -3739,29 +3751,64 @@
       background: var(--modal-bg, #ffffff);
       z-index: 6;
     }
-    [data-theme="dark"] .addon-modal-tab-bar {
+    [data-theme="dark"] .addon-modal-tab-bar,
+    [data-theme="archer-dark"] .addon-modal-tab-bar,
+    [data-theme="amber-dark"] .addon-modal-tab-bar,
+    [data-theme="matrix"] .addon-modal-tab-bar,
+    [data-theme="synthwave"] .addon-modal-tab-bar,
+    [data-theme="nighthawk"] .addon-modal-tab-bar,
+    [data-theme="catppuccin"] .addon-modal-tab-bar,
+    [data-theme="custom"] .addon-modal-tab-bar {
       background: rgba(255, 255, 255, 0.03);
-      border-bottom-color: #38bdf8;
+      border-bottom-color: var(--sec-bar-bg, #38bdf8);
     }
-    [data-theme="dark"] .addon-modal-tab-btn {
-      background: #181d22;
-      border-color: #333d47;
-      color: #94a3b8;
+    [data-theme="dark"] .addon-modal-tab-btn,
+    [data-theme="archer-dark"] .addon-modal-tab-btn,
+    [data-theme="amber-dark"] .addon-modal-tab-btn,
+    [data-theme="matrix"] .addon-modal-tab-btn,
+    [data-theme="synthwave"] .addon-modal-tab-btn,
+    [data-theme="nighthawk"] .addon-modal-tab-btn,
+    [data-theme="catppuccin"] .addon-modal-tab-btn,
+    [data-theme="custom"] .addon-modal-tab-btn {
+      background: var(--table-th-bg, #181d22);
+      border-color: var(--card-border, #333d47);
+      color: var(--text-sub, #94a3b8);
     }
-    [data-theme="dark"] .addon-modal-tab-btn:hover {
-      background: #232b33;
-      color: #f1f5f9;
+    [data-theme="dark"] .addon-modal-tab-btn:hover,
+    [data-theme="archer-dark"] .addon-modal-tab-btn:hover,
+    [data-theme="amber-dark"] .addon-modal-tab-btn:hover,
+    [data-theme="matrix"] .addon-modal-tab-btn:hover,
+    [data-theme="synthwave"] .addon-modal-tab-btn:hover,
+    [data-theme="nighthawk"] .addon-modal-tab-btn:hover,
+    [data-theme="catppuccin"] .addon-modal-tab-btn:hover,
+    [data-theme="custom"] .addon-modal-tab-btn:hover {
+      background: var(--table-hover-row, #232b33);
+      color: var(--text-bold, #f1f5f9);
     }
-    [data-theme="dark"] .addon-modal-tab-btn.active-tab {
-      background: #1a1e22 !important;
-      border: 2px solid #38bdf8 !important;
-      border-top: 3px solid #38bdf8 !important;
-      border-bottom: 2px solid #1a1e22 !important;
-      color: #38bdf8 !important;
+    [data-theme="dark"] .addon-modal-tab-btn.active-tab,
+    [data-theme="archer-dark"] .addon-modal-tab-btn.active-tab,
+    [data-theme="amber-dark"] .addon-modal-tab-btn.active-tab,
+    [data-theme="matrix"] .addon-modal-tab-btn.active-tab,
+    [data-theme="synthwave"] .addon-modal-tab-btn.active-tab,
+    [data-theme="nighthawk"] .addon-modal-tab-btn.active-tab,
+    [data-theme="catppuccin"] .addon-modal-tab-btn.active-tab,
+    [data-theme="custom"] .addon-modal-tab-btn.active-tab {
+      background: var(--modal-bg, #1a1e22) !important;
+      border: 2px solid var(--sec-bar-border, #38bdf8) !important;
+      border-top: 3px solid var(--sec-bar-bg, #38bdf8) !important;
+      border-bottom: 2px solid var(--modal-bg, #1a1e22) !important;
+      color: var(--sec-bar-bg, #38bdf8) !important;
       box-shadow: 0 -2px 8px rgba(56, 189, 248, 0.2) !important;
     }
-    [data-theme="dark"] .addon-modal-tab-btn.active-tab::after {
-      background: #1a1e22 !important;
+    [data-theme="dark"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="archer-dark"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="amber-dark"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="matrix"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="synthwave"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="nighthawk"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="catppuccin"] .addon-modal-tab-btn.active-tab::after,
+    [data-theme="custom"] .addon-modal-tab-btn.active-tab::after {
+      background: var(--modal-bg, #1a1e22) !important;
     }
     [data-theme="win7"] .addon-modal-tab-bar {
       background: linear-gradient(180deg, #dbe7f5 0%, #ccdcf0 100%);
@@ -4240,13 +4287,13 @@
         </div>
 
         <!-- ── UPCOMING EVENT NOTIFICATION BANNER ───────────────── -->
-        <div id="tp-event-reminder-banner" class="status-alert" style="display: none; background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; padding: 10px 14px; margin-bottom: 12px; border-radius: 2px;">
+        <div id="tp-event-reminder-banner" class="status-alert" style="display: none; background: var(--banner-success-bg, #eff6ff); border: 1px solid var(--banner-success-border, #93c5fd); color: var(--banner-success-text, #1e40af); padding: 10px 14px; margin-bottom: 12px; border-radius: 2px;">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 9px;">
-              <i class="fa-solid fa-calendar-star" style="font-size: 16px; color: #2563eb;"></i>
+              <i class="fa-solid fa-calendar-star" style="font-size: 16px; color: var(--banner-success-text, #2563eb);"></i>
               <div>
-                <strong style="color: #1e3a8a;">Server Event Reminder:</strong>
-                <span id="event-reminder-banner-msg" style="margin-left: 4px; font-size: 11.5px;">No upcoming events.</span>
+                <strong style="color: var(--banner-success-text, #1e3a8a);">Server Event Reminder:</strong>
+                <span id="event-reminder-banner-msg" style="margin-left: 4px; font-size: 11.5px; color: var(--text-main);">No upcoming events.</span>
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -6131,7 +6178,7 @@
           </div>
 
           <!-- Batch Action Bar (shown when checkboxes are checked) -->
-          <div id="fm-batch-toolbar" style="display:none; justify-content:space-between; align-items:center; background:#fef3c7; border:1px solid #f59e0b; padding:4px 10px; margin-bottom:8px; font-size:11px;">
+          <div id="fm-batch-toolbar" style="display:none; justify-content:space-between; align-items:center; background: var(--table-th-bg, #fef3c7); border: 1px solid var(--sec-bar-border, #f59e0b); color: var(--text-main); padding:4px 10px; margin-bottom:8px; font-size:11px;">
             <div><strong id="fm-selected-count">0</strong> item(s) selected</div>
             <div style="display:flex; gap:6px;">
               <button class="btn-classic" style="height:22px; font-size:10px;" onclick="executeBatchArchive()">[ Zip Selected ]</button>
@@ -7568,7 +7615,7 @@ def on_action(ctx, action_name, payload):
         <div style="margin-bottom: 14px;">
           <div style="font-weight: bold; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-sub, #555); display: flex; justify-content: space-between; align-items: center;">
             <span><i class="fa-solid fa-book-open" style="margin-right: 4px;"></i> Minecraft Wiki Description</span>
-            <span id="item-details-wiki-badge" style="font-size: 9px; padding: 1px 6px; background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; border-radius: 2px;">Official Wiki</span>
+            <span id="item-details-wiki-badge" style="font-size: 9px; padding: 1px 6px; background: var(--banner-success-bg, #e8f5e9); color: var(--banner-success-text, #1b5e20); border: 1px solid var(--banner-success-border, #c8e6c9); border-radius: 2px;">Official Wiki</span>
           </div>
           <div id="item-details-desc-box" style="background: rgba(0,0,0,0.03); border: 1px solid var(--table-td-border); padding: 10px 12px; font-size: 12px; line-height: 1.5; max-height: 150px; overflow-y: auto; color: var(--text-color);">
             <div id="item-details-desc-text">Loading description from Minecraft Wiki...</div>
@@ -10190,7 +10237,7 @@ def on_action(ctx, action_name, payload):
       const foodPercent = Math.min(100, (data.food / 20) * 100);
 
       container.innerHTML = `
-        <div style="background: #fafafa; border: 1px solid #d4d4d4; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="background: var(--table-th-bg, #fafafa); border: 1px solid var(--border-color, #d4d4d4); color: var(--text-main); padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <img data-darkreader-ignore src="https://mc-heads.net/avatar/${escapeHtml(data.player)}/44" width="44" height="44" style="border: 1px solid var(--border-color); background: var(--table-th-bg); image-rendering: pixelated;" onerror="this.style.display='none'">
             <div>
@@ -10199,7 +10246,7 @@ def on_action(ctx, action_name, payload):
                 ${data.is_online ? '<span class="badge-status online" style="font-size:9px; margin-left:6px;">ONLINE</span>' : '<span style="color:var(--text-sub); font-size:10px; margin-left:6px;">(Offline File)</span>'}
               </div>
               <div style="color: var(--text-sub); font-size: 10px; font-family: monospace;">UUID: ${escapeHtml(data.uuid)}</div>
-              <div style="font-size: 10px; color: #444; margin-top: 2px;">
+              <div style="font-size: 10px; color: var(--text-sub, #666); margin-top: 2px;">
                 Mode: <strong>${escapeHtml(data.gamemode)}</strong> | Dim: <strong>${escapeHtml(data.dimension)}</strong> | Pos: <strong>X: ${data.pos[0]}, Y: ${data.pos[1]}, Z: ${data.pos[2]}</strong>
               </div>
             </div>
@@ -10209,14 +10256,14 @@ def on_action(ctx, action_name, payload):
               <span>Health: <strong>${data.health} / 20</strong></span>
               <i class="fa-solid fa-heart" style="color: #c00;"></i>
             </div>
-            <div style="background: #e0e0e0; height: 8px; border: 1px solid #aaa; border-radius: 2px; overflow: hidden;">
+            <div style="background: var(--input-bg, #e0e0e0); height: 8px; border: 1px solid var(--input-border, #aaa); border-radius: 2px; overflow: hidden;">
               <div style="background: #dd2222; height: 100%; width: ${hpPercent}%;"></div>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 10px;">
               <span>Food: <strong>${data.food} / 20</strong></span>
               <i class="fa-solid fa-drumstick-bite" style="color: #bb6600;"></i>
             </div>
-            <div style="background: #e0e0e0; height: 8px; border: 1px solid #aaa; border-radius: 2px; overflow: hidden;">
+            <div style="background: var(--input-bg, #e0e0e0); height: 8px; border: 1px solid var(--input-border, #aaa); border-radius: 2px; overflow: hidden;">
               <div style="background: #d8891c; height: 100%; width: ${foodPercent}%;"></div>
             </div>
             <div style="font-size: 10px; text-align: right; color: var(--help-sub-text, #006622); font-weight: bold;">
@@ -10227,23 +10274,23 @@ def on_action(ctx, action_name, payload):
 
         <div style="display: flex; gap: 14px; margin-bottom: 12px;">
           <!-- Armor & Offhand Column -->
-          <div style="background: #efefef; border: 1px solid #ccc; padding: 8px; width: 130px; flex-shrink: 0;">
+          <div style="background: var(--panel-bg, var(--table-th-bg, #efefef)); border: 1px solid var(--border-color, #ccc); padding: 8px; width: 130px; flex-shrink: 0;">
             <div style="font-weight: bold; font-size: 11px; margin-bottom: 6px; color: var(--text-bold); text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 3px;">Armor &amp; Offhand</div>
             <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
               ${renderSlotHtml(armor.head, 'Head (Helmet)', 'armor_head')}
               ${renderSlotHtml(armor.chest, 'Chest (Chestplate)', 'armor_chest')}
               ${renderSlotHtml(armor.legs, 'Legs (Leggings)', 'armor_legs')}
               ${renderSlotHtml(armor.feet, 'Feet (Boots)', 'armor_feet')}
-              <div style="height: 1px; width: 80%; background: #ccc; margin: 2px 0;"></div>
+              <div style="height: 1px; width: 80%; background: var(--border-color, #ccc); margin: 2px 0;"></div>
               ${renderSlotHtml(offhand, 'Offhand (Shield / Held Item)', 'offhand')}
             </div>
           </div>
 
           <!-- Main Inventory Grid (9x3) and Hotbar (9x1) -->
-          <div style="flex: 1; background: #efefef; border: 1px solid #ccc; padding: 10px;">
+          <div style="flex: 1; background: var(--panel-bg, var(--table-th-bg, #efefef)); border: 1px solid var(--border-color, #ccc); padding: 10px;">
             <div style="font-weight: bold; font-size: 11px; margin-bottom: 6px; color: var(--text-bold); border-bottom: 1px solid var(--border-color); padding-bottom: 3px; display: flex; justify-content: space-between;">
               <span>Main Inventory Storage (27 Slots)</span>
-              <span style="font-size: 10px; color: #777;">Hover item and click '×' to clear</span>
+              <span style="font-size: 10px; color: var(--text-sub, #777);">Hover item and click '×' to clear</span>
             </div>
             <!-- 9x3 grid -->
             <div class="inv-slot-grid" style="grid-template-columns: repeat(9, 44px); justify-content: center; margin-bottom: 8px;">
@@ -10261,7 +10308,7 @@ def on_action(ctx, action_name, payload):
         </div>
 
         <!-- Ender Chest (Collapsible) -->
-        <details style="background: #efefef; border: 1px solid #ccc; padding: 6px 10px; margin-bottom: 12px;">
+        <details style="background: var(--panel-bg, var(--table-th-bg, #efefef)); border: 1px solid var(--border-color, #ccc); padding: 6px 10px; margin-bottom: 12px;">
           <summary style="font-weight: bold; font-size: 11px; cursor: pointer; color: var(--help-sub-text, #006622);">
             Ender Chest Storage (${ender.length} items stored)
           </summary>
@@ -10276,11 +10323,11 @@ def on_action(ctx, action_name, payload):
         </details>
 
         <!-- Inventory Action Toolbar -->
-        <div style="background: #fdfdfd; border: 1px solid #d0d0d0; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="background: var(--table-th-bg, #fdfdfd); border: 1px solid var(--border-color, #d0d0d0); padding: 10px; display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; gap: 6px; align-items: center;">
             <span style="font-weight: bold; white-space: nowrap;">Give Item:</span>
             <div style="position: relative; flex: 1;">
-              <input type="text" id="inv-give-item" autocomplete="off" placeholder="Search item by name or ID (e.g. diamond_sword, bread, mace)..." style="width: 100%; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #7f9db9;" onfocus="showItemDropdown()" oninput="onItemSearchInput(this.value)" onkeydown="onItemSearchKeyDown(event)">
+              <input type="text" id="inv-give-item" autocomplete="off" placeholder="Search item by name or ID (e.g. diamond_sword, bread, mace)..." style="width: 100%; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid var(--input-border, #7f9db9); background: var(--input-bg, #fff); color: var(--input-text, #000);" onfocus="showItemDropdown()" oninput="onItemSearchInput(this.value)" onkeydown="onItemSearchKeyDown(event)">
               <div id="inv-item-dropdown" class="item-search-dropdown" style="display: none;">
                 <div class="item-dropdown-header">
                   <span id="item-dropdown-status">Select Item to Give</span>
@@ -10290,10 +10337,10 @@ def on_action(ctx, action_name, payload):
               </div>
             </div>
             <span style="white-space: nowrap;">Count:</span>
-            <input type="number" id="inv-give-count" value="1" min="1" max="64" style="width: 55px; height: 26px; text-align: center;">
+            <input type="number" id="inv-give-count" value="1" min="1" max="64" style="width: 55px; height: 26px; text-align: center; border: 1px solid var(--input-border, #7f9db9); background: var(--input-bg, #fff); color: var(--input-text, #000);">
             <button class="btn-satin-green" style="height: 26px; white-space: nowrap;" onclick="giveItemToPlayer()">[ + Give Item ]</button>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color, #eee); padding-top: 6px;">
             <div style="display: flex; gap: 6px;">
               <button class="btn-classic" style="height: 24px;" onclick="playerAction(currentInvPlayer, 'heal'); setTimeout(refreshCurrentPlayerInventory, 400);">[ Heal &amp; Feed ]</button>
               <button class="btn-classic" style="height: 24px;" onclick="playerAction(currentInvPlayer, 'tp_spawn'); setTimeout(refreshCurrentPlayerInventory, 400);">[ TP to Spawn ]</button>
@@ -11468,7 +11515,7 @@ def on_action(ctx, action_name, payload):
             const dlUrl = primaryFile.url || '';
             const filename = primaryFile.filename || `${title}-${v.version_number}.jar`;
             const mcVers = (v.game_versions || []).slice(0, 5).join(', ') + ((v.game_versions && v.game_versions.length > 5) ? ' ...' : '');
-            const loaders = (v.loaders || []).map(l => `<span style="background:#e2e8f0; color:#334155; padding:1px 4px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:3px;">${escapeHtml(l)}</span>`).join('');
+            const loaders = (v.loaders || []).map(l => `<span style="background:var(--table-th-bg, #e2e8f0); color:var(--text-main, #334155); border:1px solid var(--card-border, #cbd5e1); padding:1px 4px; border-radius:3px; font-size:9px; font-weight:bold; margin-right:3px;">${escapeHtml(l)}</span>`).join('');
             const dateStr = v.date_published ? v.date_published.slice(0, 10) : 'N/A';
 
             return `
@@ -17303,13 +17350,13 @@ def on_action(ctx, action_name, payload):
             pluginsRows = pluginsList.map(p => `
               <tr>
                 <td><strong>${escapeHtml(p.name)}</strong></td>
-                <td><span class="inline-badge" style="${p.required ? 'background:#fee2e2;color:#991b1b;' : 'background:#f1f5f9;color:#475569;'}">${p.required ? 'Mandatory' : 'Optional'}</span></td>
+                <td><span class="inline-badge" style="${p.required ? 'background:rgba(239, 68, 68, 0.18);color:#ef4444;border:1px solid rgba(239, 68, 68, 0.4);' : 'background:var(--table-th-bg, #f1f5f9);color:var(--text-sub, #475569);border:1px solid var(--card-border, #cbd5e1);'}">${p.required ? 'Mandatory' : 'Optional'}</span></td>
                 <td>
                   ${p.satisfied ? `
                     <span style="color:var(--banner-success-text, #16a34a);font-weight:bold;"><i class="fa-solid fa-check" style="margin-right:4px;"></i> Satisfied</span>
                     ${p.detected_plugin ? `<div style="font-size:10px;color:var(--text-sub);">Detected: ${escapeHtml(p.detected_plugin)}</div>` : ''}
                   ` : `
-                    <span style="color:#dc2626;font-weight:bold;"><i class="fa-solid fa-xmark" style="margin-right:4px;"></i> Not Found in /plugins</span>
+                    <span style="color:var(--danger-text, #ef4444);font-weight:bold;"><i class="fa-solid fa-xmark" style="margin-right:4px;"></i> Not Found in /plugins</span>
                   `}
                 </td>
                 <td>

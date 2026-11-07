@@ -797,10 +797,10 @@
             <td style="text-align: center; width: 36px; vertical-align: middle;">${getAddonIconHtml(a.icon, 18)}</td>
             <td><code>${escapeHtml(a.id)}</code></td>
             <td><strong>${escapeHtml(a.name)}</strong></td>
-            <td><span class="inline-badge" style="background: #e2e8f0; color: #334155;">v${escapeHtml(a.version || '1.0.0')}</span></td>
+            <td><span class="inline-badge" style="background: var(--table-th-bg, #e2e8f0); color: var(--text-main, #334155); border: 1px solid var(--border-color, #cbd5e1);">v${escapeHtml(a.version || '1.0.0')}</span></td>
             <td><span class="inline-badge" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">${escapeHtml(a.category || 'Tools')}</span></td>
             <td>${escapeHtml(a.author || 'FiestaSMP Team')}</td>
-            <td>${isFeatured ? '<span class="inline-badge" style="background:#16a34a;color:#fff;">Featured</span>' : '<span style="color:#999;">--</span>'}</td>
+            <td>${isFeatured ? '<span class="inline-badge" style="background: var(--banner-success-bg, #16a34a); color: var(--banner-success-text, #fff); border: 1px solid var(--banner-success-border, #16a34a);">Featured</span>' : '<span style="color:var(--text-sub, #999);">--</span>'}</td>
             <td><span class="inline-hint">${filesCount} files</span></td>
             <td style="text-align: right; white-space: nowrap; vertical-align: middle;">
               <button type="button" class="btn-classic tbl-action-btn" onclick="openEditAddonModal('${escapeHtml(a.id)}')">[ Details ]</button>

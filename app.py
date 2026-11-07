@@ -3464,6 +3464,11 @@ def api_software_install():
                 except Exception: pass
         elif software in ("bedrock", "bds"):
             with zipfile.ZipFile(tmp_path, "r") as zf:
+                real_server_dir = os.path.realpath(SERVER_DIR)
+                for member in zf.namelist():
+                    abs_target = os.path.realpath(os.path.join(SERVER_DIR, member))
+                    if not (abs_target == real_server_dir or abs_target.startswith(real_server_dir + os.sep)):
+                        raise ValueError(f"Unsafe path in archive: {member}")
                 zf.extractall(SERVER_DIR)
             bds_bin = os.path.join(SERVER_DIR, "bedrock_server")
             if os.path.exists(bds_bin):
@@ -8355,6 +8360,13 @@ def route_install_ps1():
     if os.path.exists(install_path):
         return send_file(install_path, mimetype="text/plain")
     return "Write-Error 'FiestaPanel: install.ps1 not found'; exit 1", 404, {"Content-Type": "text/plain"}
+
+@app.route("/install.bat")
+def route_install_bat():
+    install_path = os.path.join(BASE_DIR, "install.bat")
+    if os.path.exists(install_path):
+        return send_file(install_path, mimetype="text/plain")
+    return "@echo off\r\necho FiestaPanel: install.bat not found\r\nexit /b 1", 404, {"Content-Type": "text/plain"}
 
 if __name__ == "__main__":
     h = SERVER_CONFIG.get("host", "127.0.0.1")

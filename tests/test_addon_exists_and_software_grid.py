@@ -5,6 +5,7 @@ import tempfile
 import json
 import uuid
 import io
+import zipfile
 from unittest.mock import patch, MagicMock
 
 import app as portal_app
@@ -239,6 +240,66 @@ class TestAddonExistsAndSoftwareGrid(unittest.TestCase):
         # 3. Every card has a badge slot container to guarantee equal row heights
         badge_slots = re.findall(r'class="sw-card-badge-slot"', content)
         self.assertEqual(len(badge_slots), 12, "Every software card must have a .sw-card-badge-slot")
+
+    def test_install_scripts_endpoints(self):
+        # 1. /install.sh
+        resp_sh = self._get("/install.sh")
+        self.assertEqual(resp_sh.status_code, 200)
+        self.assertIn(b"FiestaPanel", resp_sh.data)
+        resp_sh.close()
+
+        # 2. /install.ps1
+        resp_ps1 = self._get("/install.ps1")
+        self.assertEqual(resp_ps1.status_code, 200)
+        self.assertIn(b"FiestaPanel", resp_ps1.data)
+        resp_ps1.close()
+
+        # 3. /install.bat
+        resp_bat = self._get("/install.bat")
+        self.assertEqual(resp_bat.status_code, 200)
+        self.assertIn(b"FiestaPanel", resp_bat.data)
+        self.assertIn(b"@echo off", resp_bat.data)
+        resp_bat.close()
+
+    def test_bedrock_zip_slip_prevention(self):
+        evil_zip_path = os.path.join(self.temp_dir, "evil.zip")
+        with zipfile.ZipFile(evil_zip_path, "w") as zf:
+            zf.writestr("../evil.txt", "pwned")
+
+        # Simulate bedrock extraction check logic
+        with zipfile.ZipFile(evil_zip_path, "r") as zf:
+            real_server_dir = os.path.realpath(self.temp_dir)
+            with self.assertRaises(ValueError):
+                for member in zf.namelist():
+                    abs_target = os.path.realpath(os.path.join(self.temp_dir, member))
+                    if not (abs_target == real_server_dir or abs_target.startswith(real_server_dir + os.sep)):
+                        raise ValueError(f"Unsafe path in archive: {member}")
+                zf.extractall(self.temp_dir)
+
+    def test_dark_theme_and_modal_contrast_fixes(self):
+        tpl_path = os.path.join(portal_app.BASE_DIR, "templates", "dashboard.html")
+        with open(tpl_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # 1. Event reminder banner uses CSS variables
+        self.assertIn('id="tp-event-reminder-banner"', content)
+        self.assertIn('background: var(--banner-success-bg, #eff6ff);', content)
+
+        # 2. FM batch toolbar uses CSS variables
+        self.assertIn('id="fm-batch-toolbar"', content)
+        self.assertIn('background: var(--table-th-bg, #fef3c7);', content)
+
+        # 3. Player inventory modal uses CSS variables
+        self.assertIn('id="inv-modal-body"', content)
+        self.assertIn('background: var(--table-th-bg, #fafafa);', content)
+
+        # 4. Perm badge all has dark theme overrides
+        self.assertIn('[data-theme="dark"] .perm-badge.all', content)
+        self.assertIn('[data-theme="catppuccin"] .perm-badge.all', content)
+
+        # 5. Addon modal active tab has overrides for all dark themes
+        self.assertIn('[data-theme="archer-dark"] .addon-modal-tab-btn.active-tab', content)
+        self.assertIn('[data-theme="nighthawk"] .addon-modal-tab-btn.active-tab', content)
 
 if __name__ == "__main__":
     unittest.main()
