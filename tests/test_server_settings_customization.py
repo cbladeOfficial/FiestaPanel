@@ -333,14 +333,16 @@ class ServerSettingsCustomizationTests(unittest.TestCase):
 
     def test_server_properties_port_editable(self):
         self._login(role="owner", permissions=["all"])
-        props_file = os.path.join(portal_app.SERVER_DIR, "server.properties")
-        os.makedirs(portal_app.SERVER_DIR, exist_ok=True)
+        temp_srv = os.path.join(self.temp_dir.name, "server")
+        os.makedirs(temp_srv, exist_ok=True)
+        props_file = os.path.join(temp_srv, "server.properties")
         with open(props_file, "w") as f:
             f.write("server-port=25565\nmotd=A Minecraft Server\nmax-players=20\n")
 
-        res_post = self._post('/api/server/properties', {"server-port": 25577, "max-players": 50})
-        self.assertEqual(res_post.status_code, 200)
-        self.assertEqual(portal_app.get_server_port(), 25577)
+        with patch.object(portal_app, 'SERVER_DIR', temp_srv):
+            res_post = self._post('/api/server/properties', {"server-port": 25577, "max-players": 50})
+            self.assertEqual(res_post.status_code, 200)
+            self.assertEqual(portal_app.get_server_port(), 25577)
 
 
 if __name__ == '__main__':
