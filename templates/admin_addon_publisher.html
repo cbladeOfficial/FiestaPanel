@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>{{ branding.brand_name }} | Fiesta Developer Addon Studio</title>
   <link rel="icon" id="portal-favicon" href="{{ get_portal_favicon_url(branding) }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -377,7 +378,7 @@
       <div class="panel-box">
         <div class="section-title-bar">
           <span>FiestaSMP Official Community Discord Link &amp; Broadcast Presets</span>
-          <span style="font-size: 10px; color: #64748b;">Syncs into official addon broadcasts &amp; repository metadata</span>
+          <span style="font-size: 10px; color: var(--text-sub);">Syncs into official addon broadcasts &amp; repository metadata</span>
         </div>
         <div class="panel-body">
           <p style="margin: 0 0 10px 0; font-size: 11px; color: var(--text-sub);">
@@ -433,7 +434,7 @@
             </thead>
             <tbody id="catalog-tbody">
               <tr>
-                <td colspan="9" style="text-align: center; color: #888; padding: 20px;">Loading official addon repository catalog...</td>
+                <td colspan="9" style="text-align: center; color: var(--text-sub); padding: 20px;">Loading official addon repository catalog...</td>
               </tr>
             </tbody>
           </table>
@@ -581,7 +582,7 @@
         <textarea id="docs-markdown-input" class="ctrl-input" style="width: 100%; height: 380px; font-family: monospace; font-size: 11.5px; line-height: 1.4; resize: vertical;" placeholder="# Addon Title&#10;&#10;## Features&#10;- Feature 1&#10;&#10;## Setup Guide&#10;..."></textarea>
       </div>
       <div style="background: var(--table-alt); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--table-border);">
-        <span style="font-size: 10.5px; color: #64748b;">Supports GitHub-flavored markdown and alerts.</span>
+        <span style="font-size: 10.5px; color: var(--text-sub);">Supports GitHub-flavored markdown and alerts.</span>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn-satin-green" onclick="submitSaveDocs()">[ Save Documentation ]</button>
           <button type="button" class="btn-classic" onclick="closeModal('modal-edit-docs')">[ Cancel ]</button>
@@ -783,7 +784,7 @@
       if (countBadge) countBadge.textContent = `${addons.length} official addons in store`;
 
       if (addons.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #888; padding: 20px;">No addons in repository catalog.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-sub); padding: 20px;">No addons in repository catalog.</td></tr>';
         return;
       }
 

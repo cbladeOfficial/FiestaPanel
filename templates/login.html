@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>{{ branding.brand_name }} | {{ branding.model_number }} Login</title>
   <link rel="icon" id="portal-favicon" href="{{ get_portal_favicon_url(branding) }}">
   <link rel="shortcut icon" href="{{ get_portal_favicon_url(branding) }}">
@@ -74,8 +75,8 @@
       --header-sub-color: #92d89b;
       --sec-bar-bg: #3d6910;
       --sec-bar-border: #2e520b;
-      --text-main: #d0d6de;
-      --text-sub: #8c959f;
+      --text-main: #e6edf3;
+      --text-sub: #a8b4c2;
       --input-bg: #262b32;
       --input-border: #3c444f;
       --input-badge-bg: #20242a;
@@ -100,8 +101,8 @@
       --header-sub-color: #79c0ff;
       --sec-bar-bg: #005a9e;
       --sec-bar-border: #004578;
-      --text-main: #cad5e2;
-      --text-sub: #8696a7;
+      --text-main: #e2ecf8;
+      --text-sub: #a5b9ce;
       --input-bg: #1e2836;
       --input-border: #324357;
       --input-badge-bg: #151d27;
@@ -126,8 +127,8 @@
       --header-sub-color: #ffb870;
       --sec-bar-bg: #8c3b03;
       --sec-bar-border: #6e2e02;
-      --text-main: #dfd3ca;
-      --text-sub: #9e8b7f;
+      --text-main: #f5ebe3;
+      --text-sub: #c7b5a9;
       --input-bg: #28221d;
       --input-border: #4a3d34;
       --input-badge-bg: #1e1916;
@@ -152,8 +153,8 @@
       --header-sub-color: #80ffaa;
       --sec-bar-bg: #00551c;
       --sec-bar-border: #00ff66;
-      --text-main: #99eeaa;
-      --text-sub: #44aa66;
+      --text-main: #bdf5c8;
+      --text-sub: #6ce894;
       --input-bg: #060e06;
       --input-border: #00aa44;
       --input-badge-bg: #040a04;
@@ -178,8 +179,8 @@
       --header-sub-color: #ffb8e0;
       --sec-bar-bg: #ff2a85;
       --sec-bar-border: #cc1865;
-      --text-main: #e2d4f5;
-      --text-sub: #a48bbd;
+      --text-main: #f3ebfa;
+      --text-sub: #cfbfe4;
       --input-bg: #110721;
       --input-border: #6b2e9e;
       --input-badge-bg: #0d0519;
@@ -204,8 +205,8 @@
       --header-sub-color: #fca5a5;
       --sec-bar-bg: #bd1a26;
       --sec-bar-border: #99141e;
-      --text-main: #d4d4d8;
-      --text-sub: #8e8e96;
+      --text-main: #f0f0f4;
+      --text-sub: #b8b8c2;
       --input-bg: #101012;
       --input-border: #4c4c56;
       --input-badge-bg: #0a0a0c;
@@ -256,8 +257,8 @@
       --header-sub-color: #bac2de;
       --sec-bar-bg: #cba6f7;
       --sec-bar-border: #b48ead;
-      --text-main: #cdd6f4;
-      --text-sub: #9399b2;
+      --text-main: #e4e9fa;
+      --text-sub: #bac2de;
       --input-bg: #181825;
       --input-border: #45475a;
       --input-badge-bg: #11111b;
@@ -308,8 +309,8 @@
       --header-sub-color: #d1b8eb;
       --sec-bar-bg: #00f0ff;
       --sec-bar-border: #00bfcc;
-      --text-main: #d0d6de;
-      --text-sub: #8c959f;
+      --text-main: #e6edf3;
+      --text-sub: #a8b4c2;
       --input-bg: #121417;
       --input-border: #3c4450;
       --input-badge-bg: #0e1014;
@@ -346,6 +347,61 @@
       --btn-border: #134e85;
       --info-border: #b8d4ed;
       --info-val: #003e7e;
+    }
+
+    /* ── Native Color Scheme Adaptation for Native Form Controls ── */
+    [data-theme="dark"],
+    [data-theme="archer-dark"],
+    [data-theme="amber-dark"],
+    [data-theme="matrix"],
+    [data-theme="synthwave"],
+    [data-theme="nighthawk"],
+    [data-theme="catppuccin"],
+    [data-theme="custom"][data-custom-mode="dark"] {
+      color-scheme: dark;
+    }
+
+    [data-theme="classic"],
+    [data-theme="archer"],
+    [data-theme="amber"],
+    [data-theme="nordic"],
+    [data-theme="win98"],
+    [data-theme="win7"],
+    [data-theme="custom"][data-custom-mode="light"] {
+      color-scheme: light;
+    }
+
+    /* ── Dark Reader Extension Compatibility ── */
+    html[data-darkreader-scheme="dark"],
+    html[data-darkreader-mode] {
+      color-scheme: dark !important;
+    }
+
+    html[data-darkreader-scheme="dark"] [data-theme="win7"] .login-container,
+    html[data-darkreader-mode] [data-theme="win7"] .login-container {
+      background: rgba(18, 26, 36, 0.94) !important;
+      border: 1px solid rgba(80, 160, 240, 0.6) !important;
+      color: #f0f6fc !important;
+    }
+
+    html[data-darkreader-scheme="dark"] [data-theme="win7"] .login-body,
+    html[data-darkreader-mode] [data-theme="win7"] .login-body {
+      background: #141c24 !important;
+      color: #f0f6fc !important;
+    }
+
+    html[data-darkreader-scheme="dark"] [data-theme="win7"] input,
+    html[data-darkreader-mode] [data-theme="win7"] input {
+      background: #1e2834 !important;
+      color: #f0f6fc !important;
+      border: 1px solid #3b5066 !important;
+    }
+
+    html[data-darkreader-scheme="dark"] [data-theme="win7"] .login-btn,
+    html[data-darkreader-mode] [data-theme="win7"] .login-btn {
+      background: linear-gradient(180deg, #1b5693 0%, #103c68 100%) !important;
+      color: #ffffff !important;
+      border-color: #3b74a8 !important;
     }
 
     [data-theme="win7"] body {
