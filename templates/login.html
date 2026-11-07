@@ -324,6 +324,7 @@
     }
 
     [data-theme="win7"] {
+      --font-sans: "Segoe UI", "SegoeUI", "Noto Sans", sans-serif;
       --bg-page: #06192d;
       --bg-frame: rgba(255, 255, 255, 0.96);
       --border-frame: #3285c7;
@@ -409,7 +410,7 @@
         radial-gradient(circle at 50% 8%, rgba(68, 179, 255, 0.85) 0%, rgba(26, 120, 205, 0.7) 25%, transparent 60%),
         radial-gradient(ellipse at 50% 100%, rgba(0, 45, 95, 0.9) 0%, rgba(3, 16, 32, 0.98) 100%),
         linear-gradient(180deg, #1860a4 0%, #0c3666 40%, #051a33 75%, #020b17 100%) fixed !important;
-      font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+      font-family: "Segoe UI", "SegoeUI", "Noto Sans", sans-serif !important;
     }
     [data-theme="win7"] .login-container {
       border-radius: 8px !important;
@@ -456,6 +457,9 @@
       text-shadow: 0 0 6px #ffffff !important;
       font-weight: 600 !important;
     }
+    [data-theme="win7"] input {
+      font-family: "Segoe UI", sans-serif !important;
+    }
     [data-theme="win7"] .login-btn {
       background: linear-gradient(to bottom, #5bb4f8 0%, #3594e2 48%, #1569b4 49%, #277ece 100%) !important;
       border: 1px solid #134e85 !important;
@@ -463,6 +467,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 0 6px rgba(25, 120, 220, 0.4) !important;
       color: #ffffff !important;
       text-shadow: 0 1px 2px rgba(0, 30, 80, 0.6) !important;
+      font-family: "Segoe UI", sans-serif !important;
       font-weight: 700;
     }
     [data-theme="win7"] .login-btn:hover {

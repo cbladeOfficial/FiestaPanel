@@ -191,7 +191,7 @@ fiestapanel version       # FiestaPanel Software Suite v2.1.0
 
 ##  Themes Supported
 
-- **Windows 7 Aero**: Authentic design powered by [**7.css**](https://github.com/khang-nd/7.css) by Khang NT. Vibrant electric azure Aero Glass frames, specular glass reflection buttons, interactive titlebar controls (minimize/maximize/close), and crisp Arial typography.
+- **Windows 7 Aero**: Authentic design powered by [**7.css**](https://github.com/khang-nd/7.css) by Khang NT. Vibrant electric azure Aero Glass frames, specular glass reflection buttons, interactive titlebar controls (minimize/maximize/close), and Segoe UI typography.
 - **TP-Link Classic**: Retro 2000s router web interface.
 - **Windows 98**: Classic desktop bevels and teal aesthetic.
 - **Dark Mode**: High contrast OLED dark styling.
