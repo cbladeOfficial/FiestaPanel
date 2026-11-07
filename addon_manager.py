@@ -13,6 +13,8 @@ import urllib.request
 import urllib.parse
 import time
 import io
+import html
+import re
 from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger("fiestapanel.addons")
@@ -101,7 +103,7 @@ STORE_CATALOG = [
     <tr>
       <td class="label-col">Discord Webhook URL:</td>
       <td class="val-col">
-        <input type="password" id="addon-discord-url" class="ctrl-input" style="width:75%;" placeholder="https://discord.com/api/webhooks/...">
+        <input type="password" id="addon-discord-url" class="ctrl-input" style="width:75%;" placeholder="https://discord.com/api/webhooks/..." value="{{ settings.webhook_url }}">
         <button class="btn-classic" onclick="togglePasswordVisibility('addon-discord-url', this)">[ Show ]</button>
         <button class="btn-classic" style="margin-left:6px;font-weight:bold;color:#5865f2;" onclick="testDiscordWebhook()">[ Test Ping ]</button>
       </td>
@@ -109,27 +111,27 @@ STORE_CATALOG = [
     <tr>
       <td class="label-col">Bot Display Name:</td>
       <td class="val-col">
-        <input type="text" id="addon-discord-botname" class="ctrl-input" style="width:50%;" value="FiestaPanel Gateway">
+        <input type="text" id="addon-discord-botname" class="ctrl-input" style="width:50%;" value="{{ settings.bot_name }}">
       </td>
     </tr>
     <tr>
       <td class="label-col">Bot Avatar URL:</td>
       <td class="val-col">
-        <input type="text" id="addon-discord-avatar" class="ctrl-input" style="width:75%;" placeholder="https://example.com/icon.png">
+        <input type="text" id="addon-discord-avatar" class="ctrl-input" style="width:75%;" placeholder="https://example.com/icon.png" value="{{ settings.avatar_url }}">
       </td>
     </tr>
     <tr>
       <td class="label-col">Notification Triggers:</td>
       <td class="val-col">
-        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-start" checked> Server Online Event</label>
-        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-stop" checked> Server Stop Event</label>
-        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-join" checked> Player Join / Leave</label>
+        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-start" {{ notify_start_checked }}> Server Online Event</label>
+        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-stop" {{ notify_stop_checked }}> Server Stop Event</label>
+        <label style="margin-right:15px;cursor:pointer;"><input type="checkbox" id="addon-discord-notif-join" {{ notify_join_checked }}> Player Join / Leave</label>
       </td>
     </tr>
     <tr>
       <td class="label-col">Embed Theme Color:</td>
       <td class="val-col">
-        <input type="color" id="addon-discord-color" value="#38bdf8" style="vertical-align:middle;cursor:pointer;">
+        <input type="color" id="addon-discord-color" value="{{ settings.embed_color }}" style="vertical-align:middle;cursor:pointer;">
         <span class="inline-hint" style="margin-left:8px;">Color accent applied to Discord embed borders</span>
       </td>
     </tr>
@@ -141,28 +143,96 @@ STORE_CATALOG = [
   </div>
 
   <div class="section-sub-header" style="margin-top:20px;">Discord Live Embed Preview</div>
-  <div style="max-width:520px;background:#2b2d31;border-left:4px solid #38bdf8;border-radius:4px;padding:12px 16px;color:#dbdee1;font-family:'Segoe UI',sans-serif;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+  <div id="discord-preview-card" style="max-width:520px;background:#2b2d31;border-left:4px solid {{ settings.embed_color }};border-radius:4px;padding:12px 16px;color:#dbdee1;font-family:'Segoe UI',sans-serif;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
     <div style="display:flex;align-items:center;margin-bottom:8px;">
-      <div style="width:28px;height:28px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:12px;margin-right:8px;">FP</div>
+      <div id="discord-preview-avatar-box" style="width:28px;height:28px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:12px;margin-right:8px;overflow:hidden;flex-shrink:0;">
+        <span id="discord-preview-avatar-initials">FP</span>
+      </div>
       <div>
-        <strong style="color:#f2f3f5;" id="preview-botname">FiestaPanel Gateway</strong>
+        <strong style="color:#f2f3f5;" id="preview-botname">{{ settings.bot_name }}</strong>
         <span style="background:#5865f2;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px;">BOT</span>
         <span style="font-size:11px;color:#949ba4;margin-left:6px;">Today at 12:00</span>
       </div>
     </div>
     <div style="font-weight:bold;color:#f2f3f5;font-size:14px;margin-bottom:4px;"><i class="fa-solid fa-bolt" style="color:#eab308;margin-right:4px;"></i> Server Online Notification</div>
-    <div style="color:#dbdee1;margin-bottom:8px;">Paper 1.21.4 is now running on port 25565. TPS is optimal at 20.0.</div>
+    <div style="color:#dbdee1;margin-bottom:8px;">Minecraft server is active and online. Players can now connect.</div>
     <div style="font-size:11px;color:#949ba4;border-top:1px solid rgba(255,255,255,0.08);padding-top:6px;margin-top:8px;">
       FiestaPanel Addon System • 0 / 20 Players Online
     </div>
   </div>
 </div>
+
+<script>
+(function() {
+  function updateDiscordPreview() {
+    const botNameInput = document.getElementById('addon-discord-botname');
+    const colorInput = document.getElementById('addon-discord-color');
+    const avatarInput = document.getElementById('addon-discord-avatar');
+    const previewBot = document.getElementById('preview-botname');
+    const previewCard = document.getElementById('discord-preview-card');
+    const avatarBox = document.getElementById('discord-preview-avatar-box');
+
+    const name = botNameInput ? botNameInput.value.trim() : 'FiestaPanel Gateway';
+    if (previewBot) previewBot.textContent = name || 'FiestaPanel Gateway';
+    if (previewCard && colorInput) previewCard.style.borderLeftColor = colorInput.value || '#38bdf8';
+
+    if (avatarBox) {
+      const av = avatarInput ? avatarInput.value.trim() : '';
+      if (av && av.startsWith('http')) {
+        avatarBox.innerHTML = '<img src="' + av.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.innerHTML=\\'<span>FP</span>\\'">';
+      } else {
+        const initials = name ? name.substring(0, 2).toUpperCase() : 'FP';
+        avatarBox.innerHTML = '<span>' + (initials || 'FP') + '</span>';
+      }
+    }
+  }
+
+  const s = window.__ACTIVE_ADDON_SETTINGS__;
+  if (s && typeof s === 'object') {
+    const urlEl = document.getElementById('addon-discord-url');
+    if (urlEl && !urlEl.value && s.webhook_url) urlEl.value = s.webhook_url;
+
+    const botEl = document.getElementById('addon-discord-botname');
+    if (botEl && (!botEl.value || botEl.value === 'FiestaPanel Gateway') && s.bot_name) botEl.value = s.bot_name;
+
+    const avEl = document.getElementById('addon-discord-avatar');
+    if (avEl && !avEl.value && s.avatar_url) avEl.value = s.avatar_url;
+
+    const colEl = document.getElementById('addon-discord-color');
+    if (colEl && s.embed_color) colEl.value = s.embed_color;
+
+    const nStart = document.getElementById('addon-discord-notif-start');
+    if (nStart && s.notify_start !== undefined) nStart.checked = Boolean(s.notify_start);
+
+    const nStop = document.getElementById('addon-discord-notif-stop');
+    if (nStop && s.notify_stop !== undefined) nStop.checked = Boolean(s.notify_stop);
+
+    const nJoin = document.getElementById('addon-discord-notif-join');
+    if (nJoin && s.notify_join !== undefined) nJoin.checked = Boolean(s.notify_join);
+  }
+
+  const botEl = document.getElementById('addon-discord-botname');
+  if (botEl) botEl.addEventListener('input', updateDiscordPreview);
+  const colorEl = document.getElementById('addon-discord-color');
+  if (colorEl) colorEl.addEventListener('input', updateDiscordPreview);
+  const avEl = document.getElementById('addon-discord-avatar');
+  if (avEl) avEl.addEventListener('input', updateDiscordPreview);
+
+  updateDiscordPreview();
+})();
+</script>
 """,
             "main.py": """
 import urllib.request
+import urllib.error
+import urllib.parse
 import json
 import datetime
 import threading
+import ssl
+import logging
+
+logger = logging.getLogger("fiestapanel.addon.discord_notifier")
 
 def _send_webhook_payload(url, payload):
     try:
@@ -171,13 +241,23 @@ def _send_webhook_payload(url, payload):
             data=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json", "User-Agent": "FiestaPanel-Discord/1.2"}
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
             return resp.status in (200, 204)
-    except Exception:
+    except urllib.error.HTTPError as e:
+        try:
+            body = e.read().decode("utf-8", "ignore")
+            logger.error(f"Discord webhook HTTP {e.code}: {body}")
+        except Exception:
+            logger.error(f"Discord webhook HTTP {e.code}: {e.reason}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to deliver Discord webhook payload: {e}")
         return False
 
 def _deliver_discord_event(ctx, event_type, details=None):
     try:
+        details = details or {}
         settings = ctx.get_settings()
         url = (settings.get("webhook_url") or "").strip()
         if not url or not url.startswith("http"):
@@ -210,7 +290,7 @@ def _deliver_discord_event(ctx, event_type, details=None):
 
             embed = {
                 "title": "[●] Minecraft Server is Online",
-                "description": f"The Minecraft server is active and online. Players can now connect.",
+                "description": "The Minecraft server is active and online. Players can now connect.",
                 "color": color,
                 "fields": [
                     {"name": "Status", "value": "Online / Running", "inline": True},
@@ -239,6 +319,56 @@ def _deliver_discord_event(ctx, event_type, details=None):
                     "text": "FiestaPanel Addon System • Server Status Notification"
                 }
             }
+
+        elif event_type == "player_join":
+            if not settings.get("notify_join", True):
+                return
+
+            player_name = str(details.get("player") or "Unknown Player").strip()
+            online_count = details.get("players_online", 1)
+            max_p = details.get("max_players", 20)
+
+            embed = {
+                "title": f"[+] Player Joined: {player_name}",
+                "description": f"**{player_name}** connected to the server.",
+                "color": 0x22c55e,
+                "thumbnail": {
+                    "url": f"https://mc-heads.net/avatar/{urllib.parse.quote(player_name)}/64.png"
+                },
+                "fields": [
+                    {"name": "Player", "value": player_name, "inline": True},
+                    {"name": "Online Players", "value": f"{online_count} / {max_p}", "inline": True},
+                    {"name": "Timestamp", "value": now_str, "inline": False}
+                ],
+                "footer": {
+                    "text": "FiestaPanel Addon System • Player Activity"
+                }
+            }
+
+        elif event_type == "player_leave":
+            if not settings.get("notify_join", True):
+                return
+
+            player_name = str(details.get("player") or "Unknown Player").strip()
+            online_count = details.get("players_online", 0)
+            max_p = details.get("max_players", 20)
+
+            embed = {
+                "title": f"[-] Player Left: {player_name}",
+                "description": f"**{player_name}** disconnected from the server.",
+                "color": 0xeab308,
+                "thumbnail": {
+                    "url": f"https://mc-heads.net/avatar/{urllib.parse.quote(player_name)}/64.png"
+                },
+                "fields": [
+                    {"name": "Player", "value": player_name, "inline": True},
+                    {"name": "Online Players", "value": f"{online_count} / {max_p}", "inline": True},
+                    {"name": "Timestamp", "value": now_str, "inline": False}
+                ],
+                "footer": {
+                    "text": "FiestaPanel Addon System • Player Activity"
+                }
+            }
         else:
             return
 
@@ -246,7 +376,7 @@ def _deliver_discord_event(ctx, event_type, details=None):
             "username": bot_name,
             "embeds": [embed]
         }
-        if avatar_url:
+        if avatar_url and avatar_url.startswith("http"):
             payload["avatar_url"] = avatar_url
 
         threading.Thread(target=_send_webhook_payload, args=(url, payload), daemon=True).start()
@@ -264,24 +394,34 @@ def init_addon(ctx):
         ctx.logger.info("Discord Webhook: triggering server stop notification.")
         _deliver_discord_event(ctx, "server_stop", kwargs)
 
+    def on_player_join(**kwargs):
+        ctx.logger.info(f"Discord Webhook: triggering player join notification for {kwargs.get('player')}.")
+        _deliver_discord_event(ctx, "player_join", kwargs)
+
+    def on_player_leave(**kwargs):
+        ctx.logger.info(f"Discord Webhook: triggering player leave notification for {kwargs.get('player')}.")
+        _deliver_discord_event(ctx, "player_leave", kwargs)
+
     ctx.register_hook("server_start", on_server_start)
     ctx.register_hook("server_online", on_server_start)
     ctx.register_hook("server_stop", on_server_stop)
+    ctx.register_hook("player_join", on_player_join)
+    ctx.register_hook("player_leave", on_player_leave)
 
 def on_action(ctx, action_name, payload):
     if action_name == "test_ping":
         settings = ctx.get_settings()
-        url = payload.get("webhook_url") or settings.get("webhook_url")
+        url = (payload.get("webhook_url") or settings.get("webhook_url") or "").strip()
         if not url or not url.startswith("http"):
-            return {"success": False, "error": "Invalid or empty Webhook URL."}
+            return {"success": False, "error": "Invalid or empty Webhook URL. Please enter a valid URL."}
 
-        bot_name = payload.get("bot_name") or settings.get("bot_name", "FiestaPanel Gateway")
-        avatar_url = (payload.get("avatar_url") or settings.get("avatar_url", "")).strip()
-        embed_color_hex = (payload.get("embed_color") or settings.get("embed_color", "#38bdf8")).lstrip("#")
+        bot_name = (payload.get("bot_name") or settings.get("bot_name") or "FiestaPanel Gateway").strip()
+        avatar_url = (payload.get("avatar_url") or settings.get("avatar_url") or "").strip()
+        embed_color_hex = (payload.get("embed_color") or settings.get("embed_color") or "#38bdf8").lstrip("#")
         try:
             color_int = int(embed_color_hex, 16)
         except Exception:
-            color_int = 3718648
+            color_int = 0x38bdf8
 
         embed_data = {
             "username": bot_name,
@@ -291,16 +431,16 @@ def on_action(ctx, action_name, payload):
                     "description": "Connectivity test successful! Your Minecraft server is linked to this Discord channel.",
                     "color": color_int,
                     "fields": [
-                        {"name": "Status", "value": "Online & Operational", "inline": True},
+                        {"name": "Status", "value": "[●] Online & Operational", "inline": True},
                         {"name": "Timestamp", "value": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "inline": True}
                     ],
                     "footer": {
-                        "text": "FiestaPanel Addon System • Turnkey Deployment"
+                        "text": "FiestaPanel Addon System • Webhook Verification"
                     }
                 }
             ]
         }
-        if avatar_url:
+        if avatar_url and avatar_url.startswith("http"):
             embed_data["avatar_url"] = avatar_url
 
         try:
@@ -309,10 +449,21 @@ def on_action(ctx, action_name, payload):
                 data=json.dumps(embed_data).encode("utf-8"),
                 headers={"Content-Type": "application/json", "User-Agent": "FiestaPanel-Discord/1.2"}
             )
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            ssl_ctx = ssl.create_default_context()
+            with urllib.request.urlopen(req, timeout=10, context=ssl_ctx) as resp:
                 if resp.status in (200, 204):
                     return {"success": True, "message": "Test ping sent to Discord channel successfully!"}
                 return {"success": False, "error": f"Discord returned HTTP status {resp.status}"}
+        except urllib.error.HTTPError as e:
+            try:
+                body = e.read().decode("utf-8", "ignore")
+                err_data = json.loads(body)
+                msg = err_data.get("message") or body
+                return {"success": False, "error": f"Discord error ({e.code}): {msg}"}
+            except Exception:
+                return {"success": False, "error": f"Discord HTTP status {e.code}: {e.reason}"}
+        except urllib.error.URLError as e:
+            return {"success": False, "error": f"Connection failed: {e.reason}"}
         except Exception as e:
             return {"success": False, "error": f"Failed to deliver payload: {str(e)}"}
 
@@ -323,6 +474,14 @@ def on_action(ctx, action_name, payload):
     elif action_name == "server_stop":
         _deliver_discord_event(ctx, "server_stop", payload)
         return {"success": True, "message": "Server stop notification dispatched."}
+
+    elif action_name == "player_join":
+        _deliver_discord_event(ctx, "player_join", payload)
+        return {"success": True, "message": "Player join notification dispatched."}
+
+    elif action_name == "player_leave":
+        _deliver_discord_event(ctx, "player_leave", payload)
+        return {"success": True, "message": "Player leave notification dispatched."}
 
     return {"success": False, "error": f"Unknown action: {action_name}"}
 """
@@ -1377,18 +1536,88 @@ class AddonManager:
             return f"<div class='panel-box'><h3>Addon not found: {addon_id}</h3></div>"
 
         manifest = self.installed_addons[addon_id]
+        settings = manifest.get("settings", {})
         tab_file = os.path.join(manifest["dir_path"], "tab.html")
         if os.path.isfile(tab_file):
             try:
                 with open(tab_file, "r", encoding="utf-8") as f:
-                    return f.read()
+                    content = f.read()
+
+                # Interpolate settings into HTML placeholders
+                for k, v in settings.items():
+                    if isinstance(v, bool):
+                        chk_str = "checked" if v else ""
+                        content = content.replace(f"{{{{ {k}_checked }}}}", chk_str)
+                        content = content.replace(f"{{{{ settings.{k}_checked }}}}", chk_str)
+                    val_str = html.escape(str(v if v is not None else ""))
+                    content = content.replace(f"{{{{ {k} }}}}", val_str)
+                    content = content.replace(f"{{{{ settings.{k} }}}}", val_str)
+
+                # Special handling for discord_notifier inputs if placeholders weren't present in raw HTML
+                if addon_id == "discord_notifier":
+                    wh = html.escape(str(settings.get("webhook_url") or ""))
+                    bot = html.escape(str(settings.get("bot_name") or "FiestaPanel Gateway"))
+                    av = html.escape(str(settings.get("avatar_url") or ""))
+                    col = html.escape(str(settings.get("embed_color") or "#38bdf8"))
+                    ns = settings.get("notify_start", True)
+                    nst = settings.get("notify_stop", True)
+                    nj = settings.get("notify_join", True)
+
+                    # Ensure #addon-discord-url has value attribute
+                    if 'id="addon-discord-url"' in content:
+                        content = re.sub(
+                            r'(<input[^>]*id="addon-discord-url"[^>]*?)(\/?>)',
+                            lambda m: f'{re.sub(r"""\s*value=["\'][^"\']*["\']""", "", m.group(1))} value="{wh}"{m.group(2)}',
+                            content
+                        )
+                    # Ensure #addon-discord-botname has value attribute
+                    if 'id="addon-discord-botname"' in content:
+                        content = re.sub(
+                            r'(<input[^>]*id="addon-discord-botname"[^>]*?)(\/?>)',
+                            lambda m: f'{re.sub(r"""\s*value=["\'][^"\']*["\']""", "", m.group(1))} value="{bot}"{m.group(2)}',
+                            content
+                        )
+                    # Ensure #addon-discord-avatar has value attribute
+                    if 'id="addon-discord-avatar"' in content:
+                        content = re.sub(
+                            r'(<input[^>]*id="addon-discord-avatar"[^>]*?)(\/?>)',
+                            lambda m: f'{re.sub(r"""\s*value=["\'][^"\']*["\']""", "", m.group(1))} value="{av}"{m.group(2)}',
+                            content
+                        )
+                    # Ensure #addon-discord-color has value attribute
+                    if 'id="addon-discord-color"' in content:
+                        content = re.sub(
+                            r'(<input[^>]*id="addon-discord-color"[^>]*?)(\/?>)',
+                            lambda m: f'{re.sub(r"""\s*value=["\'][^"\']*["\']""", "", m.group(1))} value="{col}"{m.group(2)}',
+                            content
+                        )
+                    # Ensure checkboxes
+                    for chk_id, checked in [("addon-discord-notif-start", ns), ("addon-discord-notif-stop", nst), ("addon-discord-notif-join", nj)]:
+                        if f'id="{chk_id}"' in content:
+                            def _replace_chk(m, is_checked=checked):
+                                tag = re.sub(r'\s*checked\b', '', m.group(1))
+                                if is_checked:
+                                    tag += ' checked'
+                                return f'{tag}{m.group(2)}'
+                            content = re.sub(rf'(<input[^>]*id="{chk_id}"[^>]*?)(\/?>)', _replace_chk, content)
+
+                # Inject runtime settings payload for client scripts
+                injected_script = f"""
+<script id="addon-runtime-settings-{addon_id}">
+(function() {{
+    window.__ACTIVE_ADDON_ID__ = {json.dumps(addon_id)};
+    window.__ACTIVE_ADDON_SETTINGS__ = {json.dumps(settings)};
+}})();
+</script>
+"""
+                return content + injected_script
             except Exception as e:
                 return f"<div class='panel-box'><p>Error reading tab.html: {e}</p></div>"
 
         # Fallback generated UI based on settings schema
         schema = manifest.get("settings_schema", [])
         settings = manifest.get("settings", {})
-        html = [
+        fallback_lines = [
             f"<div class='panel-box'>",
             f"<div class='section-title-bar'><span>{manifest.get('name', addon_id)}</span></div>",
             f"<p class='inline-hint'>{manifest.get('description', '')}</p>",
@@ -1401,13 +1630,13 @@ class AddonManager:
             ftype = field.get("type", "text")
             if ftype == "checkbox":
                 chk = "checked" if val else ""
-                html.append(f"<tr><td class='label-col'>{label}:</td><td class='val-col'><input type='checkbox' id='addon-{addon_id}-{key}' {chk}></td></tr>")
+                fallback_lines.append(f"<tr><td class='label-col'>{label}:</td><td class='val-col'><input type='checkbox' id='addon-{addon_id}-{key}' {chk}></td></tr>")
             else:
-                html.append(f"<tr><td class='label-col'>{label}:</td><td class='val-col'><input type='text' id='addon-{addon_id}-{key}' class='ctrl-input' style='width:70%;' value='{val}'></td></tr>")
-        html.append("</table>")
-        html.append(f"<div style='margin-top:14px;'><button class='btn-classic' onclick='saveGenericAddonSettings(\"{addon_id}\")'>[ Save Settings ]</button></div>")
-        html.append("</div>")
-        return "\n".join(html)
+                fallback_lines.append(f"<tr><td class='label-col'>{label}:</td><td class='val-col'><input type='text' id='addon-{addon_id}-{key}' class='ctrl-input' style='width:70%;' value='{val}'></td></tr>")
+        fallback_lines.append("</table>")
+        fallback_lines.append(f"<div style='margin-top:14px;'><button class='btn-classic' onclick='saveGenericAddonSettings(\"{addon_id}\")'>[ Save Settings ]</button></div>")
+        fallback_lines.append("</div>")
+        return "\n".join(fallback_lines)
 
     def execute_addon_action(self, addon_id: str, action_name: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Dispatches an action call to an addon module's on_action(ctx, action_name, payload)."""

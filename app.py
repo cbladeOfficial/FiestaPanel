@@ -1389,6 +1389,8 @@ def enforce_security():
             elif path.startswith("/api/events/"): permission = "events"
             elif path.startswith("/api/panel-addons/") and "/review" in path:
                 permission = "allow_any_logged_in"
+            elif path.startswith("/api/panel-addons/") and ("/settings" in path or "/action" in path or "/view" in path):
+                permission = "parameters"
             perms = session.get("permissions", [])
             role = session.get("role", "")
             is_admin = (role in ("owner", "administrator") or "all" in perms)
@@ -1406,15 +1408,22 @@ except Exception as e:
 cloud_backup_mgr = CloudBackupManager(DATA_DIR)
 
 _last_known_server_running = None
+_last_known_online_players = None
 _state_notification_lock = threading.Lock()
 
 def check_and_notify_server_state(force_state=None):
-    global _last_known_server_running
+    global _last_known_server_running, _last_known_online_players
     with _state_notification_lock:
         current_state = force_state if force_state is not None else server_runner.is_running()
         if _last_known_server_running is None:
             # Seed initial state without broadcasting spurious alerts on panel boot
             _last_known_server_running = current_state
+            if current_state:
+                try:
+                    pinfo = ping_mc() or {}
+                    _last_known_online_players = set(pinfo.get("player_sample") or [])
+                except Exception:
+                    _last_known_online_players = set()
             return
 
         if current_state and not _last_known_server_running:
@@ -1424,13 +1433,39 @@ def check_and_notify_server_state(force_state=None):
                 addon_manager.trigger_event("server_online")
             except Exception as err:
                 app.logger.error(f"Error dispatching server_start addon event: {err}")
+            try:
+                pinfo = ping_mc() or {}
+                _last_known_online_players = set(pinfo.get("player_sample") or [])
+            except Exception:
+                _last_known_online_players = set()
 
         elif not current_state and _last_known_server_running:
             _last_known_server_running = False
+            _last_known_online_players = None
             try:
                 addon_manager.trigger_event("server_stop")
             except Exception as err:
                 app.logger.error(f"Error dispatching server_stop addon event: {err}")
+
+        elif current_state and _last_known_server_running:
+            try:
+                pinfo = ping_mc() or {}
+                raw_sample = pinfo.get("player_sample") or []
+                current_players = set(raw_sample)
+                if _last_known_online_players is not None:
+                    joined = current_players - _last_known_online_players
+                    left = _last_known_online_players - current_players
+                    max_p = pinfo.get("players_max", 20)
+                    online_count = pinfo.get("players_online", len(current_players))
+                    for p in joined:
+                        if p:
+                            addon_manager.trigger_event("player_join", player=p, players_online=online_count, max_players=max_p)
+                    for p in left:
+                        if p:
+                            addon_manager.trigger_event("player_leave", player=p, players_online=online_count, max_players=max_p)
+                _last_known_online_players = current_players
+            except Exception:
+                pass
 
 server_runner.on_state_change = [check_and_notify_server_state]
 
@@ -5449,14 +5484,27 @@ def api_panel_addons_toggle(addon_id):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 
-@app.route("/api/panel-addons/<addon_id>/settings", methods=["POST"])
+@app.route("/api/panel-addons/<addon_id>/settings", methods=["GET", "POST"])
 @login_required
 def api_panel_addons_settings(addon_id):
+    if request.method == "GET":
+        settings = addon_manager.get_addon_settings(addon_id)
+        manifest = addon_manager.installed_addons.get(addon_id, {})
+        return jsonify({
+            "success": True,
+            "addon_id": addon_id,
+            "settings": settings,
+            "settings_schema": manifest.get("settings_schema", [])
+        })
     data = request.get_json() or {}
     settings = data.get("settings", {})
     try:
         addon_manager.update_addon_settings(addon_id, settings)
-        return jsonify({"success": True, "message": "Settings updated successfully."})
+        return jsonify({
+            "success": True,
+            "message": "Settings updated successfully.",
+            "settings": addon_manager.get_addon_settings(addon_id)
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
 

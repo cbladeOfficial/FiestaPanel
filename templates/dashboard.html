@@ -16993,8 +16993,22 @@ def on_action(ctx, action_name, payload):
       selectNavView('panel-addon-tab', navEl);
 
       try {
-        const res = await fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/view`);
-        const html = await res.text();
+        const [viewRes, settingsRes] = await Promise.all([
+          fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/view`),
+          fetch(`/api/panel-addons/${encodeURIComponent(addonId)}/settings`).catch(() => null)
+        ]);
+        const html = await viewRes.text();
+        let loadedSettings = null;
+        if (settingsRes && settingsRes.ok) {
+          try {
+            const sData = await settingsRes.json();
+            if (sData.success && sData.settings) {
+              loadedSettings = sData.settings;
+              window.__ACTIVE_ADDON_SETTINGS__ = loadedSettings;
+            }
+          } catch(e) {}
+        }
+
         if (container) {
           container.innerHTML = html;
           // Execute any embedded scripts in the loaded HTML
@@ -17005,6 +17019,24 @@ def on_action(ctx, action_name, payload):
             else newScript.textContent = s.textContent;
             document.body.appendChild(newScript);
           });
+
+          // Ensure fields are populated from settings
+          if (loadedSettings && addonId === 'discord_notifier') {
+            const urlEl = document.getElementById('addon-discord-url');
+            if (urlEl && loadedSettings.webhook_url !== undefined) urlEl.value = loadedSettings.webhook_url;
+            const botEl = document.getElementById('addon-discord-botname');
+            if (botEl && loadedSettings.bot_name !== undefined) botEl.value = loadedSettings.bot_name;
+            const avEl = document.getElementById('addon-discord-avatar');
+            if (avEl && loadedSettings.avatar_url !== undefined) avEl.value = loadedSettings.avatar_url;
+            const colEl = document.getElementById('addon-discord-color');
+            if (colEl && loadedSettings.embed_color !== undefined) colEl.value = loadedSettings.embed_color;
+            const ns = document.getElementById('addon-discord-notif-start');
+            if (ns && loadedSettings.notify_start !== undefined) ns.checked = Boolean(loadedSettings.notify_start);
+            const nst = document.getElementById('addon-discord-notif-stop');
+            if (nst && loadedSettings.notify_stop !== undefined) nst.checked = Boolean(loadedSettings.notify_stop);
+            const nj = document.getElementById('addon-discord-notif-join');
+            if (nj && loadedSettings.notify_join !== undefined) nj.checked = Boolean(loadedSettings.notify_join);
+          }
         }
       } catch (err) {
         if (container) {
@@ -17076,13 +17108,18 @@ def on_action(ctx, action_name, payload):
 
     // ── Built-in Addon Helper Scripts & Interactive Handlers ─────────
     async function testDiscordWebhook() {
-      const url = document.getElementById('addon-discord-url').value.trim();
-      const botname = document.getElementById('addon-discord-botname').value.trim();
-      const avatar = document.getElementById('addon-discord-avatar').value.trim();
-      const color = document.getElementById('addon-discord-color').value;
+      const urlEl = document.getElementById('addon-discord-url');
+      const url = urlEl ? urlEl.value.trim() : '';
+      const botname = (document.getElementById('addon-discord-botname') ? document.getElementById('addon-discord-botname').value : 'FiestaPanel Gateway').trim();
+      const avatar = (document.getElementById('addon-discord-avatar') ? document.getElementById('addon-discord-avatar').value : '').trim();
+      const color = document.getElementById('addon-discord-color') ? document.getElementById('addon-discord-color').value : '#38bdf8';
       const msg = document.getElementById('addon-discord-msg');
 
       if (!url) {
+        if (msg) {
+          msg.textContent = 'Please enter a valid Discord Webhook URL first.';
+          msg.style.color = '#dc2626';
+        }
         return alert('Please enter a valid Discord Webhook URL first.');
       }
 
@@ -17106,29 +17143,44 @@ def on_action(ctx, action_name, payload):
             msg.textContent = (d.message || 'Ping delivered successfully!');
             msg.style.color = 'var(--banner-success-text, #22c55e)';
           }
+          showBannerAlert(d.message || 'Ping delivered to Discord channel successfully!');
         } else {
           if (msg) {
             msg.textContent = 'Error: ' + (d.error || 'Delivery failed');
             msg.style.color = '#dc2626';
           }
+          showBannerAlert('Discord test ping failed: ' + (d.error || 'Delivery failed'), true);
         }
       } catch (e) {
         if (msg) {
           msg.textContent = 'Network error: ' + e.message;
           msg.style.color = '#dc2626';
         }
+        showBannerAlert('Network error delivering ping: ' + e.message, true);
       }
     }
 
     async function saveDiscordSettings() {
-      const url = document.getElementById('addon-discord-url').value.trim();
-      const botname = document.getElementById('addon-discord-botname').value.trim();
-      const avatar = document.getElementById('addon-discord-avatar').value.trim();
-      const color = document.getElementById('addon-discord-color').value;
-      const notifStart = document.getElementById('addon-discord-notif-start').checked;
-      const notifStop = document.getElementById('addon-discord-notif-stop').checked;
-      const notifJoin = document.getElementById('addon-discord-notif-join').checked;
+      const urlEl = document.getElementById('addon-discord-url');
+      const url = urlEl ? urlEl.value.trim() : '';
+      const botname = (document.getElementById('addon-discord-botname') ? document.getElementById('addon-discord-botname').value : 'FiestaPanel Gateway').trim();
+      const avatar = (document.getElementById('addon-discord-avatar') ? document.getElementById('addon-discord-avatar').value : '').trim();
+      const color = document.getElementById('addon-discord-color') ? document.getElementById('addon-discord-color').value : '#38bdf8';
+      const notifStart = document.getElementById('addon-discord-notif-start') ? document.getElementById('addon-discord-notif-start').checked : true;
+      const notifStop = document.getElementById('addon-discord-notif-stop') ? document.getElementById('addon-discord-notif-stop').checked : true;
+      const notifJoin = document.getElementById('addon-discord-notif-join') ? document.getElementById('addon-discord-notif-join').checked : true;
       const msg = document.getElementById('addon-discord-msg');
+
+      if (!url) {
+        if (!confirm('Discord Webhook URL is empty. Saving will disable outgoing Discord alerts. Do you want to proceed?')) {
+          return;
+        }
+      }
+
+      if (msg) {
+        msg.textContent = 'Saving configuration...';
+        msg.style.color = '#5865f2';
+      }
 
       try {
         const res = await fetch('/api/panel-addons/discord_notifier/settings', {
@@ -17137,7 +17189,7 @@ def on_action(ctx, action_name, payload):
           body: JSON.stringify({
             settings: {
               webhook_url: url,
-              bot_name: botname,
+              bot_name: botname || 'FiestaPanel Gateway',
               avatar_url: avatar,
               embed_color: color,
               notify_start: notifStart,
@@ -17149,17 +17201,35 @@ def on_action(ctx, action_name, payload):
         const d = await res.json();
         if (d.success) {
           if (msg) {
-            msg.textContent = 'Webhook configuration saved!';
+            msg.textContent = 'Webhook configuration saved successfully!';
             msg.style.color = 'var(--banner-success-text, #22c55e)';
+          }
+          showBannerAlert('Discord Webhook configuration saved successfully!');
+          window.__ACTIVE_ADDON_SETTINGS__ = d.settings || {
+            webhook_url: url,
+            bot_name: botname,
+            avatar_url: avatar,
+            embed_color: color,
+            notify_start: notifStart,
+            notify_stop: notifStop,
+            notify_join: notifJoin
+          };
+          if (typeof loadPanelAddons === 'function') {
+            loadPanelAddons(false);
           }
         } else {
           if (msg) {
             msg.textContent = 'Error: ' + (d.error || 'Failed to save');
             msg.style.color = '#dc2626';
           }
+          showBannerAlert('Failed to save webhook settings: ' + (d.error || 'Unknown error'), true);
         }
       } catch (e) {
-        if (msg) msg.textContent = 'Network error: ' + e.message;
+        if (msg) {
+          msg.textContent = 'Network error: ' + e.message;
+          msg.style.color = '#dc2626';
+        }
+        showBannerAlert('Network error saving webhook: ' + e.message, true);
       }
     }
 
